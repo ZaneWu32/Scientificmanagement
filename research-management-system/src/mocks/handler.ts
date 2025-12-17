@@ -278,6 +278,9 @@ export function handleMockRequest(config: Record<string, any> = {}) {
         createdAt: now(),
         updatedAt: now(),
         reviewHistory: [],
+        formatChecked: isProcess ? false : true,
+        formatStatus: isProcess ? 'pending' : 'passed',
+        formatNote: '',
         ...projectFields
       }
       results.unshift(newResult)
@@ -390,6 +393,30 @@ export function handleMockRequest(config: Record<string, any> = {}) {
       createdAt: now()
     })
     return success(true, '已退回修改')
+  }
+
+  // 格式审查通过
+  if (method === 'post' && /^\/results\/[^/]+\/format-check$/.test(url)) {
+    const id = url.split('/')[2]
+    const item = results.find((r) => r.id === id)
+    if (!item) return fail(404, '未找到成果')
+    item.formatChecked = true
+    item.formatStatus = 'passed'
+    item.formatNote = ''
+    item.updatedAt = now()
+    return success(item, '格式审查已通过')
+  }
+
+  // 格式审查不通过
+  if (method === 'post' && /^\/results\/[^/]+\/format-reject$/.test(url)) {
+    const id = url.split('/')[2]
+    const item = results.find((r) => r.id === id)
+    if (!item) return fail(404, '未找到成果')
+    item.formatChecked = false
+    item.formatStatus = 'failed'
+    item.formatNote = body.reason || '格式问题待修复'
+    item.updatedAt = now()
+    return success(item, '已标记格式不通过')
   }
 
   // 待审核/审核中看板

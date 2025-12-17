@@ -9,6 +9,7 @@ import { ErrorHandler, AppError, ErrorType } from './errorHandler'
 declare module 'axios' {
   export interface AxiosRequestConfig {
     skipAuth?: boolean
+    mock?: boolean // 新增：允许单个请求控制是否使用 Mock
   }
 }
 
@@ -122,7 +123,8 @@ function handleBusinessResponse(response: any) {
 export default async function request(config: AxiosRequestConfig) {
   const finalConfig = { ...config }
 
-  if (isMockEnabled) {
+  // 如果全局开启了 Mock，且当前请求没有显式禁用 Mock
+  if (isMockEnabled && finalConfig.mock !== false) {
     // 模拟请求拦截器的 Token 注入逻辑，确保 Mock 接口能拿到 Token
     if (!finalConfig.skipAuth) {
       const userStore = useUserStore()

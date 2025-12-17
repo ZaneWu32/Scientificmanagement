@@ -39,7 +39,7 @@
         </div>
 
         <!-- 步骤2: 填写基础信息 -->
-        <div v-show="currentStep === 1" class="step-panel">
+        <div v-show="currentStep === 1" class="step-panel" v-loading="loadingFields" element-loading-text="正在加载字段配置...">
           <h3>填写基础信息</h3>
           <el-form
             ref="formRef"
@@ -278,7 +278,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { getResultTypes, createResult, saveDraft, autoFillMetadata, uploadAttachment } from '@/api/result'
+import { getResultTypes, getFieldDefsByType, createResult, saveDraft, autoFillMetadata, uploadAttachment } from '@/api/result'
 import { getProjects, createProject } from '@/api/project'
 import { ResultVisibility } from '@/types'
 
@@ -288,7 +288,11 @@ const userStore = useUserStore()
 const currentStep = ref(0)
 const resultTypes = ref([])
 const projects = ref([])
-const selectedType = computed(() => resultTypes.value.find(t => t.id === formData.typeId))
+const loadingFields = ref(false)
+const selectedType = computed(() => {
+  const type = resultTypes.value.find(t => t.id === formData.typeId)
+  return type || null
+})
 
 const formRef = ref()
 const formData = reactive({
@@ -358,8 +362,72 @@ async function loadProjects() {
   }
 }
 
-function handleTypeChange() {
+// 字段类型映射：后端 -> 前端
+function mapFieldType(backendType: string): string {
+  const typeMap: Record<string, string> = {
+    'TEXT': 'text',
+    'RICHTEXT': 'textarea',
+    'NUMBER': 'number',
+    'DATE': 'date',
+    'EMAIL': 'text',
+    'BOOLEAN': 'checkbox',
+    'JSON': 'textarea',
+    'MEDIA': 'text'
+  }
+  return typeMap[backendType] || 'text'
+}
+
+// 将后端字段定义转换为前端表单字段格式
+function transformFieldDef(field: any) {
+  return {
+    id: field.field_code,
+    name: field.field_code,
+    label: field.field_name,
+    type: mapFieldType(field.field_type),
+    required: field.is_required === 1,
+    helpText: field.description || `请输入${field.field_name}`,
+    order: field.order || 0
+  }
+}
+
+// 当用户选择成果类型后，动态加载该类型的字段定义
+async function handleTypeChange() {
+  // 清空旧的元数据
   formData.metadata = {}
+  
+  if (!formData.typeId) return
+  
+  // 查找当前选择的类型
+  const currentType = resultTypes.value.find(t => t.id === formData.typeId)
+  if (!currentType) return
+  
+  // 如果该类型已经加载过字段，不重复加载
+  if (currentType.fields && currentType.fields.length > 0) return
+  
+  loadingFields.value = true
+  try {
+    const res = await getFieldDefsByType(formData.typeId)
+    const rawFields = res?.data || []
+    
+    // 转换字段格式并排序
+    const transformedFields = rawFields
+      .map(transformFieldDef)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+    
+    // 将字段定义注入到类型对象中
+    currentType.fields = transformedFields
+    
+    if (transformedFields.length === 0) {
+      ElMessage.info('该类型暂未配置动态字段')
+    }
+  } catch (error) {
+    console.error('加载字段定义失败:', error)
+    ElMessage.error('加载字段定义失败，请稍后重试')
+    // 失败时设置空数组，避免重复请求
+    if (currentType) currentType.fields = []
+  } finally {
+    loadingFields.value = false
+  }
 }
 
 function validateDynamicFields() {

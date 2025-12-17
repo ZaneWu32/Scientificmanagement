@@ -26,56 +26,71 @@
       </el-form>
 
       <el-table :data="tableData" v-loading="loading">
-        <el-table-column prop="title" label="成果名称" min-width="220">
+        <el-table-column prop="title" label="成果名称" min-width="240">
           <template #default="{ row }">
             <div class="title-cell">
               <div class="title">{{ row.title }}</div>
               <div class="meta">
-                <el-tag size="small" effect="plain">{{ row.type }}</el-tag>
-                <el-tag v-if="row.projectPhase" size="small" type="info" effect="plain">
+                <span class="pill pill-type">{{ row.type }}</span>
+                <span v-if="row.projectPhase" class="pill pill-ghost">
                   {{ phaseMap[row.projectPhase] || row.projectPhase }}
-                </el-tag>
+                </span>
               </div>
             </div>
           </template>
         </el-table-column>
         <el-table-column prop="source" label="来源" width="130">
           <template #default="{ row }">
-            <el-tag :type="row.source === 'process_system' ? 'warning' : 'success'" size="small">
-              {{ sourceText(row.source) }}
-            </el-tag>
+            <div class="source-block">
+              <span :class="['pill', row.source === 'process_system' ? 'pill-warn' : 'pill-success']">
+                {{ sourceText(row.source) }}
+              </span>
+              <div
+                v-if="row.source === 'process_system'"
+                class="format-line"
+                :class="formatClass(row)"
+              >
+                {{ formatText(row) }}
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" effect="plain">
+            <el-tag :type="statusType(row.status)" effect="plain" class="status-soft">
               {{ statusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="170" />
-        <el-table-column label="操作" width="240">
+        <el-table-column label="操作" width="180">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewResult(row)">查看</el-button>
-            <el-button
-              v-if="canAssign(row)"
-              type="primary"
-              link
-              size="small"
-              @click="openAssign(row)"
-            >
-              分配审核
-            </el-button>
-            <el-button
-              type="primary"
-              link
-              size="small"
-              :disabled="row.source === 'process_system'"
-              @click="editResult(row)"
-            >
-              编辑
-            </el-button>
-            <el-button type="danger" link size="small" @click="removeResult(row)">删除</el-button>
+            <div class="ops">
+              <el-button type="primary" link size="small" @click="viewResult(row)">查看</el-button>
+              <el-dropdown trigger="click">
+                <span class="more-link">
+                  更多
+                  <el-icon><ArrowDown /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item v-if="canAssign(row)" @click="openAssign(row)">分配审核</el-dropdown-item>
+                    <el-dropdown-item v-if="canFormatCheck(row)" @click="handleFormatCheck(row)">
+                      格式审查通过
+                    </el-dropdown-item>
+                    <el-dropdown-item v-if="canFormatReject(row)" @click="handleFormatReject(row)">
+                      格式退回
+                    </el-dropdown-item>
+                    <el-dropdown-item :disabled="row.source === 'process_system'" @click="editResult(row)">
+                      编辑
+                    </el-dropdown-item>
+                    <el-dropdown-item divided @click="removeResult(row)">
+                      <span class="danger">删除</span>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -112,7 +127,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getResults, deleteResult, assignReviewers } from '@/api/result'
+import { ArrowDown } from '@element-plus/icons-vue'
+import { getResults, deleteResult, assignReviewers, markFormatChecked, markFormatRejected } from '@/api/result'
 import { ResultStatus } from '@/types'
 
 const router = useRouter()
@@ -120,6 +136,7 @@ const loading = ref(false)
 const tableData = ref([])
 const assignDialogVisible = ref(false)
 const assigning = ref(false)
+const formatChecking = ref(false)
 const currentAssignId = ref('')
 const assignForm = reactive({
   reviewers: ''
@@ -167,6 +184,14 @@ function canAssign(row: any) {
   return row?.source === 'process_system' && row?.status === ResultStatus.PENDING
 }
 
+function canFormatCheck(row: any) {
+  return row?.source === 'process_system' && row?.formatStatus !== 'passed'
+}
+
+function canFormatReject(row: any) {
+  return row?.source === 'process_system' && row?.formatStatus !== 'failed'
+}
+
 function openAssign(row: any) {
   currentAssignId.value = row.id
   assignForm.reviewers = (row.assignedReviewers || []).join(', ')
@@ -186,6 +211,56 @@ async function handleAssign() {
   } finally {
     assigning.value = false
   }
+}
+
+async function handleFormatCheck(row: any) {
+  if (!row?.id) return
+  formatChecking.value = true
+  try {
+    await markFormatChecked(row.id)
+    ElMessage.success('格式审查通过')
+    handleSearch()
+  } catch (e) {
+    ElMessage.error('操作失败')
+  } finally {
+    formatChecking.value = false
+  }
+}
+
+async function handleFormatReject(row: any) {
+  if (!row?.id) return
+  try {
+    const { value, action } = await ElMessageBox.prompt('请填写格式问题说明', '格式退回', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：缺少章节编号、摘要格式不规范',
+      inputType: 'textarea'
+    })
+    if (action === 'confirm') {
+      formatChecking.value = true
+      await markFormatRejected(row.id, { reason: value })
+      ElMessage.success('已退回格式修改')
+      handleSearch()
+    }
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('操作失败')
+    }
+  } finally {
+    formatChecking.value = false
+  }
+}
+
+function formatClass(row: any) {
+  if (row?.formatStatus === 'failed') return 'format-failed'
+  if (row?.formatStatus === 'passed' || row?.formatChecked === true) return 'format-ok'
+  return 'format-pending'
+}
+
+function formatText(row: any) {
+  if (row?.formatStatus === 'failed') return row.formatNote || '格式不通过'
+  if (row?.formatStatus === 'passed' || row?.formatChecked === true) return '格式已审'
+  return '待格式审查'
 }
 
 async function removeResult(row) {
@@ -254,5 +329,100 @@ function sourceText(source: string) {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.title-cell .title {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.title-cell .meta {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.pill-type {
+  background: rgba(29, 91, 255, 0.12);
+  color: #1d5bff;
+}
+
+.pill-ghost {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.pill-warn {
+  background: rgba(244, 159, 10, 0.12);
+  color: #b45309;
+}
+
+.pill-success {
+  background: rgba(46, 204, 113, 0.14);
+  color: #15803d;
+}
+
+.source-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.format-line {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  width: fit-content;
+  border: 1px solid transparent;
+}
+
+.format-pending {
+  background: rgba(255, 170, 73, 0.16);
+  color: #b45309;
+}
+
+.format-ok {
+  background: rgba(46, 204, 113, 0.14);
+  color: #15803d;
+}
+
+.format-failed {
+  background: rgba(248, 113, 113, 0.14);
+  color: #b91c1c;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.status-soft {
+  border-color: transparent;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.ops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.more-link {
+  color: #1d5bff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.danger {
+  color: #e11d48;
 }
 </style>

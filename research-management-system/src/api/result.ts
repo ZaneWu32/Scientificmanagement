@@ -148,6 +148,23 @@ export function requestChanges(id: string, data: any) {
   })
 }
 
+// 格式审查通过 (mock demo)
+export function markFormatChecked(id: string) {
+  return request({
+    url: `/results/${id}/format-check`,
+    method: 'post'
+  })
+}
+
+// 格式审查不通过 (mock demo)
+export function markFormatRejected(id: string, data: any) {
+  return request({
+    url: `/results/${id}/format-reject`,
+    method: 'post',
+    data
+  })
+}
+
 // 审核待办/统计 (mock demo)
 export function getReviewBacklog(params: any = {}) {
   return request({
@@ -212,6 +229,7 @@ export function getResultTypes() {
  return request({
   url: '/achievement-types',
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'get',
   params: {
    'filters[is_delete][$ne]': 1,
@@ -224,6 +242,7 @@ export function createResultType(data: Partial<AchievementType>) {
  return request({
   url: '/achievement-types',
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'post',
   data: { data }
  })
@@ -233,6 +252,7 @@ export function updateResultType(documentId: string, data: Partial<AchievementTy
  return request({
   url: `/achievement-types/${documentId}`,
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'put',
   data: { data }
  })
@@ -250,6 +270,7 @@ export function getFieldDefsByType(typeDocumentId: string) {
  return request({
   url: '/achievement-field-defs',
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'get',
   params: {
    // 【已修改】：使用确认的键名 achievement_type_id 进行过滤
@@ -272,6 +293,7 @@ export function createFieldDef(data: AchievementFieldDef) {
  return request({
   url: '/achievement-field-defs',
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'post',
   data: { data: payload }
  })
@@ -289,6 +311,7 @@ export function updateFieldDef(documentId: string, data: Partial<AchievementFiel
  return request({
   url: `/achievement-field-defs/${documentId}`,
   skipAuth: true,
+  mock: false, // 强制使用真实后端
   method: 'put',
   data: { data: payload }
  })

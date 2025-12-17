@@ -146,6 +146,9 @@ export interface ResearchResult {
   sourceRef?: string
   syncTime?: string
   assignedReviewers?: string[]
+  formatChecked?: boolean
+  formatStatus?: 'pending' | 'passed' | 'failed'
+  formatNote?: string
   createdAt?: string
   updatedAt?: string
   permissionStatus?: AccessPermissionStatus
