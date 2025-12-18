@@ -1,0 +1,34 @@
+package com.achievement.service;
+
+import com.achievement.domain.dto.AchListDTO;
+import com.achievement.domain.po.AchievementMains;
+import com.achievement.domain.vo.AchListVO;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+/**
+ * <p>
+ *  服务类
+ * </p>
+ *
+ * @author author
+ * @since 2025-12-11
+ */
+public interface IAchievementMainsService extends IService<AchievementMains> {
+
+    Page<AchListVO> pageList(AchListDTO achListDTO);
+
+    Long countByUserId();
+
+    Long countByUserIdAndTypeId(Long typeId);
+
+    Long countMonthNewByUserId();
+
+    Long countAch();
+
+    Long countByTypeId(Long typeId);
+
+    Long countMonthNew();
+
+    Page<AchListVO> pageList4User(AchListDTO achListDTO);
+}

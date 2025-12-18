@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.AchievementMainsMapper">
+
+
+
+<!-- 其他自动生成的 CRUD 在这里... -->
+<!-- 分页查询成果物列表 -->
+<select id="pageList"
+        resultType="com.achievement.domain.vo.AchListVO">
+    SELECT
+    m.document_id        AS documentId,
+    m.title              AS title,
+    t.type_name          AS typeName,
+    m.achievement_status AS auditStatus,
+    au.username          AS creatorName,
+    NULL                 AS authorName,     -- 先占位，后续有字段再填
+    NULL                 AS projectName,    -- 先占位，后续 join 项目表
+    m.summary            AS summary,
+    m.created_at         AS createdAt,
+    NULL/*m.visible_scope  */    AS visibleScope   -- 假设你后面会加这个字段
+    FROM achievement_mains m
+    LEFT JOIN achievement_mains_achievement_type_id_lnk mt
+    ON mt.achievement_main_id = m.id
+    LEFT JOIN achievement_types t
+    ON t.id = mt.achievement_type_id
+    LEFT JOIN admin_users au
+    ON au.id = m.created_by_id
+    WHERE m.is_delete = 0
+    AND m.published_at IS NOT NULL
+
+
+    <if test="dto.title != null and dto.title != ''">
+        AND m.title LIKE CONCAT('%', #{dto.title}, '%')
+    </if>
+
+    <if test="dto.status != null and dto.status != ''">
+        AND m.achievement_status = #{dto.status}
+    </if>
+
+    <if test="dto.typeId != null">
+        AND mt.achievement_type_id = #{dto.typeId}
+    </if>
+    <if test="dto.creatorId != null ">
+    AND m.created_by_id = #{dto.creatorId}
+    </if>
+    <if test="dto.creatorName != null and dto.creatorName != ''">
+        AND au.username LIKE CONCAT('%', #{dto.creatorName}, '%')
+    </if>
+
+    <!-- 项目名、可见范围的条件，等你有相关字段/表后再加 -->
+    <!--
+    <if test="dto.projectName != null and dto.projectName != ''">
+        AND p.project_name LIKE CONCAT('%', #{dto.projectName}, '%')
+    </if>
+    -->
+    ORDER BY m.created_at DESC
+</select>
+
+</mapper>
+
