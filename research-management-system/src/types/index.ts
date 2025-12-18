@@ -159,3 +159,20 @@ export interface ResearchResult {
   lastRequestAt?: string
   content?: string
 }
+
+export interface ResultAccessRequest {
+  id: string
+  resultId: string
+  resultTitle: string
+  resultType?: string
+  projectName?: string
+  visibility?: ResultVisibility
+  userId: string
+  userName: string
+  reason: string
+  status: AccessRequestStatus
+  createdAt: string
+  reviewedAt?: string
+  reviewer?: string
+  comment?: string
+}

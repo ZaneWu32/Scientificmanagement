@@ -1,14 +1,22 @@
 <template>
   <div class="search-results">
-    <el-card>
-      <el-form :model="searchForm" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="12">
+    <el-card class="search-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">成果检索</div>
+          <div class="panel-desc">组合关键词、类型、年份、项目等条件精准定位成果</div>
+        </div>
+        <el-tag effect="plain" type="info" class="panel-total">匹配 {{ pagination.total }} 条</el-tag>
+      </div>
+
+      <el-form :model="searchForm" label-width="90px" class="search-form">
+        <el-row :gutter="18" class="form-grid">
+          <el-col :xs="24" :md="12" :lg="12">
             <el-form-item label="关键词">
               <el-input v-model="searchForm.keyword" placeholder="搜索标题、作者、摘要" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :md="12" :lg="6">
             <el-form-item label="成果类型">
               <el-select v-model="searchForm.type" placeholder="全部类型" clearable>
                 <el-option label="论文" value="paper" />
@@ -17,7 +25,12 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :md="12" :lg="6">
+            <el-form-item label="作者">
+              <el-input v-model="searchForm.author" placeholder="作者姓名" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :md="12" :lg="8">
             <el-form-item label="年份范围">
               <el-date-picker
                 v-model="searchForm.yearRange"
@@ -29,15 +42,10 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="作者">
-              <el-input v-model="searchForm.author" placeholder="作者姓名" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :md="12" :lg="8">
             <el-form-item label="项目">
               <el-select v-model="searchForm.projectId" placeholder="全部项目" clearable filterable>
-                <el-option :label="'全部'" :value="''" />
+                <el-option :label="'全部项目'" :value="''" />
                 <el-option
                   v-for="project in projects"
                   :key="project.id"
@@ -48,10 +56,32 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
+
+        <div class="search-actions">
+          <div class="search-hint">
+            <el-icon class="hint-icon">
+              <InfoFilled />
+            </el-icon>
+            支持输入多个关键词，以空格分隔可提高命中率
+          </div>
+          <div class="action-buttons">
+            <el-button round plain :icon="RefreshIcon" @click="handleReset">重置</el-button>
+            <el-button round type="primary" :icon="SearchIcon" @click="handleSearch">查询</el-button>
+            <el-button
+              v-if="canExport"
+              round
+              type="success"
+              plain
+              class="export-btn"
+              :icon="DownloadIcon"
+              :loading="exporting"
+              :disabled="loading"
+              @click="handleExport"
+            >
+              导出
+            </el-button>
+          </div>
+        </div>
       </el-form>
     </el-card>
 
@@ -100,17 +130,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getResults } from '@/api/result'
+import dayjs from 'dayjs'
+import { InfoFilled, Search as SearchIcon, RefreshRight as RefreshIcon, Download as DownloadIcon } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
+import { getResults, exportResults } from '@/api/result'
 import { getProjects } from '@/api/project'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 const loading = ref(false)
 const tableData = ref([])
 const projects = ref([])
+const exporting = ref(false)
+const canExport = computed(() => userStore.isAdmin)
 
 const searchForm = reactive({
   keyword: '',
@@ -136,7 +172,7 @@ async function handleSearch() {
   loading.value = true
   try {
     const res = await getResults({
-      ...searchForm,
+      ...getSearchParams(),
       page: pagination.page,
       pageSize: pagination.pageSize
     })
@@ -180,6 +216,21 @@ function getProjectLabel(project) {
   return `${project.name} (${project.code})`
 }
 
+function getSearchParams() {
+  const params: Record<string, any> = {
+    keyword: searchForm.keyword,
+    type: searchForm.type,
+    author: searchForm.author,
+    projectId: searchForm.projectId
+  }
+
+  if (Array.isArray(searchForm.yearRange) && searchForm.yearRange.length === 2) {
+    params.yearRange = [...searchForm.yearRange]
+  }
+
+  return params
+}
+
 function initFromQuery() {
   const { projectId, keyword } = route.query
   if (projectId && typeof projectId === 'string') {
@@ -189,9 +240,120 @@ function initFromQuery() {
     searchForm.keyword = keyword
   }
 }
+
+async function handleExport() {
+  if (!canExport.value || exporting.value) return
+  exporting.value = true
+  try {
+    const params = {
+      ...getSearchParams(),
+      page: 1,
+      pageSize: Math.max(pagination.total, pagination.pageSize) || 100
+    }
+    const blob = await exportResults(params)
+    const fileName = `成果检索_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败', error)
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <style scoped>
+.search-panel {
+  border: none;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding-bottom: 26px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.panel-desc {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.panel-total {
+  border-radius: 999px;
+  font-size: 13px;
+  padding: 4px 12px;
+}
+
+.search-form {
+  padding-top: 6px;
+}
+
+.form-grid :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.search-actions {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #eef2ff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-hint {
+  color: #94a3b8;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hint-icon {
+  color: #1d5bff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.action-buttons .el-button {
+  min-width: 96px;
+  padding: 0 18px;
+  font-weight: 500;
+}
+
+.action-buttons .el-button--primary {
+  box-shadow: 0 12px 25px rgba(35, 93, 255, 0.25);
+}
+
+.export-btn {
+  border-color: rgba(25, 135, 84, 0.35);
+  color: #15803d;
+}
+
 .pagination {
   margin-top: 20px;
   display: flex;

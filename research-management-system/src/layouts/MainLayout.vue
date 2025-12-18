@@ -247,6 +247,7 @@ const menuItems = computed(() => {
       children: [
         { path: '/admin/dashboard', title: '科研看台' },
         { path: '/admin/results', title: '成果管理' },
+        { path: '/admin/access-requests', title: '权限审核' },
         { path: '/admin/review-assign', title: '审核分配' },
         { path: '/admin/system-settings', title: '系统设置' }
       ]

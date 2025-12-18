@@ -279,6 +279,10 @@ export function handleMockRequest(config: Record<string, any> = {}) {
     const record = {
       id: nextId('req'),
       resultId: id,
+      resultTitle: detail.title,
+      resultType: detail.type,
+      projectName: detail.projectName,
+      visibility: detail.visibility,
       userId: currentUser.id,
       userName: currentUser.name,
       reason,
@@ -292,6 +296,81 @@ export function handleMockRequest(config: Record<string, any> = {}) {
     detail.rejectedReason = ''
     detail.canRequestAccess = false
     return success(record, '申请已提交，等待管理员审核')
+  }
+
+  if (method === 'get' && url === '/results/access-requests') {
+    let list = resultAccessRequests.map((item) => {
+      const target = results.find((r) => r.id === item.resultId)
+      return {
+        ...item,
+        resultTitle: item.resultTitle || target?.title || item.resultId,
+        resultType: item.resultType || target?.type,
+        projectName: item.projectName || target?.projectName,
+        visibility: item.visibility || target?.visibility,
+        resultStatus: target?.status
+      }
+    })
+    if (params.keyword) {
+      list = list.filter(
+        (item) =>
+          item.resultTitle?.includes(params.keyword) ||
+          item.userName?.includes(params.keyword) ||
+          item.reason?.includes(params.keyword)
+      )
+    }
+    if (params.status) {
+      const filters = Array.isArray(params.status) ? params.status : [params.status]
+      list = list.filter((item) => filters.includes(item.status))
+    }
+    const page = Number(params.page) || 1
+    const pageSize = Number(params.pageSize) || 10
+    const total = list.length
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    return success({
+      list: list.slice(start, end),
+      total,
+      page,
+      pageSize
+    })
+  }
+
+  const reviewAccessMatch = url.match(/^\/results\/access-requests\/([^/]+)\/review$/)
+  if (method === 'post' && reviewAccessMatch) {
+    if (!currentUser) return fail(401, '未登录')
+    const requestId = reviewAccessMatch[1]
+    const record = resultAccessRequests.find((req) => req.id === requestId)
+    if (!record) return fail(404, '未找到申请')
+    const action = body?.action
+    if (!['approve', 'reject'].includes(action)) return fail(400, '无效的操作类型')
+    const target = results.find((item) => item.id === record.resultId)
+    const reviewedAt = nowWithTime()
+    record.status = action === 'approve' ? 'approved' : 'rejected'
+    record.reviewedAt = reviewedAt
+    record.reviewer = currentUser.name
+    record.comment = body?.comment || ''
+
+    if (target) {
+      record.resultTitle = target.title
+      record.resultType = target.type
+      record.projectName = target.projectName
+      record.visibility = target.visibility
+      target.lastRequestAt = reviewedAt
+      if (action === 'approve') {
+        target.permissionStatus = 'full'
+        target.accessRequestStatus = 'approved'
+        target.canRequestAccess = false
+        target.rejectedReason = ''
+      } else {
+        target.permissionStatus = target.permissionStatus || 'summary'
+        target.accessRequestStatus = 'rejected'
+        target.canRequestAccess = true
+        target.rejectedReason = record.comment || '管理员已拒绝申请'
+      }
+    }
+
+    const message = action === 'approve' ? '已通过申请' : '已拒绝申请'
+    return success(record, message)
   }
 
   // 创建/草稿

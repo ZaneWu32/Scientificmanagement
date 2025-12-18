@@ -227,8 +227,9 @@ export const results = [
     status: 'published',
     visibility: 'internal_abstract',
     permissionStatus: 'summary',
-    accessRequestStatus: 'none',
-    canRequestAccess: true,
+    accessRequestStatus: 'pending',
+    canRequestAccess: false,
+    lastRequestAt: '2025-01-05 11:20',
     attachments: [],
     metadata: { regNo: '2023SR0123456', devDate: '2023-11-30', pubDate: '2023-12-15', owner: 'XX大学' },
     createdBy: '李研究员',
@@ -613,6 +614,10 @@ export const resultAccessRequests = [
   {
     id: 'req-001',
     resultId: 'r-005',
+    resultTitle: '新能源固态电解质界面改性实验报告',
+    resultType: 'paper',
+    projectName: '高比能固态锂电池界面稳定性及调控机制',
+    visibility: 'internal_abstract',
     userId: '3',
     userName: '李研究员',
     status: 'rejected',
@@ -625,11 +630,44 @@ export const resultAccessRequests = [
   {
     id: 'req-002',
     resultId: 'r-002',
+    resultTitle: '一种基于多传感器融合的车辆目标检测方法及系统',
+    resultType: 'patent',
+    projectName: '基于多模态融合的复杂场景自动驾驶感知关键技术',
+    visibility: 'internal_full',
     userId: '3',
     userName: '李研究员',
     status: 'pending',
     reason: '准备撰写企业转化方案，需要查看专利全文',
     createdAt: '2025-01-08 14:30'
+  },
+  {
+    id: 'req-003',
+    resultId: 'r-003',
+    resultTitle: '分布式科研数据管理系统 V1.0',
+    resultType: 'software',
+    projectName: '数字经济驱动下制造业供应链韧性提升策略研究',
+    visibility: 'internal_abstract',
+    userId: '3',
+    userName: '李研究员',
+    status: 'pending',
+    reason: '需要申请全文用于企业部署方案评审',
+    createdAt: '2025-01-05 11:20'
+  },
+  {
+    id: 'req-004',
+    resultId: 'r-004',
+    resultTitle: '多模态交通场景数据集 V2.0',
+    resultType: 'paper',
+    projectName: '基于多模态融合的复杂场景自动驾驶感知关键技术',
+    visibility: 'internal_full',
+    userId: '3',
+    userName: '李研究员',
+    status: 'approved',
+    reason: '拟开展跨部门联合研究，需要访问完整数据集',
+    createdAt: '2024-12-26 09:40',
+    reviewedAt: '2024-12-28 16:20',
+    reviewer: '管理员',
+    comment: '已确认保密承诺，准予查看全文及附件'
   }
 ]
 

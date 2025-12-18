@@ -52,6 +52,15 @@ export function getResults(params: any) {
  })
 }
 
+export function exportResults(params: any) {
+  return request({
+    url: '/results/export',
+    method: 'get',
+    params,
+    responseType: 'blob'
+  })
+}
+
 // 获取我的成果列表 (保持不变)
 export function getMyResults(params: any) {
  return request({
@@ -76,6 +85,22 @@ export function requestResultAccess(id: string, data: any) {
   method: 'post',
   data
  })
+}
+
+export function getResultAccessRequests(params: any = {}) {
+  return request({
+    url: '/results/access-requests',
+    method: 'get',
+    params
+  })
+}
+
+export function reviewResultAccessRequest(id: string, data: { action: 'approve' | 'reject'; comment?: string }) {
+  return request({
+    url: `/results/access-requests/${id}/review`,
+    method: 'post',
+    data
+  })
 }
 
 // 创建成果 (保持不变)

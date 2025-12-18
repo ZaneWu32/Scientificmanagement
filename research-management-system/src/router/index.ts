@@ -82,6 +82,12 @@ const router = createRouter({
           meta: { title: '成果管理', roles: [UserRole.ADMIN, UserRole.MANAGER] }
         },
         {
+          path: '/admin/access-requests',
+          name: 'AccessRequests',
+          component: () => import('@/views/admin/AccessRequests.vue'),
+          meta: { title: '权限审核', roles: [UserRole.ADMIN, UserRole.MANAGER] }
+        },
+        {
           path: '/admin/review-assign',
           name: 'ReviewAssign',
           component: () => import('@/views/admin/ReviewAssign.vue'),
