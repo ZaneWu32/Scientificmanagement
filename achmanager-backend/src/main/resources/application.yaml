@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/strapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  data:
+    redis:
+      password:
+      port: 6379
+      host: localhost
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1000ms
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+strapi:
+  base-url: http://[::1]:1337
+  api-token: 225192546813fdc1689d095b282f8d82d231f84d95878c10e419b3dd50fdd92ac601f3362bb75f7aa5ce96f69526bd57acbfb432429ff78dd6f58fa2d11cd288dc59ac14ebf0c7856655a4405b50c1b69700eb9627f396f2da606e9746d7753f5781f9053b1bec856710d55c8d65e759cdde5683a940e04b572f275c4f62fd75
+
