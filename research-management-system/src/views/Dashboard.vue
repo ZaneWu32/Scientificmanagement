@@ -91,7 +91,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Document, Tickets, TrophyBase, TrendCharts } from '@element-plus/icons-vue'
-import { getMyStatistics, getMyResults } from '@/api/result'
+import { getMyStatistics, getMyResults, getTypePie } from '@/api/result'
 import * as echarts from 'echarts'
 import { ResultStatus } from '@/types'
 
@@ -179,13 +179,49 @@ onBeforeUnmount(() => {
 async function loadData() {
   loading.value = true
   try {
-    const [statsRes, resultsRes] = await Promise.all([
+    const [statsRes, resultsRes, typePieRes] = await Promise.all([
       getMyStatistics(),
-      getMyResults({ page: 1, pageSize: 5 })
+      getMyResults({ page: 1, pageSize: 5 }),
+      getTypePie()
     ])
-    statistics.value = statsRes?.data
+    statistics.value = statsRes?.data || {}
     greetingName.value = statsRes?.data?.owner || '科研者'
     recentResults.value = resultsRes?.data?.list || []
+
+    // 处理真实分布数据
+    if (typePieRes?.data) {
+      // 映射后端数据结构，保留 typeCode 以便进行稳定的逻辑判断
+      const realTypeData = typePieRes.data.map((item: any) => ({
+        name: item.typeName || '未命名',
+        value: Number(item.count || 0),
+        typeCode: item.typeCode || '' // 透传 typeCode
+      }))
+      
+      statistics.value.typeDistribution = realTypeData
+      
+      // 基于真实数据计算统计指标 (优先使用 typeCode，中文名作为降级兜底)
+      const total = realTypeData.reduce((sum: number, item: any) => sum + item.value, 0)
+      
+      const papers = realTypeData
+        .filter((item: any) => {
+           const code = String(item.typeCode || '').toUpperCase()
+           const name = String(item.name || '')
+           return code.includes('PAPER') || name.includes('论文')
+        })
+        .reduce((sum: number, item: any) => sum + item.value, 0)
+
+      const patents = realTypeData
+        .filter((item: any) => {
+           const code = String(item.typeCode || '').toUpperCase()
+           const name = String(item.name || '')
+           return code.includes('PATENT') || name.includes('专利')
+        })
+        .reduce((sum: number, item: any) => sum + item.value, 0)
+        
+      statistics.value.totalResults = total
+      statistics.value.paperCount = papers
+      statistics.value.patentCount = patents
+    }
   } catch (error) {
     console.error('加载数据失败:', error)
   } finally {

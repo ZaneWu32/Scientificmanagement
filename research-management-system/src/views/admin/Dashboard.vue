@@ -161,9 +161,10 @@ watch([trendDimension, trendRange], () => loadStackedTrend())
 async function loadSummary() {
   loading.value = true
   try {
-    const [statsRes, resultsRes] = await Promise.all([
+    const [statsRes, resultsRes, typePieRes] = await Promise.all([
       getStatistics(),
-      getResults({ page: 1, pageSize: 10 })
+      getResults({ page: 1, pageSize: 10 }),
+      getTypePie()
     ])
     const statsData = statsRes?.data || {}
     const resultsData = resultsRes?.data || {}
@@ -171,10 +172,38 @@ async function loadSummary() {
     statistics.value = statsData
     recentResults.value = resultsData.list || []
 
-    if (stats.value[0]) stats.value[0].value = statsData.totalResults
-    if (stats.value[1]) stats.value[1].value = statsData.paperCount
-    if (stats.value[2]) stats.value[2].value = statsData.patentCount
-    if (stats.value[3]) stats.value[3].value = statsData.monthlyNew
+    let total = statsData.totalResults || 0
+    let papers = statsData.paperCount || 0
+    let patents = statsData.patentCount || 0
+    let monthly = statsData.monthlyNew || 0
+
+    // 使用真实分布数据覆盖统计
+    if (typePieRes?.data && Array.isArray(typePieRes.data)) {
+      const list = typePieRes.data
+      total = list.reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
+      
+      // 优先使用 typeCode 判断 (PAPER/PATENT)，中文名称匹配作为 fallback
+      papers = list
+        .filter((item: any) => {
+           const code = String(item.typeCode || '').toUpperCase()
+           const name = String(item.typeName || '')
+           return code.includes('PAPER') || name.includes('论文')
+        })
+        .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
+
+      patents = list
+        .filter((item: any) => {
+           const code = String(item.typeCode || '').toUpperCase()
+           const name = String(item.typeName || '')
+           return code.includes('PATENT') || name.includes('专利')
+        })
+        .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
+    }
+
+    if (stats.value[0]) stats.value[0].value = total
+    if (stats.value[1]) stats.value[1].value = papers
+    if (stats.value[2]) stats.value[2].value = patents
+    if (stats.value[3]) stats.value[3].value = monthly
   } catch (error) {
     console.error('加载数据失败:', error)
   } finally {
