@@ -235,18 +235,6 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         return result;
     }
 
-    @Override
-    public Page<ReviewBacklogVO> pageReviewBacklog(Integer reviewerId, Integer pageNum, Integer pageSize) {
-        Page<ReviewBacklogVO> page = new Page<>(pageNum == null ? 1 : pageNum, pageSize == null ? 10 : pageSize);
-        return (Page<ReviewBacklogVO>) assignmentMapper.selectReviewBacklog(page, reviewerId);
-    }
-
-    @Override
-    public Page<ReviewHistoryVO> pageReviewHistory(Integer reviewerId, Integer pageNum, Integer pageSize) {
-        Page<ReviewHistoryVO> page = new Page<>(pageNum == null ? 1 : pageNum, pageSize == null ? 10 : pageSize);
-        return (Page<ReviewHistoryVO>) achievementReviewMapper.selectReviewHistory(page, reviewerId);
-    }
-    
     /**
      * 根据documentId查询成果
      */
@@ -274,8 +262,7 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         }
         return resolveUserName(reviewerId);
     }
-}
-
+    
     @Override
     public Page<ReviewBacklogVO> pageReviewBacklog(Integer reviewerId, Integer pageNum, Integer pageSize) {
         log.info("查询审核待办: reviewerId={}, page={}, size={}", reviewerId, pageNum, pageSize);
@@ -319,3 +306,4 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         
         return result;
     }
+}
