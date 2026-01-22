@@ -1,7 +1,9 @@
 package com.achievement.controller;
 
 
+import com.achievement.annotation.CurrentUser;
 import com.achievement.domain.dto.AchListDTO;
+import com.achievement.domain.po.BusinessUser;
 import com.achievement.domain.vo.AchDetailVO;
 import com.achievement.domain.vo.AchListVO;
 import com.achievement.result.Result;
@@ -53,7 +55,13 @@ public class AchievementManageController {
      */
     @Operation(description = "管理员分页查询成果物列表接口")
     @PostMapping("/pageList")
-    public Result<Page<AchListVO>> pageList(@RequestBody AchListDTO achListDTO){
+    public Result<Page<AchListVO>> pageList(@RequestBody AchListDTO achListDTO, @CurrentUser BusinessUser currentUser){
+        if (currentUser == null) {
+            return Result.error("未登录");
+        }
+        if (!"admin".equalsIgnoreCase(currentUser.getRole())) {
+            return Result.error("无权限：仅管理员可访问");
+        }
         return Result.success(achievementMainsService.pageList(achListDTO));
     }
     /*
