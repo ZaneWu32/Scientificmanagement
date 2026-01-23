@@ -21,11 +21,11 @@ public interface IAchievementMainsService extends IService<AchievementMains> {
 
     Page<AchListVO> pageList(AchListDTO achListDTO);
 
-    Long countByUserId();
+    Long countByUserId(Long userId);
 
-    Long countByUserIdAndTypeId(Long typeId);
+    Long countByUserIdAndTypeId(Long typeId, Long userId);
 
-    Long countMonthNewByUserId();
+    Long countMonthNewByUserId(Long userId);
 
     Long countAch();
 
