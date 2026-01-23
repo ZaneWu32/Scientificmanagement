@@ -33,7 +33,7 @@ public class UserStatController {
         return Result.success(statVo);
 
     }
-    //统计某用户的某类别成果物数量
+    /*//统计某用户的某类别成果物数量
     @Operation(description = "统计某用户创建的某类别成果物数量")
     @GetMapping("/userTypeAchCount")
     public Result<Long> userTypeAchStat(@RequestParam Long typeId, @CurrentUser BusinessUser currentUser){
@@ -53,7 +53,7 @@ public class UserStatController {
         }
         Long count = mainsService.countMonthNewByUserId(Long.valueOf(currentUser.getId()));
         return Result.success(count);
-    }
+    }*/
     @Operation(description = "饼图：各成果物类型数量")
     @GetMapping("/user/stat/typePie")
     public Result<List<TypeCountVO>> typePie(@CurrentUser BusinessUser businessUser) {
