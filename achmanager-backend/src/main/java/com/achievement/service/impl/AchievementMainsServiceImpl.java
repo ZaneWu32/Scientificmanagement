@@ -197,7 +197,6 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
     @Override
     public UserStatVo countByUserId(Integer userId) {
-        userId = 1;
         if (userId == null) {
             throw new RuntimeException("userId不能为空");
         }
