@@ -50,6 +50,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         }
         //MybatisPlus的分页查询
         Page<AchListVO> page = new Page<>(pageNum, pageSize);
+        page.setOptimizeCountSql(false);  // 关键：关闭 count SQL 优化解析
         return baseMapper.pageList(page, achListDTO);
     }
     @Override
@@ -62,6 +63,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         achListDTO.setCreatorId(userId);
         //MybatisPlus的分页查询
         Page<AchListVO> page = new Page<>(pageNum, pageSize);
+        page.setOptimizeCountSql(false);  // 关键：关闭 count SQL 优化解析
         return baseMapper.pageList(page, achListDTO);
     }
 
@@ -152,6 +154,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
             }
             //MybatisPlus的分页查询
             Page<AchListVO> page = new Page<>(pageNum, pageSize);
+            page.setOptimizeCountSql(false);  // 关键：关闭 count SQL 优化解析
             return baseMapper.pageList2(page, achListDTO);
     }
 

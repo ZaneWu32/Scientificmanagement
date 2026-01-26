@@ -144,7 +144,9 @@ function buildAchListPayload(params?: QueryParams, useTypeCode = false, onlyUnas
     mainTitle: params?.keyword,
     status,
     projectId: params?.projectId,
-    onlyUnassigned
+    onlyUnassigned,
+  // ✅ 新增：作者
+    author: (params as any)?.author
   }
 
   // ZZQ改 ：✅ 追加：年份范围（页面传的是 yearRange: [start,end]）

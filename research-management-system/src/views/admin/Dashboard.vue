@@ -71,7 +71,12 @@
           <el-table :data="recentResults" v-loading="loading" size="default">
             <el-table-column prop="title" label="成果名称" min-width="240" show-overflow-tooltip />
             <el-table-column prop="type" label="类型" width="120" />
-            <el-table-column prop="author" label="作者" width="140" show-overflow-tooltip />
+            <!-- <el-table-column prop="author" label="作者" width="140" show-overflow-tooltip /> -->
+            <el-table-column label="作者" width="180" show-overflow-tooltip>
+              <template #default="{ row }">
+                {{ Array.isArray(row.authors) && row.authors.length ? row.authors.join(', ') : '未知作者' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="department" label="所属部门" width="160" show-overflow-tooltip />
             <el-table-column prop="createdAt" label="入库时间" width="160" />
           </el-table>

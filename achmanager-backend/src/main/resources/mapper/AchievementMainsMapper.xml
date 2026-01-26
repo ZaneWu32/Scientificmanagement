@@ -9,6 +9,7 @@
         <result column="typeName" property="typeName"/>
         <result column="auditStatus" property="auditStatus"/>
         <result column="creatorName" property="creatorName"/>
+        <result column="year" property="year"/>
 
         <!-- 关键：authors 用 JSON List TypeHandler -->
         <result column="authors" property="authors"
@@ -75,6 +76,13 @@
         <if test="dto.typeCode != null and dto.typeCode != ''">
             AND t.type_code = #{dto.typeCode}
         </if>
+        <if test="dto.author != null and dto.author.trim() != ''">
+            AND (
+            JSON_SEARCH(m.authors, 'one', CONCAT('%', TRIM(#{dto.author}), '%')) IS NOT NULL
+            OR JSON_SEARCH(m.authors, 'all', CONCAT('%', TRIM(#{dto.author}), '%')) IS NOT NULL
+            )
+        </if>
+
 
         <if test="dto.visibilityRange != null and dto.visibilityRange != ''">
             AND m.visibility_range = #{dto.visibilityRange}
