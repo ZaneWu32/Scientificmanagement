@@ -12,7 +12,7 @@
         m.title              AS title,
         t.type_name          AS typeName,
         m.achievement_status AS auditStatus,
-        au.username          AS creatorName,
+        m.authors          AS author,
         m.project_name       AS projectName,
         m.summary            AS summary,
         m.created_at         AS createdAt,
