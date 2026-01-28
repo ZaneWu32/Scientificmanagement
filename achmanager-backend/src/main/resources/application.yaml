@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/strapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: Wjh0921@
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
@@ -74,7 +74,7 @@ logging:
     com.achievement.config: INFO
 strapi:
   base-url: http://localhost:1337
-  api-token: a51741360bef479d82c67aad87d9e177279f706ab853c9886330b87b32e0eb02a1c0aab48c429563490bba06d487620b9e765c9d67ee6ca24065e11da3447c716a795a96adba3bd9efa60822935b062cfc1568c24d27a283020c81090c40658ae632a8ad962acb7d125bdada1d466ba114e6113d3f862f90adffe944ca46feb1
+  api-token: d7fdf051c487ef52ef6e1aa3e64c0e57a0e614b35cfd8e04cde6ff89f7284e173cdbc732a916a15b35a257a6f2414dbadd88f99efcce607935338ec740df89e6db54afd28a03740e9bb4a70b6b370fc7458467265bf081ad2e1d51411108ea009d5ec9afc60d6b053972f5b9692fd26e6ba8513e029f5bf37e2299e30993b392
 
 easyscholar:
   base-url: https://www.easyscholar.cc/open/getPublicationRank

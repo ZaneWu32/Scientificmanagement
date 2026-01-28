@@ -186,6 +186,13 @@ export function getTypePie(creatorId?: number): Promise<ApiResponse<any>> {
     params: creatorId ? { creatorId } : undefined
   })
 }
+export function getTypePie4User(creatorId?: number): Promise<ApiResponse<any>> {
+  return request({
+    url: '/user/stat/typePie',
+    method: 'get',
+    params: creatorId ? { creatorId } : undefined
+  })
+}
 
 // 获取高级分布数据
 export function getAdvancedDistribution(params?: QueryParams): Promise<ApiResponse<any>> {
@@ -262,6 +269,14 @@ export function exportResults(params?: QueryParams): Promise<Blob> {
 
 // 获取我的成果列表（也可用于用户端通用检索）
 export async function getMyResults(params?: QueryParams, useTypeCode = false): Promise<StrapiPaginatedResponse<any>> {
+  const res = await request({
+    url: '/user/achievement/pageList4User',
+    method: 'post',
+    data: buildAchListPayload(params, useTypeCode)
+  })
+  return normalizePageResult(res, mapListItem)
+}
+export async function selectResults(params?: QueryParams, useTypeCode = false): Promise<StrapiPaginatedResponse<any>> {
   const res = await request({
     url: '/user/achievement/pageList',
     method: 'post',
