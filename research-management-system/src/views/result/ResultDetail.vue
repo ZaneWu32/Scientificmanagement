@@ -524,8 +524,17 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
 }
 
+const STRAPI_FILE_BASE = import.meta.env.VITE_STRAPI_FILE_BASE || 'http://localhost:1337'
+
+function normalizeFileUrl(u?: string) {
+  if (!u) return ''
+  if (u.startsWith('http')) return u
+  return STRAPI_FILE_BASE.replace(/\/$/, '') + u
+}
+
 function downloadFile(file) {
-  window.open(file.url, '_blank')
+  const url = normalizeFileUrl(file.url)
+  window.open(url, '_blank')
 }
 
 function goProjectFilter(item) {

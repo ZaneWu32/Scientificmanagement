@@ -91,49 +91,44 @@ function mapReviewHistoryItem(item: any) {
   }
 }
 
-function mapDetailItem(item: any) {
-  const fields = Array.isArray(item?.fields) ? item.fields : []
-  const metadata: Record<string, any> = {}
-  fields.forEach((field) => {
-    if (field?.fieldCode) {
-      metadata[field.fieldCode] = field.value
-    }
-  })
+function mapDetailItem(raw: any) {
+  const data = raw?.data ?? raw ?? {}
 
-  // 解析附件:后端返回Strapi格式{data:[{id,attributes:{files:{data:[...]}}}]}
-  let attachments = []
-  if (item?.attachments?.data) {
-    attachments = Array.isArray(item.attachments.data) ? item.attachments.data.flatMap((fileRecord: any) => {
-      const filesData = fileRecord?.attributes?.files?.data || []
-      return filesData.map((file: any) => ({
-        id: file.id,
-        name: file.attributes?.name || '',
-        url: resolveAssetUrl(file.attributes?.url || ''),
-        size: file.attributes?.size || 0,
-        mime: file.attributes?.mime || ''
-      }))
-    }) : []
-  }
+  // 1) 把 attachments 拍平为 files 数组
+  const attachments =
+    data?.attachments?.data?.flatMap((att: any) => att?.files ?? []) ?? []
 
+  // 2) 返回前端需要的字段（按你页面用到的字段来）
   return {
-    ...item,
-    id: item.documentId || item.id,
-    status: mapStatus(item.auditStatus || item.status),
-    type: item.typeName || item.type,
-    typeId: item.typeDocId || item.typeId,
-    typeName: item.typeName,
-    typeCode: item.typeCode,
-    abstract: item.summary || item.abstract,
-    authors: Array.isArray(item.authors) ? item.authors : item.authorName ? [item.authorName] : item.creatorName ? [item.creatorName] : [],
-    keywords: Array.isArray(item.keywords) ? item.keywords : [],
-    year: item.year,
-    projectCode: item.projectCode,
-    projectName: item.projectName,
-    metadata,
-    attachments,
-    visibility: item.visibilityRange || item.visibility || 'private'
+    id: data.documentId,
+    title: data.title,
+    abstract: data.summary,                  // 你页面用 result.abstract
+    status: data.auditStatus,                // 你页面用 result.status
+    type: data.typeName,                     // 右侧“成果类型”
+    typeCode: data.typeCode,
+    year: data.year,
+    authors: data.authors ?? [],
+    keywords: data.keywords ?? [],
+    visibility: data.visibilityRange,        // 你页面用 result.visibility
+    updatedAt: data.updatedAt,
+    createdAt: data.createdAt,
+
+    // ✅ 关键：让 result.attachments 变成数组
+    attachments: attachments.map((f: any) => ({
+      id: f.id,
+      name: f.name,
+      url: f.url,
+      // Strapi 的 size 通常是 KB（float），你 formatFileSize 是按 bytes 算的
+      // 所以这里给 bytes（更合理）
+      size: typeof f.size === 'number' ? Math.round(f.size * 1024) : 0
+    })),
+
+    // 如果你还用动态字段
+    metadata: data.metadata ?? {}
   }
 }
+
+
 
 function buildAchListPayload(params?: QueryParams, useTypeCode = false, onlyUnassigned = false) {
   const rawStatus = Array.isArray(params?.status) ? params?.status?.[0] : params?.status
