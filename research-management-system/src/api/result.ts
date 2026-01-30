@@ -48,8 +48,7 @@ function mapStatusToBackend(status?: string) {
   return map[normalized] || status.toString().toUpperCase()
 }
 
-const strapiAssetBase =
-  (import.meta.env.VITE_STRAPI_BASE_URL || import.meta.env.VITE_API_BASE_URL || '').toString()
+const strapiAssetBase = (import.meta.env.VITE_STRAPI_BASE_URL || '').toString()
 
 function resolveAssetUrl(url?: string) {
   if (!url) return ''
@@ -91,44 +90,67 @@ function mapReviewHistoryItem(item: any) {
   }
 }
 
-function mapDetailItem(raw: any) {
-  const data = raw?.data ?? raw ?? {}
+function mapDetailItem(item: any) {
+  const fields = Array.isArray(item?.fields) ? item.fields : []
+  const metadata: Record<string, any> = {}
+  fields.forEach((field) => {
+    if (field?.fieldCode) {
+      metadata[field.fieldCode] = field.value
+    }
+  })
 
-  // 1) 把 attachments 拍平为 files 数组
-  const attachments =
-    data?.attachments?.data?.flatMap((att: any) => att?.files ?? []) ?? []
+  // 解析附件: 后端返回格式 {data:[{id, files:[{name,url,size,mime}]}]}
+  console.log('[DEBUG] 原始 item.attachments:', JSON.stringify(item?.attachments, null, 2))
+  let attachments = []
+  if (item?.attachments?.data) {
+    // 兼容 Strapi v4 两种可能的返回格式：
+    // 1. data: [ { attributes: { files: { data: [...] } } } ]
+    // 2. data: [ { files: [...] } ] (如果后端做了扁平化)
+    attachments = Array.isArray(item.attachments.data)
+      ? item.attachments.data.flatMap((fileRecord: any) => {
+        const attributes = fileRecord.attributes || fileRecord
+        // 尝试获取 files 数组，兼容 files.data 结构
+        const rawFiles = attributes.files?.data || attributes.files || []
 
-  // 2) 返回前端需要的字段（按你页面用到的字段来）
+        return Array.isArray(rawFiles)
+          ? rawFiles.map((f: any) => {
+            const file = f.attributes || f
+            return {
+              id: file.id || f.id,
+              name: file.name || 'unknown',
+              ext: file.ext || (file.name ? '.' + file.name.split('.').pop() : ''), // 确保有扩展名
+              url: resolveAssetUrl(file.url || ''),
+              size: file.size || 0,
+              mime: file.mime || ''
+            }
+          })
+          : []
+      })
+      : []
+  }
+  console.log('[DEBUG] 解析后的 attachments:', attachments)
+
+
+
   return {
-    id: data.documentId,
-    title: data.title,
-    abstract: data.summary,                  // 你页面用 result.abstract
-    status: data.auditStatus,                // 你页面用 result.status
-    type: data.typeName,                     // 右侧“成果类型”
-    typeCode: data.typeCode,
-    year: data.year,
-    authors: data.authors ?? [],
-    keywords: data.keywords ?? [],
-    visibility: data.visibilityRange,        // 你页面用 result.visibility
-    updatedAt: data.updatedAt,
-    createdAt: data.createdAt,
-
-    // ✅ 关键：让 result.attachments 变成数组
-    attachments: attachments.map((f: any) => ({
-      id: f.id,
-      name: f.name,
-      url: f.url,
-      // Strapi 的 size 通常是 KB（float），你 formatFileSize 是按 bytes 算的
-      // 所以这里给 bytes（更合理）
-      size: typeof f.size === 'number' ? Math.round(f.size * 1024) : 0
-    })),
-
-    // 如果你还用动态字段
-    metadata: data.metadata ?? {}
+    ...item,
+    id: item.documentId || item.id,
+    status: mapStatus(item.auditStatus || item.status),
+    type: item.typeName || item.type,
+    typeId: item.typeDocId || item.typeId,
+    typeName: item.typeName,
+    typeCode: item.typeCode,
+    abstract: item.summary || item.abstract,
+    authors: Array.isArray(item.authors) ? item.authors : item.authorName ? [item.authorName] : item.creatorName ? [item.creatorName] : [],
+    keywords: Array.isArray(item.keywords) ? item.keywords : [],
+    year: item.year,
+    projectCode: item.projectCode,
+    projectName: item.projectName,
+    metadata,
+    attachments,
+    visibility: item.visibilityRange || item.visibility || 'private'
   }
 }
-
-
 
 function buildAchListPayload(params?: QueryParams, useTypeCode = false, onlyUnassigned = false) {
   const rawStatus = Array.isArray(params?.status) ? params?.status?.[0] : params?.status
@@ -153,7 +175,7 @@ function buildAchListPayload(params?: QueryParams, useTypeCode = false, onlyUnas
     payload.yearStart = String(yr[0] ?? '')
     payload.yearEnd = String(yr[1] ?? '')
   }
-  // ZZQ改 
+  // ZZQ改
 
   // 根据useTypeCode参数决定使用typeCode还是typeId
   if (useTypeCode) {
@@ -177,13 +199,6 @@ export function getStatistics(): Promise<ApiResponse<StatisticsData>> {
 export function getTypePie(creatorId?: number): Promise<ApiResponse<any>> {
   return request({
     url: '/admin/stat/typePie',
-    method: 'get',
-    params: creatorId ? { creatorId } : undefined
-  })
-}
-export function getTypePie4User(creatorId?: number): Promise<ApiResponse<any>> {
-  return request({
-    url: '/user/stat/typePie',
     method: 'get',
     params: creatorId ? { creatorId } : undefined
   })
@@ -264,14 +279,6 @@ export function exportResults(params?: QueryParams): Promise<Blob> {
 
 // 获取我的成果列表（也可用于用户端通用检索）
 export async function getMyResults(params?: QueryParams, useTypeCode = false): Promise<StrapiPaginatedResponse<any>> {
-  const res = await request({
-    url: '/user/achievement/pageList4User',
-    method: 'post',
-    data: buildAchListPayload(params, useTypeCode)
-  })
-  return normalizePageResult(res, mapListItem)
-}
-export async function selectResults(params?: QueryParams, useTypeCode = false): Promise<StrapiPaginatedResponse<any>> {
   const res = await request({
     url: '/user/achievement/pageList',
     method: 'post',

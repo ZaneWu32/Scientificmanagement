@@ -18,17 +18,17 @@
               <el-tag :type="getStatusType(result.status)" effect="dark" class="status-tag">
                 {{ getStatusText(result.status) }}
               </el-tag>
-              <el-tag 
-                v-if="result.source" 
-                :type="sourceTagType(result.source)" 
-                effect="plain" 
+              <el-tag
+                v-if="result.source"
+                :type="sourceTagType(result.source)"
+                effect="plain"
                 class="source-tag"
               >
                 {{ sourceText(result.source) }}
               </el-tag>
             </div>
           </div>
-          
+
           <div class="meta-row">
             <div class="meta-item" v-if="result.authors?.length">
               <el-icon><User /></el-icon>
@@ -47,7 +47,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="header-actions">
           <el-button circle plain @click="loadDetail" :loading="loading">
             <el-icon><Refresh /></el-icon>
@@ -106,7 +106,7 @@
               <div class="section-header">
                 <h3 class="section-title">{{ field.label }}</h3>
               </div>
-              
+
               <div v-if="hasFullAccess" class="section-body paper-content">
                 <div v-if="getFieldValueRaw(field)">
                   <div v-if="field.isHtml" v-html="getFieldValueRaw(field)" class="rich-text-display"></div>
@@ -120,7 +120,7 @@
               </div>
             </section>
           </template>
-          
+
           <!-- 默认正文 (兼容旧数据) -->
           <section v-else-if="result?.content" class="content-card">
             <div class="section-header">
@@ -143,7 +143,7 @@
                 {{ result.attachments.length }} 个文件
               </el-tag>
             </div>
-            
+
             <div v-if="hasFullAccess">
               <el-empty v-if="!result.attachments?.length" description="暂无附件" :image-size="60" />
               <div v-else class="attachment-grid">
@@ -222,11 +222,11 @@
           <div class="side-card" v-if="result.keywords?.length">
             <h4 class="side-title">关键词</h4>
             <div class="tags-cloud">
-              <el-tag 
-                v-for="kw in result.keywords" 
-                :key="kw" 
-                class="keyword-tag" 
-                type="info" 
+              <el-tag
+                v-for="kw in result.keywords"
+                :key="kw"
+                class="keyword-tag"
+                type="info"
                 effect="light"
               >
                 {{ kw }}
@@ -280,9 +280,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  ArrowLeft, Document, Refresh, User, Calendar, 
-  View, Lock, Unlock, Download, ArrowRight 
+import {
+  ArrowLeft, Document, Refresh, User, Calendar,
+  View, Lock, Unlock, Download, ArrowRight
 } from '@element-plus/icons-vue'
 import { getResult, requestResultAccess, getFieldDefsByType } from '@/api/result'
 import { mapFieldType, FrontendFieldType } from '@/config/dynamicFields'
@@ -415,21 +415,21 @@ const transformedFields = computed(() => {
     name: field.field_code,
     label: field.field_name,
     type: mapFieldType(field.field_type),
-    isHtml: field.field_type === 'RICHTEXT', 
+    isHtml: field.field_type === 'RICHTEXT',
     order: field.order || 0,
     span: 1
   })).sort((a, b) => (a.order || 0) - (b.order || 0))
 })
 
 const inlineFields = computed(() => {
-  return transformedFields.value.filter(f => 
-    f.type !== FrontendFieldType.TEXTAREA 
+  return transformedFields.value.filter(f =>
+    f.type !== FrontendFieldType.TEXTAREA
   )
 })
 
 const blockFields = computed(() => {
-  return transformedFields.value.filter(f => 
-    f.type === FrontendFieldType.TEXTAREA 
+  return transformedFields.value.filter(f =>
+    f.type === FrontendFieldType.TEXTAREA
   )
 })
 
@@ -476,7 +476,7 @@ function getFieldValueRaw(field: any) {
 function getFieldValueDisplay(field: any) {
   const val = getFieldValueRaw(field)
   if (val === undefined || val === null || val === '') return '—'
-  
+
   if (field.type === 'switch' || field.type === 'checkbox') {
     return val ? '是' : '否'
   }
@@ -524,17 +524,48 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
 }
 
-const STRAPI_FILE_BASE = import.meta.env.VITE_STRAPI_FILE_BASE || 'http://localhost:1337'
-
-function normalizeFileUrl(u?: string) {
-  if (!u) return ''
-  if (u.startsWith('http')) return u
-  return STRAPI_FILE_BASE.replace(/\/$/, '') + u
-}
-
 function downloadFile(file) {
-  const url = normalizeFileUrl(file.url)
-  window.open(url, '_blank')
+  if (!file?.url) {
+    ElMessage.error('无效的下载链接')
+    return
+  }
+
+  // 修复：如果 URL 错误地指向了 8080 (Spring Boot)，强制转为相对路径走 Proxy
+  let downloadUrl = file.url
+  if (downloadUrl.includes(':8080/uploads/')) {
+    downloadUrl = downloadUrl.replace(/^http:\/\/[^/]+/, '')
+  }
+
+  // 使用 fetch 获取 blob，避免浏览器直接打开或处理错误
+  fetch(downloadUrl)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      return res.blob()
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+
+      // 确保文件名有后缀
+      let filename = file.name || 'download'
+      if (file.ext && !filename.endsWith(file.ext)) {
+        filename += file.ext
+      } else if (!file.ext && !filename.includes('.')) {
+        // 兜底：如果没有扩展名且名字里也没有点，尝试根据 blob type 加后缀?
+        // 暂时不硬猜，防止加错
+      }
+
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    })
+    .catch(err => {
+      console.error('Download error:', err)
+      ElMessage.error('下载失败，文件可能不存在或已损坏')
+    })
 }
 
 function goProjectFilter(item) {
