@@ -1,5 +1,6 @@
 package com.achievement.domain.dto;
 
+import java.util.Arrays;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
  * 替代原有的 BusinessUser，作为认证用户的核心对象
  * 包含来自 JWT Token 的用户信息和角色
  *
- * @author system
+ * @author wyf7685
  * @since 2026-01-31
  */
 @Data
@@ -64,12 +65,7 @@ public class KeycloakUser {
         if (roles == null || roleArray == null) {
             return false;
         }
-        for (String role : roleArray) {
-            if (roles.contains(role)) {
-                return true;
-            }
-        }
-        return false;
+        return Arrays.stream(roleArray).anyMatch(roles::contains);
     }
 
     /**
@@ -82,11 +78,6 @@ public class KeycloakUser {
         if (roleArray == null || roles == null) {
             return false;
         }
-        for (String role : roleArray) {
-            if (!roles.contains(role)) {
-                return false;
-            }
-        }
-        return true;
+        return Arrays.stream(roleArray).allMatch(roles::contains);
     }
 }

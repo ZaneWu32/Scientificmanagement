@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  * Keycloak 用户服务实现
  * 通过 Keycloak Admin API 查询和管理用户
  *
- * @author system
+ * @author wyf7685
  * @since 2026-01-31
  */
 @Slf4j

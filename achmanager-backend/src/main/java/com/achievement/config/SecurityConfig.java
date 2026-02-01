@@ -6,10 +6,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.achievement.utils.KeycloakJwtAuthenticationConverter;
-
 import lombok.AllArgsConstructor;
 
+/**
+ * 安全配置类
+ *
+ * @author wyf7685
+ * @since 2026-01-31
+ */
 @Configuration
 @AllArgsConstructor
 public class SecurityConfig {
@@ -23,8 +27,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwkSetUri(keycloakConfig.getJwkSetUri())
-                                .jwtAuthenticationConverter(
-                                        new KeycloakJwtAuthenticationConverter(keycloakConfig.getRealmDefaultRoles()))))
+                                .jwtAuthenticationConverter(keycloakConfig.getKeycloakJwtConverter())))
                 .authorizeHttpRequests(requests -> {
                     requests.requestMatchers("/api/v1/process-system/**").permitAll();
                     // 其他请求配置...

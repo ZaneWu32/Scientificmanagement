@@ -137,7 +137,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
             // 过滤掉内部角色，只保留业务角色
             return allRoles.stream()
                     .filter(role -> !keycloakConfig.isDefaultRole(role))
-                    .map(role -> "ROLE_" + role.trim().toUpperCase())
+                    .map(String::trim)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.warn("提取 JWT 角色时出错", e);
