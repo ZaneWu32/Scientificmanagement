@@ -1,5 +1,6 @@
 import { useUserStore } from "@/stores/user";
 import { UserRole } from "@/types";
+import { getPortalConfig, redirectToLoginPortal } from "@/utils/portalConfig";
 import { storeToRefs } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -164,13 +165,6 @@ const router = createRouter({
     },
   ],
 });
-
-/**
- * 跳转回 login-portal
- */
-function redirectToLoginPortal(redirectUri: string) {
-  window.location.href = `${import.meta.env.VITE_LOGIN_PORTAL_URL}?redirect=${encodeURIComponent(redirectUri)}`;
-}
 
 // 路由守卫
 router.beforeEach((to, from, next) => {

@@ -174,6 +174,7 @@ import {
   FolderOpened
 } from '@element-plus/icons-vue'
 import { UserRole } from '@/types'
+import { redirectToLoginPortal } from '@/utils/portalConfig'
 
 const route = useRoute()
 const router = useRouter()
@@ -378,7 +379,7 @@ async function handleCommand(command) {
         type: 'warning'
       })
       userStore.logout()
-      redirectToLoginPortal()
+      await redirectToLoginPortal()
       ElMessage.success('已退出登录')
     } catch {
       // 取消操作
@@ -386,13 +387,6 @@ async function handleCommand(command) {
   } else if (command === 'profile') {
     ElMessage.info('个人信息功能开发中')
   }
-}
-
-/**
- * 跳转回 login-portal
- */
-function redirectToLoginPortal() {
-  window.location.href = import.meta.env.VITE_LOGIN_PORTAL_URL
 }
 </script>
 

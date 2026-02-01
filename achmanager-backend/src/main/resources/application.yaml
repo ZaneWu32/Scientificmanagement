@@ -22,6 +22,10 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: 1000ms
+
+server:
+  port: 8081
+
 mybatis:
   configuration:
     map-underscore-to-camel-case: true

@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { parseUserFromToken, verifyToken } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { redirectToLoginPortal } from '@/utils/portalConfig'
 import { Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
@@ -194,13 +195,6 @@ function isValidRedirect(url: string): boolean {
   } catch {
     return false
   }
-}
-
-/**
- * 跳转回 login-portal
- */
-function redirectToLoginPortal() {
-  window.location.href = import.meta.env.VITE_LOGIN_PORTAL_URL
 }
 </script>
 
