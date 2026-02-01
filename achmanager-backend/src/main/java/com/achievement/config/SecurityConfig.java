@@ -29,6 +29,7 @@ public class SecurityConfig {
                                 .jwkSetUri(keycloakConfig.getJwkSetUri())
                                 .jwtAuthenticationConverter(keycloakConfig.getKeycloakJwtConverter())))
                 .authorizeHttpRequests(requests -> {
+                    requests.requestMatchers("/health").permitAll();
                     requests.requestMatchers("/api/v1/process-system/**").permitAll();
                     // 其他请求配置...
                     // requests.requestMatchers("xxx").hasRole("YYY");
