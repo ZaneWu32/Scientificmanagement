@@ -22,7 +22,7 @@ export default defineConfig({
       },
       // 代理 Keycloak token endpoint 和相关接口
       "/auth": {
-        target: "http://localhost:8180",
+        target: "https://dataforge.chat/kc",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/auth/, ""),
