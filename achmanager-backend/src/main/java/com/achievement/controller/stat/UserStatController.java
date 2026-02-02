@@ -58,6 +58,6 @@ public class UserStatController {
     @Operation(description = "饼图：各成果物类型数量")
     @GetMapping("/user/stat/typePie")
     public Result<List<TypeCountVO>> typePie(@CurrentUser KeycloakUser currentUser) {
-        return Result.success(statService.typePie(Long.valueOf(currentUser.getId())));
+        return Result.success(statService.typePie(currentUser.getId()));
     }
 }
