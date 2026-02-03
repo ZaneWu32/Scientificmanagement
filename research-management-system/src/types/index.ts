@@ -1,10 +1,9 @@
 // 业务常量：集中放置角色、状态和值域，避免魔法字符串。
 export const UserRole = {
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  RESEARCHER: 'researcher',
-  EXPERT: 'expert',
-  GUEST: 'guest'
+  ADMIN: 'research_admin',
+  RESEARCHER: 'project_leader',
+  EXPERT: 'research_expert',
+  DECISION_ORG: 'decision_org',
 } as const
 
 export type UserRole = typeof UserRole[keyof typeof UserRole]
@@ -230,35 +229,35 @@ export interface Attachment {
  */
 export interface InterimResult {
   id: string
-  
+
   // 项目信息
   projectId: string
   projectName: string
   projectCode?: string
   projectPhase: string
-  
+
   // 成果物信息
   name: string
   type: InterimResultType
   typeLabel: string
   description?: string
-  
+
   // 附件
   attachments: Attachment[]
-  
+
   // 人员信息
   submitter?: string
   submitterDept?: string
-  
+
   // 时间信息
   submittedAt: string
   syncedAt: string
-  
+
   // 来源标识
   source: 'process_system' | 'contract_template' | 'signed_contract' | 'deliverable_report'
   sourceRef: string
   sourceUrl?: string
-  
+
   // 业务标识
   tags?: string[]
   status?: string

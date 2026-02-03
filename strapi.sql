@@ -1365,58 +1365,15 @@ COMMIT;
 DROP TABLE IF EXISTS `business_users`;
 CREATE TABLE `business_users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `document_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Strapi文档ID',
-  `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名（登录用）',
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮箱',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '真实姓名',
-  `department` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '部门',
-  `role` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色：researcher/expert/manager/admin',
-  `phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '联系电话',
-  `is_active` tinyint(1) DEFAULT '1' COMMENT '是否激活',
-  `last_login_at` datetime(6) DEFAULT NULL COMMENT '最后登录时间',
-  `created_at` datetime(6) DEFAULT NULL,
-  `updated_at` datetime(6) DEFAULT NULL,
-  `published_at` datetime(6) DEFAULT NULL,
-  `created_by_id` int unsigned DEFAULT NULL,
-  `updated_by_id` int unsigned DEFAULT NULL,
-  `locale` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `is_delete` int DEFAULT '0' COMMENT '软删除标记',
+  `keycloak_user_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Keycloak 用户 UUID',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_username` (`username`) USING BTREE,
-  UNIQUE KEY `uk_email` (`email`) USING BTREE,
-  KEY `idx_role` (`role`) USING BTREE,
-  KEY `idx_department` (`department`) USING BTREE,
-  KEY `idx_is_active` (`is_active`) USING BTREE,
-  KEY `business_users_documents_idx` (`document_id`,`locale`,`published_at`) USING BTREE,
-  KEY `business_users_created_by_id_fk` (`created_by_id`) USING BTREE,
-  KEY `business_users_updated_by_id_fk` (`updated_by_id`) USING BTREE,
-  CONSTRAINT `business_users_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
-  CONSTRAINT `business_users_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='业务用户表';
+  UNIQUE KEY `uk_keycloak_user_id` (`keycloak_user_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='业务用户映射表';
 
 -- ----------------------------
 -- Records of business_users
 -- ----------------------------
 BEGIN;
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (1, 'user_001', 'researcher01', 'researcher01@edu.cn', '张三', '计算机学院', 'researcher', NULL, 1, '2026-01-28 19:37:21.085358', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (2, 'user_002', 'expert01', 'expert01@edu.cn', '李四', '信息学院', 'expert', NULL, 1, '2026-01-28 19:32:13.828451', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (3, 'user_003', 'manager01', 'manager01@example.com', '王五', '科研处', 'manager', NULL, 1, NULL, '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (4, 'user_004', 'admin01', 'admin01@edu.cn', '赵六', '管理部门', 'admin', NULL, 1, '2026-01-30 13:10:35.842851', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', '2026-01-21 15:29:18.884814', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (5, 'user_res_02', 'researcher02', 'researcher02@edu.cn', '钱研究员', '计算机学院', 'researcher', NULL, 1, '2026-01-28 17:14:39.694918', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (6, 'user_res_03', 'researcher03', 'researcher03@edu.cn', '孙研究员', '计算机学院', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (7, 'user_res_04', 'researcher04', 'researcher04@edu.cn', '李研究员', '软件工程系', 'researcher', NULL, 1, '2026-01-28 19:37:32.497351', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (8, 'user_res_05', 'researcher05', 'researcher05@edu.cn', '周研究员', '软件工程系', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (9, 'user_res_06', 'researcher06', 'researcher06@edu.cn', '吴研究员', '人工智能实验室', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (10, 'user_res_07', 'researcher07', 'researcher07@edu.cn', '郑研究员', '人工智能实验室', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (11, 'user_res_08', 'researcher08', 'researcher08@edu.cn', '王研究员', '大数据中心', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (12, 'user_res_09', 'researcher09', 'researcher09@edu.cn', '冯研究员', '大数据中心', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (13, 'user_res_10', 'researcher10', 'researcher10@edu.cn', '陈研究员', '网络安全系', 'researcher', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (14, 'user_exp_02', 'expert02', 'expert02@edu.cn', '周专家', '学术委员会', 'expert', NULL, 1, '2026-01-28 19:32:51.800689', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (15, 'user_exp_03', 'expert03', 'expert03@edu.cn', '吴专家', '学术委员会', 'expert', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (16, 'user_exp_04', 'expert04', 'expert04@edu.cn', '郑专家', '外部评审组', 'expert', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (17, 'user_exp_05', 'expert05', 'expert05@edu.cn', '王专家', '外部评审组', 'expert', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (18, 'user_adm_02', 'admin02', 'admin02@edu.cn', '系统管理员B', '信管中心', 'admin', NULL, 1, NULL, '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
-INSERT INTO `business_users` (`id`, `document_id`, `username`, `email`, `name`, `department`, `role`, `phone`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `is_delete`) VALUES (19, 'user_adm_03', 'admin03', 'admin03@edu.cn', '系统管理员C', '信管中心', 'admin', NULL, 1, '2026-01-28 16:02:31.465589', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', '2026-01-28 16:02:20.000000', NULL, NULL, NULL, 0);
 COMMIT;
 
 -- ----------------------------

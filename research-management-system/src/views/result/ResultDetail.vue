@@ -628,7 +628,7 @@ function handleBack() {
     setTimeout(() => {
       if (userStore.isExpert) {
         router.push('/expert/reviews')
-      } else if (userStore.isAdmin || userStore.isManager) {
+      } else if (userStore.isAdmin) {
         router.push('/admin/results')
       } else {
         router.push('/results/my')

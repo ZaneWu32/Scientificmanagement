@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/strapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.achievement.filter.ProcessSystemApiKeyFilter: DEBUG
+    com.achievement.config: INFO
+
+strapi:
+  base-url: ${STRAPI_BASE_URL:http://localhost:1337}
+  api-token: ${STRAPI_API_TOKEN:}
+
+easyscholar:
+  base-url: https://www.easyscholar.cc/open/getPublicationRank
+  secret-key: ${EASYSCHOLAR_SECRET_KEY:}
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_AUTH_SERVER_URL:http://localhost:8080}
+  realm: ${KEYCLOAK_REALM:research-management}
+  client-id: ${KEYCLOAK_CLIENT_ID:achmanager-backend}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+  realm-default-roles: default-roles-research-management|uma_authorization|offline_access
