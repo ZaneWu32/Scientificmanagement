@@ -12,11 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -138,11 +134,17 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public JsonNode updateAchievementWithFiles(String achievementDocId, Map<String, Object> req, MultipartFile[] files) {
+    public JsonNode updateAchievementWithFiles(String achievementDocId,
+                                               Map<String, Object> req,
+                                               MultipartFile[] files) {
+        log.info("更新成果物");
+        // 1) 不上传文件就按原逻辑更新
         if (files == null || files.length == 0) {
             return updateAchievement(achievementDocId, req);
         }
 
+
+        // 2) 上传 -> fileIds
         String uploadRaw = strapiClient.upload(files);
         JsonNode uploadJson = readJson(uploadRaw);
         if (uploadJson == null || !uploadJson.isArray() || uploadJson.isEmpty()) {
@@ -152,40 +154,86 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         List<Integer> fileIds = new ArrayList<>();
         for (JsonNode item : uploadJson) {
             JsonNode idNode = item.get("id");
-            if (idNode == null || !idNode.isNumber()) {
-                continue;
+            if (idNode != null && idNode.isNumber()) {
+                fileIds.add(idNode.intValue());
             }
-            fileIds.add(idNode.intValue());
         }
         if (fileIds.isEmpty()) {
             return updateAchievement(achievementDocId, req);
         }
 
+        // 3) 取 req.data，并移除 attachments，避免 updateAchievement() 再创建附件记录导致重复
         Object dataObj = req.get("data");
         if (!(dataObj instanceof Map<?, ?> dataAny)) {
             throw new RuntimeException("请求体必须包含 data 对象");
         }
         Map<String, Object> data = (Map<String, Object>) dataAny;
+        data.remove("attachments");
 
-        Object attachmentsObj = data.get("attachments");
-        List<Map<String, Object>> attachments;
-        if (attachmentsObj instanceof List<?> list) {
-            attachments = (List<Map<String, Object>>) list;
-        } else {
-            attachments = new ArrayList<>();
-            data.put("attachments", attachments);
+        // 4) 先更新成果物主信息 + fields（保留你原有逻辑：强制 PENDING 等）
+        JsonNode out = updateAchievement(achievementDocId, req);
+
+        // 5) 查询旧的 achievement-files（is_delete=0），全部软删（is_delete=1）
+        try {
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("filters[achievement_main_id][documentId][$eq]", achievementDocId);
+            params.put("filters[is_delete][$eq]", "0");
+            params.put("pagination[pageSize]", "100");
+            String raw = strapiClient.query(ACHIEVEMENT_FILE_COLLECTION, params);
+            JsonNode listJson = readJson(raw);
+
+            JsonNode items = listJson.path("data");
+            if (items.isArray()) {
+                Map<String, Object> delBody = new HashMap<>();
+                delBody.put("data", Map.of("is_delete", 1));
+                log.info("覆盖附件：开始软删除旧 achievement-files，achievementDocId={}, count={}",
+                        achievementDocId, items.size());
+                for (JsonNode item : items) {
+                    String oldDocId = extractDocumentId(item);
+                    if (oldDocId != null && !oldDocId.isBlank()) {
+                        strapiClient.update(ACHIEVEMENT_FILE_COLLECTION, oldDocId, delBody);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("覆盖附件：软删除旧 achievement-files 失败，achievementDocId={}", achievementDocId, e);
         }
 
-        Map<String, Object> attachmentData = new HashMap<>();
-        attachmentData.put("files", fileIds);
-        attachmentData.put("is_delete", 0);
+        // 6) 创建新的 achievement-files 记录（这一条记录里可以包含多个 files）
+        try {
+            Map<String, Object> body = new HashMap<>();
+            Map<String, Object> bodyData = new HashMap<>();
+            bodyData.put("achievement_main_id", achievementDocId);
+            bodyData.put("files", fileIds);
+            bodyData.put("is_delete", 0);
+            body.put("data", bodyData);
 
-        Map<String, Object> attachmentItem = new HashMap<>();
-        attachmentItem.put("data", attachmentData);
-        attachments.add(attachmentItem);
+            strapiClient.create(ACHIEVEMENT_FILE_COLLECTION, body);
+        } catch (Exception e) {
+            log.warn("覆盖附件：创建新 achievement-files 失败，achievementDocId={}", achievementDocId, e);
+        }
 
-        return updateAchievement(achievementDocId, req);
+        // 7) 可选：把最新附件查出来回填到响应（前端立刻看到替换后的结果）
+        try {
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("filters[achievement_main_id][documentId][$eq]", achievementDocId);
+            params.put("filters[is_delete][$eq]", "0");
+            params.put("populate", "files");
+            params.put("pagination[pageSize]", "100");
+            String raw = strapiClient.query(ACHIEVEMENT_FILE_COLLECTION, params);
+            JsonNode latestAttachments = objectMapper.readTree(raw);
+
+            if (out instanceof ObjectNode obj) {
+                obj.set("attachments", latestAttachments);
+            }
+        } catch (Exception e) {
+            log.warn("覆盖附件：回填 attachments 失败，achievementDocId={}", achievementDocId, e);
+        }
+
+        return out;
     }
+
+
 
     @Override
     public JsonNode updateAchievement(String achievementDocId, Map<String, Object> req) {
