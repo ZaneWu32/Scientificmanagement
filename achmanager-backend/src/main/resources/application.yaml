@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: dev
   config:
     import: optional:file:.env[.properties]
   datasource:
@@ -85,8 +87,8 @@ easyscholar:
   secret-key: ${EASYSCHOLAR_SECRET_KEY:}
 
 keycloak:
-  auth-server-url: https://dataforge.chat/kc
-  realm: research-management
-  client-id: achmanager-backend
-  client-secret: 3IivFG0bVM6Rq1ApS91JH6IM6Nw9zx3x
+  auth-server-url: ${KEYCLOAK_AUTH_SERVER_URL}
+  realm: ${KEYCLOAK_REALM}
+  client-id: ${KEYCLOAK_CLIENT_ID}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
   realm-default-roles: default-roles-research-management|uma_authorization|offline_access
