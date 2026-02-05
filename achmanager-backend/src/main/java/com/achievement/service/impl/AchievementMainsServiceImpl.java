@@ -37,6 +37,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
     private final StrapiClient strapiClient;
     private final ObjectMapper objectMapper;
     private final AchievementMainsMapper mainsMapper;
+    private final KeycloakUserServiceImpl keycloakUserServiceImpl;
     @Override
     public Page<AchListVO> pageList(AchListDTO achListDTO){// 兜底：防止 null / 非法值（即使没有校验或校验被改了，其实也安全）
         int pageNum  = (achListDTO.getPageNum()  == null || achListDTO.getPageNum()  < 1)  ? 1  : achListDTO.getPageNum();
@@ -89,11 +90,14 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         }).toList();
 
         AchDetailVO vo = new AchDetailVO();
+        KeycloakUser User = keycloakUserServiceImpl.getUserById(Integer.parseInt(base.getCreatedByUserId()));
+        vo.setCreatorName(User.getUsername());
         vo.setDocumentId(base.getDocumentId());
+
         vo.setTitle(base.getTitle());
         vo.setSummary(base.getSummary());
         vo.setAuditStatus(base.getAuditStatus());
-        vo.setCreatorName(base.getCreatorName());
+        vo.setCreatorName(User.getUsername());
         vo.setCreatedAt(base.getCreatedAt());
         vo.setUpdatedAt(base.getUpdatedAt());
         vo.setPublishedAt(base.getPublishedAt());
