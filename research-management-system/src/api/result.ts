@@ -76,6 +76,31 @@ function mapListItem(item: any) {
   }
   // ZZQ改
 }
+function mapReviewAssignItem(item: any) {
+  return {
+    ...item,
+    id: item.documentId || item.id,
+    // 后端 VO：title/type/creatorName/reviewerName/assignedAt
+    title: item.title,
+    type: item.typeName || item.type,
+    createdBy: item.creatorName ,
+    reviewerName: item.reviewerName,
+    assignedAt: item.assignedAt
+  }
+}
+
+//  已分配审核列表（新接口）
+export async function getAssignReviewersList(params?: QueryParams): Promise<StrapiPaginatedResponse<any>> {
+  const res = await request({
+    url: '/results/assign-reviewers-list',
+    method: 'get',
+    params: {
+      page: params?.page ?? 1,
+      pageSize: params?.pageSize ?? 10
+    }
+  })
+  return normalizePageResult(res, mapReviewAssignItem)
+}
 
 
 function mapReviewHistoryItem(item: any) {
