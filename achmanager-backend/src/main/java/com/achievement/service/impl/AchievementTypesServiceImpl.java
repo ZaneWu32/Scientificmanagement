@@ -80,6 +80,8 @@ public class AchievementTypesServiceImpl extends ServiceImpl<AchievementTypesMap
         vo.setTypeCode(type.getTypeCode());
         vo.setTypeName(type.getTypeName());
         vo.setDescription(type.getDescription());
+        vo.setEnabled(type.getEnabled());
+
         return vo;
     }
     /**
@@ -211,5 +213,46 @@ public class AchievementTypesServiceImpl extends ServiceImpl<AchievementTypesMap
             throw new RuntimeException("解析 Strapi 响应失败", e);
         }
     }
+
+    @Override
+    public JsonNode toggleEnabledType(String typeDocId) {
+        try {
+            // 1) 先查当前状态
+            String rawOne = strapiClient.findOne("achievement-types", typeDocId, null);
+            JsonNode one = objectMapper.readTree(rawOne);
+
+            Integer currentEnabled = readEnabledFromStrapi(one);
+            int targetEnabled = (currentEnabled != null && currentEnabled == 1) ? 0 : 1;
+
+            // 2) patch 切换 enabled
+            Map<String, Object> patch = new HashMap<>();
+            patch.put("enabled", targetEnabled);
+
+            // ⚠️ 注意：Strapi v4 通常要求 {"data":{...}}
+            Map<String, Object> body = new HashMap<>();
+            body.put("data", patch);
+
+            // 3) 调 Strapi 更新
+            String rawUpdate = strapiClient.update("achievement-types", typeDocId, body);
+
+            // 4) 清缓存
+            evictTypeListCache();
+
+            // 5) 返回 Strapi 原始结果
+            return objectMapper.readTree(rawUpdate);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("解析 Strapi 响应失败", e);
+        }
+    }
+    // 从响应中读取 enabled 字段，兼容 boolean 和字符串两种情况
+    private Integer readEnabledFromStrapi(JsonNode root) {
+        JsonNode enabledNode = root.path("data").path("attributes").path("enabled");
+        if (enabledNode.isBoolean()) return enabledNode.asBoolean() ? 1 : 0;
+        // 兼容字符串 "1"/"0"
+        return "1".equals(enabledNode.asText()) ? 1 : 0;
+    }
+
+
 
 }

@@ -553,6 +553,7 @@ export interface AchievementType {
   type_code: string
   type_name: string
   description?: string
+   enabled?: number // 0/1
   is_delete?: number
 }
 
@@ -580,13 +581,17 @@ export function getResultTypes(): Promise<any> {
     const list = Array.isArray(res?.data) ? res.data : []
     const normalized = list.map((item: any) => ({
       ...item,
+      documentId: item.documentId ?? item.document_id, // 如果后端有下划线也兼容
       type_name: item.type_name ?? item.typeName,
       type_code: item.type_code ?? item.typeCode,
+      description: item.description,
+      enabled: Number(item.enabled ?? 1), // ✅ 统一成 0/1（默认 1）
       is_delete: item.is_delete ?? item.isDelete ?? 0
     }))
     return { data: normalized }
   })
 }
+
 
 // 创建成果类型
 export function createResultType(data: Partial<AchievementType>): Promise<any> {

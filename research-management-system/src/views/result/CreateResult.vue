@@ -326,20 +326,28 @@ async function loadResultTypes() {
   try {
     const res = await getResultTypes()
     const { data } = res || {}
-    // 映射 Strapi 返回的字段到前端模型
+
     resultTypes.value = (data || [])
-      .map((t: any) => ({
-        ...t,
-        id: t.documentId || t.id,
-        name: t.type_name || t.typeName || t.name,
-        code: t.type_code || t.typeCode || t.code,
-        enabled: t.is_delete === 0 || t.enabled === true
-      }))
-      .filter((t: any) => t.enabled)
+      .map((t: any) => {
+        const isDelete = Number(t.is_delete ?? t.isDelete ?? 0)
+        // 后端有 enabled 就用 enabled；没有 enabled 才从 is_delete 推导
+        const enabled =
+          t.enabled != null ? Number(t.enabled) : (isDelete === 1 ? 0 : 1)
+
+        return {
+          ...t,
+          id: t.documentId || t.id,
+          name: t.type_name || t.typeName || t.name,
+          code: t.type_code || t.typeCode || t.code,
+          enabled // ✅ 0/1
+        }
+      })
+      .filter((t: any) => t.enabled === 1) //  只显示启用(1)的类型
   } catch (error) {
     ElMessage.error('加载成果类型失败')
   }
 }
+
 
 async function loadProjects() {
   try {
