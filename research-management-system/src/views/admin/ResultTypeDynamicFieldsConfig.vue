@@ -105,7 +105,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const FIELD_TYPES = ["TEXT", "NUMBER", "BOOLEAN", "DATE", "MEDIA", "JSON", "EMAIL", "RICHTEXT"]
+const FIELD_TYPES = ["TEXT", "NUMBER", "BOOLEAN", "DATE", "MEDIA", "JSON", "EMAIL", "RICHTEXT","DATETIME"]
 const loading = ref(false)
 const saving = ref(false)
 
