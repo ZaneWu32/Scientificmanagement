@@ -30,4 +30,6 @@ public interface IAchievementTypesService extends IService<AchievementTypes> {
     JsonNode deleteType(String typeDocId);
 
     JsonNode toggleEnabledType(String typeDocId);
+
+    void updateFieldOrder(String typeDocId, List<String> fieldDefDocIds);
 }

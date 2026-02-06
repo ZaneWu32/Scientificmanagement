@@ -75,5 +75,15 @@ public class AchievementTypeController {
         return typesService.toggleEnabledType(typeDocId);
     }
 
-}
+    /**
+     * 更新成果物类型字段排序
+     */
+    @PutMapping("/types/{typeDocId}/field-order")
+    @Operation(description = "更新成果物类型字段排序")
+    public Result<Void> updateFieldOrder(@PathVariable String typeDocId, @RequestBody List<String> fieldDefDocIds) {
+        log.info("更新字段排序, typeDocId={}, size={}", typeDocId, fieldDefDocIds == null ? 0 : fieldDefDocIds.size());
+        typesService.updateFieldOrder(typeDocId, fieldDefDocIds);
+        return Result.success();
+    }
 
+}

@@ -245,6 +245,87 @@ public class AchievementTypesServiceImpl extends ServiceImpl<AchievementTypesMap
             throw new RuntimeException("解析 Strapi 响应失败", e);
         }
     }
+
+    @Override
+    public void updateFieldOrder(String typeDocId, List<String> fieldDefDocIds) {
+        if (fieldDefDocIds == null || fieldDefDocIds.isEmpty()) {
+            return;
+        }
+
+        AchievementTypes type = this.lambdaQuery()
+                .eq(AchievementTypes::getIsDelete, 0)
+                .eq(AchievementTypes::getDocumentId, typeDocId)
+                .isNotNull(AchievementTypes::getPublishedAt)
+                .one();
+
+        if (type == null) {
+            throw new RuntimeException("成果物类型不存在或未发布");
+        }
+
+        List<String> docIds = new ArrayList<>();
+        List<Integer> ids = new ArrayList<>();
+        for (String key : fieldDefDocIds) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            try {
+                ids.add(Integer.parseInt(key));
+            } catch (NumberFormatException e) {
+                docIds.add(key);
+            }
+        }
+
+        LambdaQueryWrapper<AchievementFieldDefs> wrapper = new LambdaQueryWrapper<>();
+        boolean hasCondition = false;
+        if (!docIds.isEmpty()) {
+            wrapper.in(AchievementFieldDefs::getDocumentId, docIds);
+            hasCondition = true;
+        }
+        if (!ids.isEmpty()) {
+            if (hasCondition) {
+                wrapper.or();
+            }
+            wrapper.in(AchievementFieldDefs::getId, ids);
+            hasCondition = true;
+        }
+
+        if (!hasCondition) {
+            return;
+        }
+
+        List<AchievementFieldDefs> fieldDefs = fieldDefsMapper.selectList(wrapper);
+
+        if (fieldDefs.isEmpty()) {
+            return;
+        }
+
+        Map<String, Integer> keyToId = new HashMap<>();
+        for (AchievementFieldDefs def : fieldDefs) {
+            if (def.getDocumentId() != null && !def.getDocumentId().isBlank()) {
+                keyToId.put(def.getDocumentId(), def.getId());
+            }
+            if (def.getId() != null) {
+                keyToId.put(String.valueOf(def.getId()), def.getId());
+            }
+        }
+
+        int order = 1;
+        for (String docId : fieldDefDocIds) {
+            Integer fieldDefId = keyToId.get(docId);
+            if (fieldDefId == null) {
+                continue;
+            }
+            AchievementFieldDefsAchievementTypeIdLnk update = new AchievementFieldDefsAchievementTypeIdLnk();
+            update.setAchievementFieldDefOrd((double) order++);
+
+            fieldDefsTypeLnkMapper.update(
+                    update,
+                    new LambdaQueryWrapper<AchievementFieldDefsAchievementTypeIdLnk>()
+                            .eq(AchievementFieldDefsAchievementTypeIdLnk::getAchievementTypeId, type.getId())
+                            .eq(AchievementFieldDefsAchievementTypeIdLnk::getAchievementFieldDefId, fieldDefId)
+            );
+        }
+    }
     // 从响应中读取 enabled 字段，兼容 boolean 和字符串两种情况
     private Integer readEnabledFromStrapi(JsonNode root) {
         JsonNode enabledNode = root.path("data").path("attributes").path("enabled");

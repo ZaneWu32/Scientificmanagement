@@ -619,6 +619,15 @@ export function deleteResultType(documentId: string): Promise<any> {
   })
 }
 
+// 更新成果类型字段排序
+export function updateResultTypeFieldOrder(typeDocumentId: string, fieldDocIds: string[]): Promise<any> {
+  return request({
+    url: `/achievementType/types/${typeDocumentId}/field-order`,
+    method: 'put',
+    data: fieldDocIds
+  })
+}
+
 // ==================== 动态字段API ====================
 
 // 获取指定成果类型的所有字段定义
