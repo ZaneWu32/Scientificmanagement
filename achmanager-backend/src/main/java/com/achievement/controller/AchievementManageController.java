@@ -110,7 +110,7 @@ public class AchievementManageController {
     @Operation(description = "管理员修改成果物（主信息+多个字段值，仅处理前端传回的改动项）")
     @PutMapping("/update/{achievementDocId}")
     public Result<JsonNode> update(@PathVariable String achievementDocId, @RequestBody Map<String, Object> req) {
-        return Result.success(achievementAdminService.updateAchievement(achievementDocId, req));
+        return Result.success(achievementAdminService.updateAchievementKeepStatus(achievementDocId, req));
     }
 
     @Operation(description = "管理员一次请求上传文件并更新成果物（multipart：data+files）")
@@ -120,7 +120,7 @@ public class AchievementManageController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "files", required = false) MultipartFile[] files) {
         Map<String, Object> req = readJsonMap(dataJson);
-        return Result.success(achievementAdminService.updateAchievementWithFiles(achievementDocId, req, files));
+        return Result.success(achievementAdminService.updateAchievementWithFilesKeepStatus(achievementDocId, req, files));
     }
 
     /*

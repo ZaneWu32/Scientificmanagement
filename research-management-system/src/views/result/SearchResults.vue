@@ -133,6 +133,15 @@
             <el-button type="primary" link size="small" @click="viewDetail(row)">
               查看详情
             </el-button>
+            <el-button
+              v-if="isAdmin"
+              type="primary"
+              link
+              size="small"
+              @click="editResult(row)"
+            >
+              编辑
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -169,6 +178,7 @@ const tableData = ref([])
 const projects = ref([])
 const exporting = ref(false)
 const canExport = computed(() => userStore.isAdmin)
+const isAdmin = computed(() => userStore.isAdmin)
 
 const resultTypes = ref<AchievementType[]>([])
 const typeLoading = ref(false)
@@ -260,6 +270,11 @@ function handleReset() {
 
 function viewDetail(row) {
   router.push(`/results/${row.id}`)
+}
+
+function editResult(row: any) {
+  if (!row?.id) return
+  router.push(`/results/${row.id}/edit`)
 }
 
 async function loadProjects() {

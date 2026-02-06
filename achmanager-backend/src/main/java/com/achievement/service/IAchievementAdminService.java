@@ -12,6 +12,11 @@ public interface IAchievementAdminService {
     JsonNode updateAchievement(String achievementDocId, Map<String, Object> req);
 
     /**
+     * 管理员修改成果物（主信息+多个字段值），保留原有审核状态。
+     */
+    JsonNode updateAchievementKeepStatus(String achievementDocId, Map<String, Object> req);
+
+    /**
      * 一次请求：上传文件到 Strapi 并创建成果物。
      * <p>
      * 前端使用 multipart/form-data：
@@ -32,6 +37,11 @@ public interface IAchievementAdminService {
      * 后端会先调用 Strapi /api/upload 拿到文件 id，追加写入 data.attachments[].data.file 后再执行 update。
      */
     JsonNode updateAchievementWithFiles(String achievementDocId, Map<String, Object> req, MultipartFile[] files);
+
+    /**
+     * 管理员修改成果物（含附件），保留原有审核状态。
+     */
+    JsonNode updateAchievementWithFilesKeepStatus(String achievementDocId, Map<String, Object> req, MultipartFile[] files);
 
     /**
      * 仅更新成果物可见范围（visibility_range），不触发 achievement_status 的强制状态变更。

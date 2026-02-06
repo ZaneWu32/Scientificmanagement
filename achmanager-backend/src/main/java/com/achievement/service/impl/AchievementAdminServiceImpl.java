@@ -137,18 +137,98 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
     public JsonNode updateAchievementWithFiles(String achievementDocId,
                                                Map<String, Object> req,
                                                MultipartFile[] files) {
+        return updateAchievementWithFilesInternal(achievementDocId, req, files, true);
+    }
+
+    @Override
+    public JsonNode updateAchievementWithFilesKeepStatus(String achievementDocId,
+                                                         Map<String, Object> req,
+                                                         MultipartFile[] files) {
+        return updateAchievementWithFilesInternal(achievementDocId, req, files, false);
+    }
+
+
+
+    @Override
+    public JsonNode updateAchievement(String achievementDocId, Map<String, Object> req) {
+        return updateAchievementInternal(achievementDocId, req, true);
+    }
+
+    @Override
+    public JsonNode updateAchievementKeepStatus(String achievementDocId, Map<String, Object> req) {
+        return updateAchievementInternal(achievementDocId, req, false);
+    }
+
+    private JsonNode updateAchievementInternal(String achievementDocId, Map<String, Object> req, boolean forcePending) {
+        MainAndFields mainAndFields = parseMainAndFields(req);
+        Map<String, Object> mainReq = mainAndFields.mainReq;
+        List<Map<String, Object>> fields = mainAndFields.fields;
+        List<Map<String, Object>> attachments = mainAndFields.attachments;
+
+        Object mainDataObj = mainReq.get("data");
+        if (mainDataObj instanceof Map<?, ?> data) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mainData = (Map<String, Object>) data;
+            if (forcePending) {
+                // 用户修改成果物：强制将审核状态置为 PENDING
+                mainData.put("achievement_status", "PENDING");
+            } else {
+                // 管理员修改成果物：保留原有状态
+                mainData.remove("achievement_status");
+            }
+        }
+
+        String mainRaw = strapiClient.update(ACHIEVEMENT_COLLECTION, achievementDocId, mainReq);
+        JsonNode mainJson = readJson(mainRaw);
+
+        ArrayNode fieldResults = objectMapper.createArrayNode();
+        for (Map<String, Object> fieldItem : fields) {
+            FieldValueRequest fieldReq = normalizeFieldValueRequest(fieldItem, achievementDocId, true);
+            if (fieldReq.isAllValueEmpty()) {
+                continue;
+            }
+
+            String raw = (fieldReq.documentId == null || fieldReq.documentId.isBlank())
+                    ? strapiClient.create(FIELD_VALUE_COLLECTION, fieldReq.body)
+                    : strapiClient.update(FIELD_VALUE_COLLECTION, fieldReq.documentId, fieldReq.body);
+            fieldResults.add(readJson(raw));
+        }
+
+        ArrayNode attachmentResults = objectMapper.createArrayNode();
+        for (Map<String, Object> attachmentItem : attachments) {
+            AchievementFileRequest fileReq = normalizeAchievementFileRequest(attachmentItem, achievementDocId);
+            if (fileReq.isAllEmpty()) {
+                continue;
+            }
+            String raw = (fileReq.documentId == null || fileReq.documentId.isBlank())
+                    ? strapiClient.create(ACHIEVEMENT_FILE_COLLECTION, fileReq.body)
+                    : strapiClient.update(ACHIEVEMENT_FILE_COLLECTION, fileReq.documentId, fileReq.body);
+            attachmentResults.add(readJson(raw));
+        }
+
+        ObjectNode out = objectMapper.createObjectNode();
+        out.set("achievement", mainJson);
+        out.set("fields", fieldResults);
+        out.set("attachments", attachmentResults);
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private JsonNode updateAchievementWithFilesInternal(String achievementDocId,
+                                                       Map<String, Object> req,
+                                                       MultipartFile[] files,
+                                                       boolean forcePending) {
         log.info("更新成果物");
         // 1) 不上传文件就按原逻辑更新
         if (files == null || files.length == 0) {
-            return updateAchievement(achievementDocId, req);
+            return updateAchievementInternal(achievementDocId, req, forcePending);
         }
-
 
         // 2) 上传 -> fileIds
         String uploadRaw = strapiClient.upload(files);
         JsonNode uploadJson = readJson(uploadRaw);
         if (uploadJson == null || !uploadJson.isArray() || uploadJson.isEmpty()) {
-            return updateAchievement(achievementDocId, req);
+            return updateAchievementInternal(achievementDocId, req, forcePending);
         }
 
         List<Integer> fileIds = new ArrayList<>();
@@ -159,7 +239,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             }
         }
         if (fileIds.isEmpty()) {
-            return updateAchievement(achievementDocId, req);
+            return updateAchievementInternal(achievementDocId, req, forcePending);
         }
 
         // 3) 取 req.data，并移除 attachments，避免 updateAchievement() 再创建附件记录导致重复
@@ -170,8 +250,8 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         Map<String, Object> data = (Map<String, Object>) dataAny;
         data.remove("attachments");
 
-        // 4) 先更新成果物主信息 + fields（保留你原有逻辑：强制 PENDING 等）
-        JsonNode out = updateAchievement(achievementDocId, req);
+        // 4) 先更新成果物主信息 + fields（按 forcePending 决定是否强制状态）
+        JsonNode out = updateAchievementInternal(achievementDocId, req, forcePending);
 
         // 5) 查询旧的 achievement-files（is_delete=0），全部软删（is_delete=1）
         try {
@@ -230,58 +310,6 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             log.warn("覆盖附件：回填 attachments 失败，achievementDocId={}", achievementDocId, e);
         }
 
-        return out;
-    }
-
-
-
-    @Override
-    public JsonNode updateAchievement(String achievementDocId, Map<String, Object> req) {
-        MainAndFields mainAndFields = parseMainAndFields(req);
-        Map<String, Object> mainReq = mainAndFields.mainReq;
-        List<Map<String, Object>> fields = mainAndFields.fields;
-        List<Map<String, Object>> attachments = mainAndFields.attachments;
-
-        // 管理员修改成果物：后端强制将审核状态置为 PENDING，避免前端遗漏或越权传值
-        Object mainDataObj = mainReq.get("data");
-        if (mainDataObj instanceof Map<?, ?> data) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> mainData = (Map<String, Object>) data;
-            mainData.put("achievement_status", "PENDING");
-        }
-
-        String mainRaw = strapiClient.update(ACHIEVEMENT_COLLECTION, achievementDocId, mainReq);
-        JsonNode mainJson = readJson(mainRaw);
-
-        ArrayNode fieldResults = objectMapper.createArrayNode();
-        for (Map<String, Object> fieldItem : fields) {
-            FieldValueRequest fieldReq = normalizeFieldValueRequest(fieldItem, achievementDocId, true);
-            if (fieldReq.isAllValueEmpty()) {
-                continue;
-            }
-
-            String raw = (fieldReq.documentId == null || fieldReq.documentId.isBlank())
-                    ? strapiClient.create(FIELD_VALUE_COLLECTION, fieldReq.body)
-                    : strapiClient.update(FIELD_VALUE_COLLECTION, fieldReq.documentId, fieldReq.body);
-            fieldResults.add(readJson(raw));
-        }
-
-        ArrayNode attachmentResults = objectMapper.createArrayNode();
-        for (Map<String, Object> attachmentItem : attachments) {
-            AchievementFileRequest fileReq = normalizeAchievementFileRequest(attachmentItem, achievementDocId);
-            if (fileReq.isAllEmpty()) {
-                continue;
-            }
-            String raw = (fileReq.documentId == null || fileReq.documentId.isBlank())
-                    ? strapiClient.create(ACHIEVEMENT_FILE_COLLECTION, fileReq.body)
-                    : strapiClient.update(ACHIEVEMENT_FILE_COLLECTION, fileReq.documentId, fileReq.body);
-            attachmentResults.add(readJson(raw));
-        }
-
-        ObjectNode out = objectMapper.createObjectNode();
-        out.set("achievement", mainJson);
-        out.set("fields", fieldResults);
-        out.set("attachments", attachmentResults);
         return out;
     }
 

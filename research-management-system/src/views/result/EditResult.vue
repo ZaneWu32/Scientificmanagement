@@ -214,13 +214,39 @@
             <el-descriptions-item label="成果类型">{{ selectedType?.name }}</el-descriptions-item>
             <el-descriptions-item label="作者">{{ formData.authors.join(', ') }}</el-descriptions-item>
             <el-descriptions-item label="年份">{{ formData.year }}</el-descriptions-item>
+            <el-descriptions-item label="摘要">{{ formData.abstract }}</el-descriptions-item>
+            <el-descriptions-item label="关键词">{{ formData.keywords.join(', ') }}</el-descriptions-item>
+            <el-descriptions-item label="所属项目">{{ formData.projectName }}</el-descriptions-item>
             <el-descriptions-item label="可见范围" :span="2">
               {{ getVisibilityText(formData.visibility) }}
             </el-descriptions-item>
-            <el-descriptions-item label="附件数量" :span="2">
-              {{ fileList.length }} 个文件
-            </el-descriptions-item>
           </el-descriptions>
+
+          <!-- 扩展信息（动态字段） -->
+          <div v-if="confirmExtraFields.length" style="margin-top: 16px">
+            <h4 style="margin: 0 0 8px 0">扩展信息</h4>
+            <el-descriptions :column="2" border>
+              <el-descriptions-item
+                v-for="item in confirmExtraFields"
+                :key="item.key"
+                :label="item.label"
+                :span="item.span || 1"
+              >
+                {{ item.text }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+
+          <!-- 附件列表 -->
+          <div style="margin-top: 16px">
+            <h4 style="margin: 0 0 8px 0">附件列表</h4>
+            <el-empty v-if="!fileList.length" description="未选择附件" />
+            <el-table v-else :data="confirmFiles" size="small" border max-height="320">
+              <el-table-column prop="name" label="文件名" min-width="220" />
+              <el-table-column prop="sizeText" label="大小" width="120" />
+              <el-table-column prop="type" label="类型" width="160" />
+            </el-table>
+          </div>
         </div>
       </div>
 
@@ -259,7 +285,18 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { getResultTypes, getFieldDefsByType, getResult, saveDraft, updateResult, updateResultWithFiles, autoFillMetadata } from '@/api/result'
+import {
+  getResultTypes,
+  getFieldDefsByType,
+  getResult,
+  getAdminResult,
+  saveDraft,
+  updateResult,
+  updateResultWithFiles,
+  updateAdminResult,
+  updateAdminResultWithFiles,
+  autoFillMetadata
+} from '@/api/result'
 import { getProjects, createProject } from '@/api/project'
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
@@ -275,6 +312,7 @@ const projects = ref([])
 const resultId = computed(() => route.params.id?.toString())
 const selectedType = computed(() => resultTypes.value.find((t) => t.id === formData.typeId))
 const currentUserName = computed(() => userStore.userInfo?.name || '')
+const isAdmin = computed(() => userStore.isAdmin)
 
 const formRef = ref()
 const formData = reactive({
@@ -313,6 +351,32 @@ const projectForm = reactive({
   code: ''
 })
 const creatingProject = ref(false)
+const confirmExtraFields = computed(() => {
+  const type = selectedType.value
+  const fields = type?.fields || []
+  if (!fields.length) return []
+
+  return fields.map((f: any) => {
+    const raw = formData.metadata?.[f.name]
+    const text = formatFieldValue(f, raw)
+    return {
+      key: f.name,
+      label: f.label,
+      text: text || '—'
+    }
+  })
+})
+
+const confirmFiles = computed(() => {
+  return (fileList.value || []).map((f: any) => {
+    const raw = f.raw || f
+    return {
+      name: raw?.name || f.name || 'unknown',
+      sizeText: formatFileSize(raw?.size || f.size || 0),
+      type: raw?.type || f.raw?.type || ''
+    }
+  })
+})
 
 onMounted(async () => {
   await Promise.all([loadResultTypes(), loadProjects()])
@@ -377,7 +441,9 @@ async function loadDetail() {
     return
   }
   try {
-    const res = await getResult(resultId.value)
+    const res = isAdmin.value
+      ? await getAdminResult(resultId.value)
+      : await getResult(resultId.value)
     const detail = res?.data
     if (!detail) {
       ElMessage.error('未找到成果')
@@ -632,6 +698,25 @@ function getVisibilityText(visibility) {
   return VISIBILITY_TEXT[visibility] || visibility
 }
 
+function formatFieldValue(field: any, value: any) {
+  if (value === undefined || value === null || value === '') return ''
+  if (Array.isArray(value)) return value.join('，')
+  if (typeof value === 'object') return JSON.stringify(value)
+  if (field.type === 'switch' || field.type === 'checkbox') return value ? '是' : '否'
+  return String(value)
+}
+
+function formatFileSize(bytes: number) {
+  const b = Number(bytes || 0)
+  if (b < 1024) return `${b} B`
+  const kb = b / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+  const mb = kb / 1024
+  if (mb < 1024) return `${mb.toFixed(1)} MB`
+  const gb = mb / 1024
+  return `${gb.toFixed(1)} GB`
+}
+
 async function handleSaveDraft() {
   if (!resultId.value) return
   saving.value = true
@@ -654,9 +739,17 @@ async function handleSubmit() {
     const rawFiles = fileList.value.filter(f => f.raw).map(f => f.raw) as File[]
 
     if (rawFiles.length > 0) {
-      await updateResultWithFiles(resultId.value, payload, rawFiles)
+      if (isAdmin.value) {
+        await updateAdminResultWithFiles(resultId.value, payload, rawFiles)
+      } else {
+        await updateResultWithFiles(resultId.value, payload, rawFiles)
+      }
     } else {
-      await updateResult(resultId.value, payload)
+      if (isAdmin.value) {
+        await updateAdminResult(resultId.value, payload)
+      } else {
+        await updateResult(resultId.value, payload)
+      }
     }
 
     ElMessage.success('保存成功')

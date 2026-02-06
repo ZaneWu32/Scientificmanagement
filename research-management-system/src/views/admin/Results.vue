@@ -81,7 +81,7 @@
                     <el-dropdown-item v-if="canFormatReject(row)" @click="handleFormatReject(row)">
                       格式退回
                     </el-dropdown-item>
-                    <el-dropdown-item :disabled="row.source === 'process_system'" @click="editResult(row)">
+                    <el-dropdown-item @click="editResult(row)">
                       编辑
                     </el-dropdown-item>
                     <el-dropdown-item divided @click="removeResult(row)">

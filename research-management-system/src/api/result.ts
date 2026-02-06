@@ -329,6 +329,16 @@ export async function getResult(id: string): Promise<StrapiSingleResponse<any>> 
   return { data: mapDetailItem(res?.data || {}) }
 }
 
+// 获取成果详情（管理员）
+export async function getAdminResult(id: string): Promise<StrapiSingleResponse<any>> {
+  const res = await request({
+    url: '/admin/achievement/detail',
+    method: 'get',
+    params: { achDocId: id }
+  })
+  return { data: mapDetailItem(res?.data || {}) }
+}
+
 export async function selectResults(params?: QueryParams, useTypeCode = false): Promise<StrapiPaginatedResponse<any>> {
   const res = await request({
     url: '/user/achievement/pageList',
@@ -414,6 +424,32 @@ export function updateResultWithFiles(id: string, data: Record<string, any>, fil
   })
   return request({
     url: `/user/achievement/updateWithFiles/${id}`,
+    method: 'put',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+// 更新成果（管理员）
+export function updateAdminResult(id: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+  return request({
+    url: `/admin/achievement/update/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 更新成果（管理员，带文件）
+export function updateAdminResultWithFiles(id: string, data: Record<string, any>, files: File[]): Promise<ApiResponse<any>> {
+  const formData = new FormData()
+  formData.append('data', JSON.stringify(data))
+  files.forEach(file => {
+    formData.append('files', file)
+  })
+  return request({
+    url: `/admin/achievement/updateWithFiles/${id}`,
     method: 'put',
     data: formData,
     headers: {
