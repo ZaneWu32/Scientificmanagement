@@ -45,12 +45,12 @@ public class StrapiClient {
     }
 
     // ✅更新：PUT /api/{collection}/{id}  body: {"data":{...}}
-    public String update(String collection, Object id, Map<String, Object> data) {
+        public String update(String collection, Object documentId, Map<String, Object> body) {
         return strapiWebClient.put()
-                .uri("/api/{collection}/{id}", collection, id)
+                .uri("/api/{collection}/{documentId}", collection, documentId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .bodyValue(data)
+                .bodyValue(body)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, resp ->
                         resp.bodyToMono(String.class)
@@ -59,6 +59,7 @@ public class StrapiClient {
                 .bodyToMono(String.class)
                 .block();
     }
+
 
     // ✅ 上传文件：POST /api/upload (multipart/form-data, field name: files)
     // GET /api/{collection}?...

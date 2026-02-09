@@ -149,13 +149,13 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         vo.setTypeDocId(base.getTypeDocId());
         vo.setTypeName(base.getTypeName());
         vo.setTypeCode(base.getTypeCode());
-        
+
         // 设置基础字段
         vo.setYear(base.getYear());
         vo.setProjectCode(base.getProjectCode());
         vo.setProjectName(base.getProjectName());
         vo.setVisibilityRange(base.getVisibilityRange());
-        
+
         // 解析 JSON 数组字段
         vo.setAuthors(parseJsonArray(base.getAuthorsJson()));
         vo.setKeywords(parseJsonArray(base.getKeywordsJson()));
@@ -176,14 +176,14 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
         return vo;
     }
-    
+
     private List<String> parseJsonArray(String json) {
         if (json == null || json.isBlank()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(json, 
-                objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return objectMapper.readValue(json,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
@@ -191,15 +191,15 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
     @Override
     public Page<AchListVO> pageList4Visibility(AchListDTO2 achListDTO) {
-            int pageNum  = (achListDTO.getPageNum()  == null || achListDTO.getPageNum()  < 1)  ? 1  : achListDTO.getPageNum();
-            int pageSize = (achListDTO.getPageSize() == null || achListDTO.getPageSize() < 1) ? 10 : achListDTO.getPageSize();
-            if (pageSize > 100) {
-                pageSize = 100; // 防止一次性查太多
-            }
-            //MybatisPlus的分页查询
-            Page<AchListVO> page = new Page<>(pageNum, pageSize);
-            page.setOptimizeCountSql(false);  // 关键：关闭 count SQL 优化解析
-            return baseMapper.pageList2(page, achListDTO);
+        int pageNum  = (achListDTO.getPageNum()  == null || achListDTO.getPageNum()  < 1)  ? 1  : achListDTO.getPageNum();
+        int pageSize = (achListDTO.getPageSize() == null || achListDTO.getPageSize() < 1) ? 10 : achListDTO.getPageSize();
+        if (pageSize > 100) {
+            pageSize = 100; // 防止一次性查太多
+        }
+        //MybatisPlus的分页查询
+        Page<AchListVO> page = new Page<>(pageNum, pageSize);
+        page.setOptimizeCountSql(false);  // 关键：关闭 count SQL 优化解析
+        return baseMapper.pageList2(page, achListDTO);
     }
 
     @Override

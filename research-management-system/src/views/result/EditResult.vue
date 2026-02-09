@@ -183,6 +183,11 @@
         <div v-show="currentStep === 3" class="step-panel">
           <h3>上传附件与设置可见范围</h3>
           <el-form label-width="120px">
+            <el-form-item label="附件操作">
+              <el-checkbox v-model="clearAttachments" @change="handleClearAttachmentsChange">
+                清空已有附件
+              </el-checkbox>
+            </el-form-item>
             <el-form-item label="附件上传">
               <el-upload
                 v-model:file-list="fileList"
@@ -190,12 +195,17 @@
                 :on-change="handleFileChange"
                 drag
                 multiple
+                :disabled="clearAttachments"
               >
                 <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                 <div class="el-upload__text">
                   拖拽文件到此处或 <em>点击上传</em>
                 </div>
               </el-upload>
+
+            <div v-if="clearAttachments" style="color:#e6a23c;margin-top:6px;">
+              已选择“清空附件”，不能上传新文件
+            </div>
             </el-form-item>
             <el-form-item label="可见范围" required>
               <el-radio-group v-model="formData.visibility">
@@ -335,6 +345,7 @@ const formRules = {
   authors: [{ required: true, message: '请选择作者', trigger: 'change' }],
   year: [{ required: true, message: '请选择年份', trigger: 'change' }]
 }
+const clearAttachments = ref(false)
 
 const fileList = ref([])
 const autoFillType = ref('doi')
@@ -611,14 +622,6 @@ async function handleAutoFill() {
   }
 }
 
-function handleFileChange(file, files) {
-  if (file?.raw && file.raw.size > MAX_FILE_SIZE) {
-    ElMessage.warning('单个附件不能超过 20MB')
-    fileList.value = files.filter((item) => item.uid !== file.uid)
-    return
-  }
-  fileList.value = files
-}
 
 function getAutoFillLabel() {
   const map = {
@@ -716,6 +719,25 @@ function formatFileSize(bytes: number) {
   const gb = mb / 1024
   return `${gb.toFixed(1)} GB`
 }
+//防御性修改，避免上传和清空附件冲突
+function handleFileChange(file, files) {
+  if (clearAttachments.value) {
+    ElMessage.warning('已选择清空附件，不能再上传文件')
+    return
+  }
+
+  if (file?.raw && file.raw.size > MAX_FILE_SIZE) {
+    ElMessage.warning('单个附件不能超过 20MB')
+    fileList.value = files.filter((item) => item.uid !== file.uid)
+    return
+  }
+  fileList.value = files
+}
+function handleClearAttachmentsChange(val: boolean) {
+  if (val) {
+    fileList.value = []
+  }
+}
 
 async function handleSaveDraft() {
   if (!resultId.value) return
@@ -800,6 +822,7 @@ function buildDraftPayload() {
 
 function buildPayload() {
   const project = projects.value.find((p) => p.id === formData.projectId)
+
   return {
     data: {
       title: formData.title,
@@ -811,10 +834,14 @@ function buildPayload() {
       projectCode: project?.code || formData.projectCode || '',
       projectName: project?.name || formData.projectName || '',
       visibilityRange: formData.visibility,
-      fields: buildFieldValues()
+      fields: buildFieldValues(),
+
+      // 👇 新增这一句（核心）
+      //clearAttachments: clearAttachments.value === true
     }
   }
 }
+
 </script>
 
 <style scoped>
