@@ -394,7 +394,7 @@ function formatFileSize(bytes: number) {
 
 async function loadResultTypes() {
   try {
-    const res = await getResultTypes()
+    const res = await getResultTypes('normal')
     const { data } = res || {}
 
     resultTypes.value = (data || [])

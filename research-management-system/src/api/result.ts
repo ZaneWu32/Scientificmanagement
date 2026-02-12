@@ -7,6 +7,7 @@ import type {
   StatisticsData,
   KeywordCloudData
 } from './types'
+import { isProcessResultTypeCode } from '@/config/resultTypeScope'
 
 function normalizePageResult(res: any, mapper?: (item: any) => any): StrapiPaginatedResponse<any> {
   const page = (res && res.data) || {}
@@ -67,6 +68,7 @@ function mapListItem(item: any) {
     id: item.documentId || item.id,
     status: mapStatus(item.auditStatus || item.status),
     type: item.typeName || item.type,
+    typeCode: item.typeCode || item.type_code || '',
 
     // ZZQ改 : 关键：优先使用后端的 authors 数组
     authors: Array.isArray(item.authors)
@@ -74,7 +76,8 @@ function mapListItem(item: any) {
       : (item.authorName ? [item.authorName] : item.creatorName ? [item.creatorName] : []),
 
     visibility: item.visibilityRange || item.visibility,
-    createdBy: item.createdBy || item.creatorName
+    createdBy: item.createdBy || item.creatorName,
+    projectCode: item.projectCode || item.project_code || ''
   }
   // ZZQ改
 }
@@ -191,7 +194,10 @@ function buildAchListPayload(params?: QueryParams, useTypeCode = false, onlyUnas
     keyword: params?.keyword,
     status,
     projectId: params?.projectId,
+    projectCode: params?.projectCode,
     onlyUnassigned,
+    typeCodes: Array.isArray(params?.typeCodes) ? params?.typeCodes : undefined,
+    excludeTypeCodes: Array.isArray(params?.excludeTypeCodes) ? params?.excludeTypeCodes : undefined,
     // ✅ 新增：作者
     author: (params as any)?.author
   }
@@ -610,8 +616,10 @@ export interface AchievementFieldDef {
 
 // ==================== 成果类型API ====================
 
+export type ResultTypeScope = 'all' | 'normal' | 'process'
+
 // 获取成果类型列表
-export function getResultTypes(): Promise<any> {
+export function getResultTypes(scope: ResultTypeScope = 'all'): Promise<any> {
   return request({
     url: '/achievementType/list',
     method: 'post'
@@ -626,7 +634,12 @@ export function getResultTypes(): Promise<any> {
       enabled: Number(item.enabled ?? 1), // ✅ 统一成 0/1（默认 1）
       is_delete: item.is_delete ?? item.isDelete ?? 0
     }))
-    return { data: normalized }
+    const filtered = normalized.filter((item: any) => {
+      if (scope === 'all') return true
+      const isProcess = isProcessResultTypeCode(item.type_code)
+      return scope === 'process' ? isProcess : !isProcess
+    })
+    return { data: filtered }
   })
 }
 

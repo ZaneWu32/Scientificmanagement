@@ -383,17 +383,22 @@ onMounted(async () => {
 
 async function loadResultTypes() {
   try {
-    const res = await getResultTypes()
+    const res = await getResultTypes('normal')
     const { data } = res || {}
     resultTypes.value = (data || [])
-      .map((t: any) => ({
-        ...t,
-        id: t.documentId || t.id,
-        name: t.type_name || t.typeName || t.name,
-        code: t.type_code || t.typeCode || t.code,
-        enabled: t.is_delete === 0 || t.enabled === true
-      }))
-      .filter((t: any) => t.enabled)
+      .map((t: any) => {
+        const isDelete = Number(t.is_delete ?? t.isDelete ?? 0)
+        const enabled =
+          t.enabled != null ? Number(t.enabled) : (isDelete === 1 ? 0 : 1)
+        return {
+          ...t,
+          id: t.documentId || t.id,
+          name: t.type_name || t.typeName || t.name,
+          code: t.type_code || t.typeCode || t.code,
+          enabled
+        }
+      })
+      .filter((t: any) => t.enabled === 1)
   } catch (error) {
     ElMessage.error('加载成果类型失败')
   }

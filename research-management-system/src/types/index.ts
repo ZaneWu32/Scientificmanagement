@@ -180,10 +180,12 @@ export interface ResultAccessRequest {
  * 中期成果物类型枚举
  */
 export const InterimResultType = {
-  CONTRACT: 'contract',                    // 合同
+  COLLECTION_ATTACHMENT: 'collection_attachment', // 征集附件
+  PROPOSAL_FILE: 'proposal_file',          // 申报书
+  CONTRACT: 'contract',                    // 合同（兼容旧值）
   CONTRACT_TEMPLATE: 'contract_template',  // 合同模板
   SIGNED_CONTRACT: 'signed_contract',      // 已签署合同
-  APPLICATION: 'application',              // 申报书
+  APPLICATION: 'application',              // 申报书（兼容旧值）
   DELIVERABLE_REPORT: 'deliverable_report', // 成果物报告
   FEASIBILITY_REPORT: 'feasibility_report', // 可行性报告
   REQUIREMENT_DOC: 'requirement_doc',      // 需求文档
@@ -199,6 +201,8 @@ export type InterimResultType = typeof InterimResultType[keyof typeof InterimRes
  * 中期成果物类型映射（中文）
  */
 export const INTERIM_RESULT_TYPE_MAP: Record<InterimResultType, string> = {
+  [InterimResultType.COLLECTION_ATTACHMENT]: '征集附件',
+  [InterimResultType.PROPOSAL_FILE]: '申报书',
   [InterimResultType.CONTRACT]: '合同',
   [InterimResultType.CONTRACT_TEMPLATE]: '合同模板',
   [InterimResultType.SIGNED_CONTRACT]: '已签署合同',

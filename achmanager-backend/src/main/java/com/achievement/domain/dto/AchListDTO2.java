@@ -3,6 +3,7 @@ package com.achievement.domain.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
+import java.util.List;
 
 @Tag(name="用户查询所有可见成果物列表的查询条件")
 @Data
@@ -20,6 +21,10 @@ public class AchListDTO2 {
     private Integer typeId;
     @Schema(description = "按成果物类型Code搜索")
     private String typeCode;
+    @Schema(description = "按成果物类型Code集合搜索（IN）")
+    private List<String> typeCodes;
+    @Schema(description = "按成果物类型Code集合排除（NOT IN）")
+    private List<String> excludeTypeCodes;
     /*@Schema(description = "按成果物最近范围搜索")
     private String recentRange; //一年/三年/五年/全部*/
     @Schema(description = "成果物范围起始时间")

@@ -99,6 +99,7 @@ import { getMyStatistics, getMyResults, getTypePie4User } from '@/api/result'
 import { formatDateTime } from '@/utils/date'
 import * as echarts from 'echarts'
 import { ResultStatus } from '@/types'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 const router = useRouter()
 const loading = ref(false)
@@ -186,7 +187,7 @@ async function loadData() {
   try {
     const [statsRes, resultsRes, typePieRes] = await Promise.all([
       getMyStatistics(),
-      getMyResults({ page: 1, pageSize: 5 }),
+      getMyResults({ page: 1, pageSize: 5, excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES] }),
       getTypePie4User()
     ])
     statistics.value = statsRes?.data || {}

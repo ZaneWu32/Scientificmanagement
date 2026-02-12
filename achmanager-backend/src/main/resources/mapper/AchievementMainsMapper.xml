@@ -7,6 +7,7 @@
         <result column="documentId" property="documentId"/>
         <result column="title" property="title"/>
         <result column="typeName" property="typeName"/>
+        <result column="typeCode" property="typeCode"/>
         <result column="auditStatus" property="auditStatus"/>
         <result column="creatorName" property="creatorName"/>
         <result column="year" property="year"/>
@@ -17,6 +18,7 @@
                 typeHandler="com.achievement.utils.JsonStringListTypeHandler"/>
 
         <result column="projectName" property="projectName"/>
+        <result column="projectCode" property="projectCode"/>
         <result column="summary" property="summary"/>
         <result column="createdAt" property="createdAt"/>
         <result column="visibilityRange" property="visibilityRange"/>
@@ -29,11 +31,13 @@
         m.document_id        AS documentId,
         m.title              AS title,
         t.type_name          AS typeName,
+        t.type_code          AS typeCode,
         m.achievement_status AS auditStatus,
         m.keywords         AS mainTitle,
         m.authors          AS authors,
         m.year              AS year,
         m.project_name       AS projectName,
+        m.project_code       AS projectCode,
         m.summary            AS summary,
         m.created_at         AS createdAt,
         m.visibility_range   AS visibilityRange,
@@ -86,6 +90,22 @@
         </if>
         <if test="dto.typeCode != null and dto.typeCode != ''">
             AND t.type_code = #{dto.typeCode}
+        </if>
+        <if test="dto.typeCodes != null and dto.typeCodes.size() > 0">
+            AND t.type_code IN
+            <foreach collection="dto.typeCodes" item="typeCodeItem" open="(" separator="," close=")">
+                #{typeCodeItem}
+            </foreach>
+        </if>
+        <if test="dto.excludeTypeCodes != null and dto.excludeTypeCodes.size() > 0">
+            AND (t.type_code IS NULL OR t.type_code NOT IN
+            <foreach collection="dto.excludeTypeCodes" item="excludeTypeCodeItem" open="(" separator="," close=")">
+                #{excludeTypeCodeItem}
+            </foreach>
+            )
+        </if>
+        <if test="dto.projectCode != null and dto.projectCode != ''">
+            AND (m.project_code = #{dto.projectCode} OR m.project_name = #{dto.projectCode})
         </if>
         <if test="dto.author != null and dto.author.trim() != ''">
             AND (
@@ -209,12 +229,13 @@
         m.document_id                 AS documentId,
         m.title              AS title,
         t.type_name          AS typeName,
+        t.type_code          AS typeCode,
         m.achievement_status AS auditStatus,
         m.authors          AS authors,
         m.year              AS year,
         m.keywords         AS keywords,
-        /*,
-        p.project_name       AS projectName,*/
+        m.project_name       AS projectName,
+        m.project_code       AS projectCode,
         m.summary            AS summary,
         m.created_at         AS createdAt,
         m.visibility_range      AS visibilityRange
@@ -245,6 +266,19 @@
         </if>
         <if test="dto.typeCode != null and dto.typeCode != ''">
             AND t.type_code = #{dto.typeCode}
+        </if>
+        <if test="dto.typeCodes != null and dto.typeCodes.size() > 0">
+            AND t.type_code IN
+            <foreach collection="dto.typeCodes" item="typeCodeItem" open="(" separator="," close=")">
+                #{typeCodeItem}
+            </foreach>
+        </if>
+        <if test="dto.excludeTypeCodes != null and dto.excludeTypeCodes.size() > 0">
+            AND (t.type_code IS NULL OR t.type_code NOT IN
+            <foreach collection="dto.excludeTypeCodes" item="excludeTypeCodeItem" open="(" separator="," close=")">
+                #{excludeTypeCodeItem}
+            </foreach>
+            )
         </if>
         <!-- 成果物年份范围：按 m.year（String）字段，区间 [yearStart, yearEnd] -->
         <if test="dto.yearStart != null and dto.yearStart != '' and dto.yearEnd != null and dto.yearEnd != ''">
@@ -440,10 +474,12 @@
             m.document_id                 AS documentId,
             m.title              AS title,
             t.type_name          AS typeName,
+            t.type_code          AS typeCode,
             m.achievement_status AS auditStatus,
             m.authors          AS authors,
-            /*,
-            p.project_name       AS projectName,*/
+            m.year              AS year,
+            m.project_name      AS projectName,
+            m.project_code      AS projectCode,
             m.summary            AS summary,
             m.created_at         AS createdAt,
             m.visibility_range      AS visibilityRange
@@ -472,6 +508,19 @@
             <if test="dto.typeCode != null and dto.typeCode != ''">
                 AND t.type_code = #{dto.typeCode}
             </if>
+            <if test="dto.typeCodes != null and dto.typeCodes.size() > 0">
+                AND t.type_code IN
+                <foreach collection="dto.typeCodes" item="typeCodeItem" open="(" separator="," close=")">
+                    #{typeCodeItem}
+                </foreach>
+            </if>
+            <if test="dto.excludeTypeCodes != null and dto.excludeTypeCodes.size() > 0">
+                AND (t.type_code IS NULL OR t.type_code NOT IN
+                <foreach collection="dto.excludeTypeCodes" item="excludeTypeCodeItem" open="(" separator="," close=")">
+                    #{excludeTypeCodeItem}
+                </foreach>
+                )
+            </if>
             <!-- 成果物年份范围：按 m.year（String）字段，区间 [yearStart, yearEnd] -->
             <if test="dto.yearStart != null and dto.yearStart != '' and dto.yearEnd != null and dto.yearEnd != ''">
                 AND m.`year` IS NOT NULL
@@ -498,11 +547,13 @@
         m.document_id        AS documentId,
         m.title              AS title,
         t.type_name          AS typeName,
+        t.type_code          AS typeCode,
         m.achievement_status AS auditStatus,
         m.keywords         AS keywords,
         m.authors          AS authors,
         m.year              AS year,
         m.project_name       AS projectName,
+        m.project_code       AS projectCode,
         m.summary            AS summary,
         m.created_at         AS createdAt,
         m.visibility_range   AS visibilityRange
@@ -554,6 +605,22 @@
         </if>
         <if test="dto.typeCode != null and dto.typeCode != ''">
             AND t.type_code = #{dto.typeCode}
+        </if>
+        <if test="dto.typeCodes != null and dto.typeCodes.size() > 0">
+            AND t.type_code IN
+            <foreach collection="dto.typeCodes" item="typeCodeItem" open="(" separator="," close=")">
+                #{typeCodeItem}
+            </foreach>
+        </if>
+        <if test="dto.excludeTypeCodes != null and dto.excludeTypeCodes.size() > 0">
+            AND (t.type_code IS NULL OR t.type_code NOT IN
+            <foreach collection="dto.excludeTypeCodes" item="excludeTypeCodeItem" open="(" separator="," close=")">
+                #{excludeTypeCodeItem}
+            </foreach>
+            )
+        </if>
+        <if test="dto.projectCode != null and dto.projectCode != ''">
+            AND (m.project_code = #{dto.projectCode} OR m.project_name = #{dto.projectCode})
         </if>
         <if test="dto.author != null and dto.author.trim() != ''">
             AND (

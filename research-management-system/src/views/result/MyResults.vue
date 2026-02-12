@@ -142,6 +142,7 @@ import { getMyResults, deleteResult as deleteResultApi } from '@/api/result'
 import { getProjects } from '@/api/project'
 import { ResultStatus, ResultVisibility } from '@/types'
 import { formatDateTime } from '@/utils/date'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 const router = useRouter()
 const loading = ref(false)
@@ -195,14 +196,15 @@ async function handleSearch() {
   loading.value = true
   try {
     const params = {
-  ...searchForm,
-  status: searchForm.status === ResultStatus.ALL ? '' : searchForm.status,
-  projectId: searchForm.projectId === ResultStatus.ALL ? '' : searchForm.projectId,
-  page: pagination.page,
-  pageSize: pagination.pageSize
-}
+      ...searchForm,
+      status: searchForm.status === ResultStatus.ALL ? '' : searchForm.status,
+      projectId: searchForm.projectId === ResultStatus.ALL ? '' : searchForm.projectId,
+      excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES],
+      page: pagination.page,
+      pageSize: pagination.pageSize
+    }
 
-const res = await getMyResults(params)
+    const res = await getMyResults(params)
     const { data } = res || {}
     tableData.value = data?.list || []
     pagination.total = data?.total || 0

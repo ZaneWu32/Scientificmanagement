@@ -169,6 +169,7 @@ import { useUserStore } from '@/stores/user'
 import { getVisibleResults, getResults,getMyResults, exportResults } from '@/api/result'
 import { getProjects } from '@/api/project'
 import { getResultTypes } from '@/api/result'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 const router = useRouter()
 const route = useRoute()
@@ -217,7 +218,7 @@ onMounted(() => {
 async function loadResultTypes() {
   typeLoading.value = true
   try {
-    const res = await getResultTypes()
+    const res = await getResultTypes('normal')
     const list = res?.data ?? []
     // 过滤掉删除的
     resultTypes.value = list.filter((t: AchievementType) => (t.is_delete ?? 0) === 0)
@@ -297,7 +298,8 @@ function getSearchParams() {
     keyword: searchForm.keyword,
     type: searchForm.type,
     author: searchForm.author,
-    projectId: searchForm.projectId
+    projectId: searchForm.projectId,
+    excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES]
   }
 
   if (Array.isArray(searchForm.yearRange) && searchForm.yearRange.length === 2) {

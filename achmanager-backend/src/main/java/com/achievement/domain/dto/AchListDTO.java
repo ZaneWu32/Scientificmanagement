@@ -3,6 +3,7 @@ package com.achievement.domain.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
+import java.util.List;
 
 /**
  * 管理员查询成果物列表的查询条件
@@ -27,12 +28,18 @@ public class AchListDTO {
     private String title;
     @Schema(description = "按成果物类型名称搜索")
     private String typeCode;
+    @Schema(description = "按成果物类型Code集合搜索（IN）")
+    private List<String> typeCodes;
+    @Schema(description = "按成果物类型Code集合排除（NOT IN）")
+    private List<String> excludeTypeCodes;
     @Schema(description = "按成果物审核状态搜索")
     /** 审核状态（achievement_status） */
     private String status;
     @Schema(description = "按成果物所属项目Id")
     /** 项目名（后面你加了项目表再用） */
     private Integer projectId;
+    @Schema(description = "按成果物所属项目编码搜索")
+    private String projectCode;
     /// TODO 目前缺少用户ID
     private Integer creatorId;
     /** 可见范围（后面你加字段再用） */

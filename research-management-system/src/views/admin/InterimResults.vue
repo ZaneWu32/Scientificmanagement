@@ -143,7 +143,7 @@
                   查看详情
                 </el-button>
                 <el-button
-                  v-if="row.source === 'process_system'"
+                  v-if="row.source === 'process_system' && row.sourceUrl"
                   type="success"
                   link
                   size="small"
@@ -275,6 +275,7 @@ import {
 import { 
   getInterimResults, 
   getInterimResultStats,
+  getInterimResultDetail,
   syncInterimResults,
   getAttachmentDownloadUrl,
   exportInterimResults
@@ -326,7 +327,6 @@ const treeProps = {
   children: 'children',
   label: 'label'
 }
-const isMockEnabled = true
 
 // ==================== 计算属性 ====================
 const projectTreeData = computed(() => {
@@ -464,13 +464,22 @@ async function handleBatchDownload() {
   ElMessage.info('批量下载功能开发中')
 }
 
-function viewDetail(item: InterimResult) {
-  currentItem.value = item
-  detailDrawerVisible.value = true
+async function viewDetail(item: InterimResult) {
+  try {
+    const res = await getInterimResultDetail(item.id)
+    currentItem.value = res.data
+    detailDrawerVisible.value = true
+  } catch (error) {
+    ElMessage.error('加载详情失败')
+  }
 }
 
 function jumpToProcessSystem(item: InterimResult) {
-  const url = item.sourceUrl || `http://process.example.com/projects/${item.projectId}`
+  const url = item.sourceUrl
+  if (!url) {
+    ElMessage.info('该成果未配置过程系统跳转链接')
+    return
+  }
   window.open(url, '_blank')
 }
 
@@ -490,17 +499,20 @@ function canPreview(filename: string) {
 }
 
 function downloadFile(file: any) {
-  const url = isMockEnabled && file?.url ? file.url : getAttachmentDownloadUrl(file.id)
+  const url = file?.url || getAttachmentDownloadUrl(file.id)
+  if (!url) {
+    ElMessage.error('附件链接不可用')
+    return
+  }
   window.open(url, '_blank')
 }
 
 function previewFile(file: any) {
-  if (isMockEnabled && file?.url) {
+  if (file?.url) {
     window.open(file.url, '_blank')
     return
   }
-  // 预览功能需要后端支持
-  ElMessage.info('预览功能开发中')
+  ElMessage.info('该附件暂不支持在线预览')
 }
 </script>
 

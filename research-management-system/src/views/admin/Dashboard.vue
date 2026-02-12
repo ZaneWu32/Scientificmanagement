@@ -98,6 +98,7 @@ import { Document, Tickets, TrophyBase, TrendCharts } from '@element-plus/icons-
 import { getStatistics, getResults, getAdvancedDistribution, getStackedTrend, getTypePie } from '@/api/result'
 import { formatDateTime } from '@/utils/date'
 import * as echarts from 'echarts'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 const loading = ref(false)
 const statistics = ref(null)
@@ -180,7 +181,7 @@ async function loadSummary() {
   try {
     const [statsRes, resultsRes, typePieRes] = await Promise.all([
       getStatistics(),
-      getResults({ page: 1, pageSize: 10 }),
+      getResults({ page: 1, pageSize: 10, excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES] }),
       getTypePie()
     ])
     const statsData = statsRes?.data || {}

@@ -111,6 +111,7 @@ import { getVisibleResults, getVisibleResults4Admin } from '@/api/result.ts'
 import { useUserStore } from '@/stores/user' 
 import ResultCard from './components/ResultCard.vue'
 import { getResultTypes } from '@/api/result'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 interface AchievementType {
   type_code: string
@@ -173,7 +174,7 @@ async function loadResults() {
 async function loadResultTypes() {
   typeLoading.value = true
   try {
-    const res = await getResultTypes()
+    const res = await getResultTypes('normal')
     const list = res?.data ?? []
     resultTypes.value = list.filter((t: AchievementType) => (t.is_delete ?? 0) === 0)
   } catch (e) {
@@ -218,7 +219,8 @@ function handleViewDetail(item: any) {
 function buildQueryParams() {
   const params: Record<string, any> = {
     type: filters.type,
-    sortBy: filters.sortBy
+    sortBy: filters.sortBy,
+    excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES]
   }
   const yearRange = resolveYearRange(filters.year)
   if (yearRange) {

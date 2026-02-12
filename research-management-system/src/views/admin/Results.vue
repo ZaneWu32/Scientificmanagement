@@ -146,6 +146,7 @@ import { getResults, deleteResult, assignReviewers, markFormatChecked, markForma
 import { formatDateTime } from '@/utils/date'
 import { getExpertUsers, type KeycloakUser } from '@/api/user'
 import { ResultStatus } from '@/types'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 const router = useRouter()
 const loading = ref(false)
@@ -214,7 +215,11 @@ function getExpertLabel(expert: Partial<KeycloakUser>) {
 async function handleSearch() {
   loading.value = true
   try {
-    const res = await getResults({ ...searchForm, ...pagination })
+    const res = await getResults({
+      ...searchForm,
+      ...pagination,
+      excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES]
+    })
     const { data } = res || {}
     tableData.value = data?.list || []
     pagination.total = data?.total || 0
