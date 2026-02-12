@@ -11,7 +11,7 @@
 
       <div class="step-content">
         <!-- 步骤1: 选择类型 -->
-        <div v-if="currentStep === 0" class="step-panel">
+        <div v-show="currentStep === 0" class="step-panel">
           <h3>选择成果类型</h3>
           <el-select
             v-model="formData.typeId"
@@ -38,7 +38,7 @@
         </div>
 
         <!-- 步骤2: 填写基础信息 -->
-        <div v-if="currentStep === 1" class="step-panel">
+        <div v-show="currentStep === 1" class="step-panel">
           <h3>填写基础信息</h3>
           <el-form
             ref="formRef"
@@ -130,7 +130,7 @@
         </div>
 
         <!-- 步骤3: 智能补全 -->
-        <div v-if="currentStep === 2" class="step-panel">
+        <div v-show="currentStep === 2" class="step-panel">
           <h3>智能补全（可选）</h3>
           <el-form label-width="120px">
             <el-form-item label="补全方式">
@@ -180,9 +180,14 @@
         </div>
 
         <!-- 步骤4: 上传附件 -->
-        <div v-if="currentStep === 3" class="step-panel">
+        <div v-show="currentStep === 3" class="step-panel">
           <h3>上传附件与设置可见范围</h3>
           <el-form label-width="120px">
+            <el-form-item label="附件操作">
+              <el-checkbox v-model="clearAttachments" @change="handleClearAttachmentsChange">
+                清空已有附件
+              </el-checkbox>
+            </el-form-item>
             <el-form-item label="附件上传">
               <el-upload
                 v-model:file-list="fileList"
@@ -190,12 +195,17 @@
                 :on-change="handleFileChange"
                 drag
                 multiple
+                :disabled="clearAttachments"
               >
                 <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                 <div class="el-upload__text">
                   拖拽文件到此处或 <em>点击上传</em>
                 </div>
               </el-upload>
+
+            <div v-if="clearAttachments" style="color:#e6a23c;margin-top:6px;">
+              已选择“清空附件”，不能上传新文件
+            </div>
             </el-form-item>
             <el-form-item label="可见范围" required>
               <el-radio-group v-model="formData.visibility">
@@ -207,7 +217,7 @@
         </div>
 
         <!-- 步骤5: 确认提交 -->
-        <div v-if="currentStep === 4" class="step-panel">
+        <div v-show="currentStep === 4" class="step-panel">
           <h3>确认信息</h3>
           <el-descriptions :column="2" border>
             <el-descriptions-item label="成果标题">{{ formData.title }}</el-descriptions-item>
@@ -256,9 +266,10 @@
         <el-button v-if="currentStep === 4" type="success" :loading="submitting" @click="handleSubmit">
           保存修改
         </el-button>
+        <el-button @click="handleSaveDraft" :loading="saving">保存草稿</el-button>
       </div>
 
-      <el-dialog v-model="projectDialogVisible" title="新建项目" width="480px" destroy-on-close>
+      <el-dialog v-model="projectDialogVisible" title="新建项目" width="480px">
         <el-form label-width="100px">
           <el-form-item label="项目名称" required>
             <el-input v-model="projectForm.name" placeholder="请输入项目名称" />
@@ -289,6 +300,7 @@ import {
   getFieldDefsByType,
   getResult,
   getAdminResult,
+  saveDraft,
   updateResult,
   updateResultWithFiles,
   updateAdminResult,
@@ -333,15 +345,16 @@ const formRules = {
   authors: [{ required: true, message: '请选择作者', trigger: 'change' }],
   year: [{ required: true, message: '请选择年份', trigger: 'change' }]
 }
+const clearAttachments = ref(false)
 
 const fileList = ref([])
-const fieldValueDocIdByCode = ref<Record<string, string>>({})
 const autoFillType = ref('doi')
 const autoFillValue = ref('')
 const autoFilling = ref(false)
 const journalRankItems = ref<string[]>([])
 const lastJournalRankAt = ref(0)
 const submitting = ref(false)
+const saving = ref(false)
 const MAX_FILE_SIZE = 20 * 1024 * 1024
 const projectDialogVisible = ref(false)
 const projectForm = reactive({
@@ -364,16 +377,18 @@ const confirmExtraFields = computed(() => {
     }
   })
 })
-
 const confirmFiles = computed(() => {
-  return (fileList.value || []).map((f: any) => {
-    const raw = f.raw || f
-    return {
-      name: raw?.name || f.name || 'unknown',
-      sizeText: formatFileSize(raw?.size || f.size || 0),
-      type: raw?.type || f.raw?.type || ''
-    }
-  })
+  // 【修改点】：增加 filter(f => f.raw)，只显示本次新上传的文件
+  return (fileList.value || [])
+    .filter((f: any) => f.raw) 
+    .map((f: any) => {
+      const raw = f.raw
+      return {
+        name: raw.name,
+        sizeText: formatFileSize(raw.size),
+        type: raw.type || ''
+      }
+    })
 })
 
 onMounted(async () => {
@@ -466,20 +481,8 @@ async function loadDetail() {
     formData.visibility = detail.visibility || ResultVisibility.PRIVATE
     formData.metadata = { ...(detail.metadata || {}) }
     formData.attachments = detail.attachments || []
-    fieldValueDocIdByCode.value = (detail.fields || []).reduce((acc: Record<string, string>, field: any) => {
-      if (field?.fieldCode && field?.fieldValueDocumentId) {
-        acc[field.fieldCode] = field.fieldValueDocumentId
-      }
-      return acc
-    }, {})
 
-    fileList.value = (detail.attachments || []).map((file) => ({
-      id: file.id,
-      name: file.name,
-      url: file.url,
-      size: file.size,
-      status: 'success'
-    }))
+    fileList.value = []
   } catch (error) {
     ElMessage.error('加载详情失败')
   }
@@ -496,7 +499,6 @@ async function loadProjects() {
 
 function handleTypeChange() {
   formData.metadata = {}
-  fieldValueDocIdByCode.value = {}
   if (formData.typeId) {
     loadFieldDefs(formData.typeId)
   }
@@ -622,14 +624,6 @@ async function handleAutoFill() {
   }
 }
 
-function handleFileChange(file, files) {
-  if (file?.raw && file.raw.size > MAX_FILE_SIZE) {
-    ElMessage.warning('单个附件不能超过 20MB')
-    fileList.value = files.filter((item) => item.uid !== file.uid)
-    return
-  }
-  fileList.value = files
-}
 
 function getAutoFillLabel() {
   const map = {
@@ -727,14 +721,86 @@ function formatFileSize(bytes: number) {
   const gb = mb / 1024
   return `${gb.toFixed(1)} GB`
 }
+function buildPayload() {
+  const project = projects.value.find((p) => p.id === formData.projectId)
+
+  // 【新增逻辑】：筛选出当前 fileList 中那些已经是服务器上的旧附件（没有 raw 属性的文件）
+  // 这样后端才知道你“保留”了哪些，从而剔除那些你删掉的
+  const remainingOldAttachments = fileList.value
+    .filter(f => !f.raw) 
+    .map(f => ({
+      documentId: f.documentId, // 如果后端需要 id 来识别旧附件，请确保这里包含
+      name: f.name,
+      url: f.url,
+      size: f.size
+    }))
+
+  return {
+    data: {
+      title: formData.title,
+      summary: formData.abstract,
+      typeDocId: formData.typeId,
+      year: formData.year,
+      authors: formData.authors,
+      keywords: formData.keywords,
+      projectCode: project?.code || formData.projectCode || '',
+      projectName: project?.name || formData.projectName || '',
+      visibilityRange: formData.visibility,
+      fields: buildFieldValues(),
+      
+      // 【关键修改】：将保留的旧附件清单传回
+      attachments: remainingOldAttachments, 
+      
+      // 如果后端需要明确的清空指令，保留这一行
+      //clearAttachments: clearAttachments.value === true
+    }
+  }
+}
+
+//防御性修改，避免上传和清空附件冲突
+function handleFileChange(file, files) {
+  if (clearAttachments.value) {
+    ElMessage.warning('已选择清空附件，不能再上传文件')
+    return
+  }
+
+  if (file?.raw && file.raw.size > MAX_FILE_SIZE) {
+    ElMessage.warning('单个附件不能超过 20MB')
+    fileList.value = files.filter((item) => item.uid !== file.uid)
+    return
+  }
+  fileList.value = files
+}
+function handleClearAttachmentsChange(val: boolean) {
+  if (val) {
+    fileList.value = []
+  }
+}
+
+async function handleSaveDraft() {
+  if (!resultId.value) return
+  saving.value = true
+  try {
+    const payload = { ...buildDraftPayload(), status: 'draft' }
+    await saveDraft(payload)
+    ElMessage.success('草稿已保存（Mock）')
+  } catch (error) {
+    ElMessage.error('保存草稿失败')
+  } finally {
+    saving.value = false
+  }
+}
 
 async function handleSubmit() {
   if (!resultId.value) return
   submitting.value = true
   try {
     const payload = buildPayload()
+    // 提取新选的文件流
     const rawFiles = fileList.value.filter(f => f.raw).map(f => f.raw) as File[]
 
+    // 逻辑：只要有新文件，就走带文件上传的接口；否则走普通更新接口
+    // 注意：即使 rawFiles 为空，payload.data.attachments 也会告诉后端现在的旧文件剩余情况
     if (rawFiles.length > 0) {
       if (isAdmin.value) {
         await updateAdminResultWithFiles(resultId.value, payload, rawFiles)
@@ -742,6 +808,7 @@ async function handleSubmit() {
         await updateResultWithFiles(resultId.value, payload, rawFiles)
       }
     } else {
+      // 此时即便 rawFiles 是空，但 payload 里的 attachments 数组已经不包含你删掉的那个文件了
       if (isAdmin.value) {
         await updateAdminResult(resultId.value, payload)
       } else {
@@ -752,6 +819,7 @@ async function handleSubmit() {
     ElMessage.success('保存成功')
     router.push('/results/my')
   } catch (error) {
+    console.error('提交失败详情:', error)
     ElMessage.error('保存失败')
   } finally {
     submitting.value = false
@@ -769,10 +837,6 @@ function buildFieldValues() {
       const payload: Record<string, any> = {
         achievement_field_def_id: field.documentId
       }
-      const fieldValueDocId = fieldValueDocIdByCode.value[field.name]
-      if (fieldValueDocId) {
-        payload.documentId = fieldValueDocId
-      }
 
       if (field.type === 'number') {
         payload.numberValue = Number(value)
@@ -789,44 +853,17 @@ function buildFieldValues() {
     .filter(Boolean)
 }
 
-function buildAttachmentPayload() {
-  const existingFileIds = (fileList.value || [])
-    .filter((f: any) => !f?.raw)
-    .map((f: any) => Number(f?.id))
-    .filter((id: number) => Number.isFinite(id))
-
-  if (!existingFileIds.length) {
-    return []
-  }
-
-  return [
-    {
-      data: {
-        files: existingFileIds,
-        is_delete: 0
-      }
-    }
-  ]
-}
-
-function buildPayload() {
+function buildDraftPayload() {
   const project = projects.value.find((p) => p.id === formData.projectId)
   return {
-    data: {
-      title: formData.title,
-      summary: formData.abstract,
-      typeDocId: formData.typeId,
-      year: formData.year,
-      authors: formData.authors,
-      keywords: formData.keywords,
-      projectCode: project?.code || formData.projectCode || '',
-      projectName: project?.name || formData.projectName || '',
-      visibilityRange: formData.visibility,
-      fields: buildFieldValues(),
-      attachments: buildAttachmentPayload()
-    }
+    ...formData,
+    projectName: project?.name || formData.projectName || '',
+    projectCode: project?.code || formData.projectCode || '',
+    metadata: { ...formData.metadata }
   }
 }
+
+
 </script>
 
 <style scoped>

@@ -225,9 +225,9 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
 
     @SuppressWarnings("unchecked")
     private JsonNode updateAchievementWithFilesInternal(String achievementDocId,
-                                                       Map<String, Object> req,
-                                                       MultipartFile[] files,
-                                                       boolean forcePending) {
+                                                        Map<String, Object> req,
+                                                        MultipartFile[] files,
+                                                        boolean forcePending) {
         log.info("更新成果物");
         // 1) 不上传文件就按原逻辑更新
         if (files == null || files.length == 0) {
@@ -355,12 +355,12 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         moveKey(mainData, "achievementStatus", "achievement_status");
         // 成果物类型外键：typeDocId -> achievement_type_id
         moveKey(mainData, "typeDocId", "achievement_type_id");
-        
+
         // 新增基础字段映射（前端驼峰 -> Strapi 下划线）
         moveKey(mainData, "projectCode", "project_code");
         moveKey(mainData, "projectName", "project_name");
         moveKey(mainData, "visibilityRange", "visibility_range");
-        
+
         // 前端展示字段不写入 Strapi
         mainData.remove("typeName");
         mainData.remove("typeCode");

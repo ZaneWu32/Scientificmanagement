@@ -244,7 +244,7 @@ async function handleSearch() {
     // 管理员使用管理员接口，普通用户使用用户端检索接口
     const res = userStore.isAdmin
        ? await getResults(params, true)
-       : await getMyResults(params)
+       : await getVisibleResults(params)
 
     const { data } = res || {}
     tableData.value = data?.list || []
