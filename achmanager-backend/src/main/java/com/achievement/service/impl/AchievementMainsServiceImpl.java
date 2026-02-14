@@ -325,12 +325,13 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
     private Object pickValueByType(AchFieldRow r) {
         if (r.getFieldType() == null) return r.getTextValue();
-        return switch (r.getFieldType()) {
-            case "text" -> r.getTextValue();
-            case "boolean" -> r.getBooleanValue();
-            case "number" -> r.getNumberValue();
-            case "date" -> r.getDateValue();
-            case "email" -> r.getEmailValue();
+        String normalizedType = r.getFieldType().trim().toUpperCase(Locale.ROOT);
+        return switch (normalizedType) {
+            case "TEXT", "RICHTEXT", "JSON", "MEDIA" -> r.getTextValue();
+            case "BOOLEAN" -> r.getBooleanValue();
+            case "NUMBER" -> r.getNumberValue();
+            case "DATE", "DATETIME" -> r.getDateValue();
+            case "EMAIL" -> r.getEmailValue();
             default -> r.getTextValue();
         };
     }

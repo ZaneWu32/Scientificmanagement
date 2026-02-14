@@ -21,6 +21,7 @@ export const BackendFieldType = {
   RICHTEXT: 'RICHTEXT',
   NUMBER: 'NUMBER',
   DATE: 'DATE',
+  DATETIME: 'DATETIME',
   EMAIL: 'EMAIL',
   BOOLEAN: 'BOOLEAN',
   JSON: 'JSON',
@@ -49,6 +50,7 @@ export const BACKEND_TO_FRONTEND_TYPE_MAP: Record<string, string> = {
   [BackendFieldType.RICHTEXT]: FrontendFieldType.TEXTAREA,
   [BackendFieldType.NUMBER]: FrontendFieldType.NUMBER,
   [BackendFieldType.DATE]: FrontendFieldType.DATE,
+  [BackendFieldType.DATETIME]: FrontendFieldType.DATE,
   [BackendFieldType.EMAIL]: FrontendFieldType.TEXT,
   [BackendFieldType.BOOLEAN]: FrontendFieldType.CHECKBOX,
   [BackendFieldType.JSON]: FrontendFieldType.TEXTAREA,
@@ -123,6 +125,5 @@ export function getFieldComponent(fieldType: string) {
 export function getFieldDefaultProps(fieldType: string): Record<string, any> {
   return { ...(FIELD_DEFAULT_PROPS[fieldType] || {}) }
 }
-
 
 
