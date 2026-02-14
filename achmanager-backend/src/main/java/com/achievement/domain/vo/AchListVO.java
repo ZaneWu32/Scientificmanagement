@@ -22,4 +22,5 @@ public class AchListVO {
     private String summary;        // 成果物概要
     private LocalDateTime createdAt; //创建时间
     private String visibilityRange;   // 可见范围
+    private String reviewComment;     // 审核意见/驳回理由
 }

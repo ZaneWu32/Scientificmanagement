@@ -470,3 +470,56 @@ Base Path：`/results`
   - 通过 `EASYSCHOLAR_SECRET_KEY`（读取 `.env`）进行鉴权
   - `code != 200` 会返回 `Result.error(msg)`
   - 请求速率限制：最多 2 次/秒
+
+## 8) 过程成果对接（ProcessSystemAchievementController）
+
+Base Path：`/api/v1/process-system/achievements`
+
+### 8.1 上传过程成果（multipart 文件直传）
+
+- Method：`POST`
+- Path：`/api/v1/process-system/achievements/createWithFiles`
+- Content-Type：`multipart/form-data`
+- Headers：
+  - `Authorization: Bearer <apiKey>`
+  - `X-Idempotency-Key: <幂等键>`（可选，亦可放到 data.idempotency_key）
+- FormData：
+  - `data`：JSON 字符串
+  - `files`：可选，多文件
+- 关键字段：
+  - `type_code`：仅支持 `collection_attachment/proposal_file/contract_template/deliverable_report/signed_contract`
+  - 默认写入 `achievementStatus=APPROVED`
+- Response：`Result<Map<String,Object>>`
+
+### 8.2 上传过程成果（JSON + 远程文件URL）
+
+- Method：`POST`
+- Path：`/api/v1/process-system/achievements/create`
+- Content-Type：`application/json`
+- Headers：
+  - `Authorization: Bearer <apiKey>`
+  - `X-Idempotency-Key: <幂等键>`（可选）
+- Body 示例：
+
+```json
+{
+  "idempotency_key": "proc-9001-20260213-001",
+  "type_code": "proposal_file",
+  "project_code": "P-9001",
+  "project_name": "XX项目",
+  "remote_files": [
+    {
+      "url": "https://example.com/files/a.pdf",
+      "name": "申报书.pdf"
+    }
+  ]
+}
+```
+
+- Response：`Result<Map<String,Object>>`
+
+### 8.3 幂等行为
+
+- 幂等唯一键：`apiKey + idempotencyKey`
+- 同键同请求：返回已创建成果，`idempotent_hit=true`
+- 同键不同请求：返回业务码 `409`

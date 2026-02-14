@@ -55,6 +55,12 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="reviewComment" label="驳回理由" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.status === ResultStatus.REJECTED">{{ row.reviewComment || '审核人未填写驳回理由' }}</span>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="projectName" label="所属项目" min-width="180">
           <template #default="{ row }">
             <span v-if="row.projectName">{{ row.projectName }} ({{ row.projectCode }})</span>

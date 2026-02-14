@@ -63,12 +63,16 @@ function resolveAssetUrl(url?: string) {
 }
 
 function mapListItem(item: any) {
+  const status = mapStatus(item.auditStatus || item.status)
+  const reviewComment = item.reviewComment || item.review_comment || ''
   return {
     ...item,
     id: item.documentId || item.id,
-    status: mapStatus(item.auditStatus || item.status),
+    status,
     type: item.typeName || item.type,
     typeCode: item.typeCode || item.type_code || '',
+    reviewComment,
+    rejectedReason: item.rejectedReason || (status === 'rejected' ? reviewComment : ''),
 
     // ZZQ改 : 关键：优先使用后端的 authors 数组
     authors: Array.isArray(item.authors)
@@ -121,6 +125,8 @@ function mapReviewHistoryItem(item: any) {
 }
 
 function mapDetailItem(item: any) {
+  const status = mapStatus(item.auditStatus || item.status)
+  const reviewComment = item.reviewComment || item.review_comment || ''
   const fields = Array.isArray(item?.fields) ? item.fields : []
   const metadata: Record<string, any> = {}
   fields.forEach((field) => {
@@ -165,7 +171,7 @@ function mapDetailItem(item: any) {
   return {
     ...item,
     id: item.documentId || item.id,
-    status: mapStatus(item.auditStatus || item.status),
+    status,
     type: item.typeName || item.type,
     typeId: item.typeDocId || item.typeId,
     typeName: item.typeName,
@@ -178,6 +184,10 @@ function mapDetailItem(item: any) {
     projectName: item.projectName,
     metadata,
     attachments,
+    reviewComment,
+    reviewedAt: item.reviewedAt || item.reviewed_at,
+    reviewerName: item.reviewerName || item.reviewer_name,
+    rejectedReason: item.rejectedReason || (status === 'rejected' ? reviewComment : ''),
     visibility: item.visibilityRange || item.visibility || 'private'
   }
 }

@@ -192,6 +192,13 @@
             </div>
           </div>
 
+          <div class="side-card reject-card" v-if="result.status === ResultStatus.REJECTED">
+            <h4 class="side-title">驳回反馈</h4>
+            <div class="reject-reason">{{ result.reviewComment || result.rejectedReason || '审核人未填写驳回理由' }}</div>
+            <div class="reject-meta" v-if="result.reviewerName">审核人：{{ result.reviewerName }}</div>
+            <div class="reject-meta" v-if="result.reviewedAt">驳回时间：{{ formatDateTime(result.reviewedAt) }}</div>
+          </div>
+
           <!-- 动态行内字段 -->
           <div class="side-card" v-if="inlineFields.length">
             <h4 class="side-title">扩展属性</h4>
@@ -768,6 +775,24 @@ function handleBack() {
 .side-card {
   padding: 20px;
   margin-bottom: 24px;
+}
+
+.reject-card {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.reject-reason {
+  color: #991b1b;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reject-meta {
+  margin-top: 10px;
+  color: #7f1d1d;
+  font-size: 13px;
 }
 
 .section-header {

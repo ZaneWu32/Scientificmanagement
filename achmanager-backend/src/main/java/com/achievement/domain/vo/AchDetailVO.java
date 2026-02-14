@@ -17,6 +17,9 @@ public class AchDetailVO {
         private String summary;
         private String auditStatus;     // achievement_status
         private String creatorName;
+        private String reviewerName;
+        private String reviewComment;   // 审核意见/驳回理由
+        private LocalDateTime reviewedAt;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime publishedAt;

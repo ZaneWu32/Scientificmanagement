@@ -20,6 +20,7 @@
         <result column="projectName" property="projectName"/>
         <result column="projectCode" property="projectCode"/>
         <result column="summary" property="summary"/>
+        <result column="reviewComment" property="reviewComment"/>
         <result column="createdAt" property="createdAt"/>
         <result column="visibilityRange" property="visibilityRange"/>
     </resultMap>
@@ -39,6 +40,7 @@
         m.project_name       AS projectName,
         m.project_code       AS projectCode,
         m.summary            AS summary,
+        m.review_comment     AS reviewComment,
         m.created_at         AS createdAt,
         m.visibility_range   AS visibilityRange,
         m.created_by_user_id      AS creatorId
@@ -170,6 +172,9 @@
             m.title         AS title,
             m.summary       AS summary,
             m.achievement_status AS auditStatus,
+            m.reviewer_name AS reviewerName,
+            m.review_comment AS reviewComment,
+            m.reviewed_at   AS reviewedAt,
             m.created_at    AS createdAt,
             m.updated_at    AS updatedAt,
             m.published_at  AS publishedAt,
@@ -481,6 +486,7 @@
             m.project_name      AS projectName,
             m.project_code      AS projectCode,
             m.summary            AS summary,
+            m.review_comment     AS reviewComment,
             m.created_at         AS createdAt,
             m.visibility_range      AS visibilityRange
             FROM achievement_mains m
@@ -555,6 +561,7 @@
         m.project_name       AS projectName,
         m.project_code       AS projectCode,
         m.summary            AS summary,
+        m.review_comment     AS reviewComment,
         m.created_at         AS createdAt,
         m.visibility_range   AS visibilityRange
         FROM achievement_mains m

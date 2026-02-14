@@ -1,4 +1,3 @@
-import request from '@/utils/request'
 import type { ApiResponse } from './types'
 import type { InterimResult, InterimResultStats } from '@/types'
 import { getAdminResult, getResults } from './result'
@@ -14,22 +13,31 @@ type InterimResultListPayload = {
 function mapListItemToInterim(item: any): InterimResult {
   const projectCode = item.projectCode || ''
   const projectName = item.projectName || '未归属项目'
+  const attachments = Array.isArray(item.attachments)
+    ? item.attachments.map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        url: file.url,
+        size: file.size,
+        ext: file.ext
+      }))
+    : []
   return {
     id: item.id || item.documentId,
     projectId: projectCode || projectName,
     projectName,
     projectCode,
-    projectPhase: '-',
+    projectPhase: item.projectPhase || '-',
     name: item.title || '未命名成果',
     type: (item.typeCode || item.type || 'other') as any,
     typeLabel: item.type || item.typeName || '其他',
     description: item.summary || '',
-    attachments: [],
-    submitter: item.createdBy || '',
+    attachments,
+    submitter: item.createdBy || item.submitter || '',
     submitterDept: '',
     submittedAt: item.createdAt || '',
     syncedAt: item.updatedAt || item.createdAt || '',
-    source: 'process_system',
+    source: item.source || 'process_system',
     sourceRef: item.id || item.documentId || '',
     sourceUrl: item.sourceUrl,
     tags: Array.isArray(item.keywords) ? item.keywords : [],
@@ -55,17 +63,17 @@ function mapDetailToInterim(item: any): InterimResult {
     projectId: projectCode || projectName,
     projectName,
     projectCode,
-    projectPhase: '-',
+    projectPhase: item.projectPhase || '-',
     name: item.title || '未命名成果',
     type: (item.typeCode || item.type || 'other') as any,
     typeLabel: item.typeName || item.type || '其他',
     description: item.abstract || item.summary || '',
     attachments,
-    submitter: item.createdBy || '',
+    submitter: item.createdBy || item.submitter || '',
     submitterDept: '',
     submittedAt: item.createdAt || '',
     syncedAt: item.updatedAt || item.createdAt || '',
-    source: 'process_system',
+    source: item.source || 'process_system',
     sourceRef: item.id || item.documentId || '',
     sourceUrl: item.sourceUrl,
     tags: Array.isArray(item.keywords) ? item.keywords : [],
@@ -184,54 +192,4 @@ export async function getInterimResultDetail(id: string): Promise<ApiResponse<In
     msg: 'success',
     data: mapDetailToInterim(res?.data || {})
   }
-}
-
-/**
- * 手动同步中期成果物
- */
-export function syncInterimResults(projectId?: string): Promise<ApiResponse<{
-  syncCount: number
-  syncTime: string
-}>> {
-  return request({
-    url: '/interim-results/sync',
-    method: 'post',
-    data: { projectId }
-  })
-}
-
-/**
- * 下载附件
- */
-export function getAttachmentDownloadUrl(attachmentId: string): string {
-  return `${import.meta.env.VITE_API_BASE_URL}/interim-results/attachments/${attachmentId}/download`
-}
-
-/**
- * 批量下载（打包）
- */
-export function batchDownload(resultIds: string[]): Promise<Blob> {
-  return request({
-    url: '/interim-results/batch-download',
-    method: 'post',
-    data: { resultIds },
-    responseType: 'blob'
-  })
-}
-
-/**
- * 导出列表
- */
-export function exportInterimResults(params?: {
-  projectId?: string
-  type?: string
-  year?: string
-  keyword?: string
-}): Promise<Blob> {
-  return request({
-    url: '/interim-results/export',
-    method: 'get',
-    params,
-    responseType: 'blob'
-  })
 }

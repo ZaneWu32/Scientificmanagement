@@ -142,6 +142,9 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         vo.setTitle(base.getTitle());
         vo.setSummary(base.getSummary());
         vo.setAuditStatus(base.getAuditStatus());
+        vo.setReviewerName(base.getReviewerName());
+        vo.setReviewComment(base.getReviewComment());
+        vo.setReviewedAt(base.getReviewedAt());
         vo.setCreatorName(User.getUsername());
         vo.setCreatedAt(base.getCreatedAt());
         vo.setUpdatedAt(base.getUpdatedAt());

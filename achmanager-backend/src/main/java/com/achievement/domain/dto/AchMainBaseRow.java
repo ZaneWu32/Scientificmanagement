@@ -12,6 +12,9 @@ public class AchMainBaseRow {
     private String title;
     private String summary;
     private String auditStatus;
+    private String reviewerName;
+    private String reviewComment;
+    private LocalDateTime reviewedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;
@@ -30,4 +33,3 @@ public class AchMainBaseRow {
     private String projectName;
     private String visibilityRange;
 }
-

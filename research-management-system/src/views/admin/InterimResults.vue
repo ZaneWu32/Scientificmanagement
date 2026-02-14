@@ -13,11 +13,9 @@
             placeholder="搜索项目或成果物"
             :prefix-icon="Search"
             clearable
-            style="width: 300px; margin-right: 12px"
+            style="width: 300px"
             @change="handleSearch"
           />
-          <el-button :icon="Refresh" @click="handleSync">同步数据</el-button>
-          <el-button :icon="Download" @click="handleExport">导出列表</el-button>
         </div>
       </div>
     </el-card>
@@ -83,27 +81,14 @@
             <div class="card-header">
               <span v-if="currentFilter">{{ currentFilter }}</span>
               <span v-else>全部成果物</span>
-              <div class="header-actions">
-                <el-button 
-                  v-if="selectedIds.length > 0"
-                  type="primary"
-                  :icon="Download"
-                  @click="handleBatchDownload"
-                >
-                  批量下载 ({{ selectedIds.length }})
-                </el-button>
-              </div>
             </div>
           </template>
 
           <el-table
             v-loading="loading"
             :data="list"
-            @selection-change="handleSelectionChange"
             stripe
           >
-            <el-table-column type="selection" width="55" />
-            
             <el-table-column label="成果物名称" min-width="250">
               <template #default="{ row }">
                 <div class="result-name">
@@ -195,7 +180,7 @@
             {{ currentItem.projectPhase }}
           </el-descriptions-item>
           <el-descriptions-item label="提交人">
-            {{ currentItem.submitter }} ({{ currentItem.submitterDept }})
+            {{ getSubmitterDisplay(currentItem) }}
           </el-descriptions-item>
           <el-descriptions-item label="提交时间">
             {{ formatDateTime(currentItem.submittedAt) }}
@@ -262,11 +247,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   Search,
-  Refresh,
-  Download,
   Calendar,
   FolderOpened,
   Document,
@@ -275,10 +258,7 @@ import {
 import { 
   getInterimResults, 
   getInterimResultStats,
-  getInterimResultDetail,
-  syncInterimResults,
-  getAttachmentDownloadUrl,
-  exportInterimResults
+  getInterimResultDetail
 } from '@/api/interim-result'
 import type { InterimResult, InterimResultStats, ProjectTreeNode } from '@/types'
 import { 
@@ -297,7 +277,6 @@ const searchKeyword = ref('')
 const activeTab = ref('project')
 const detailDrawerVisible = ref(false)
 const currentItem = ref<InterimResult | null>(null)
-const selectedIds = ref<string[]>([])
 const currentFilter = ref('')
 
 const stats = ref<InterimResultStats>({
@@ -415,55 +394,6 @@ function handleSearch() {
   loadData()
 }
 
-async function handleSync() {
-  try {
-    await ElMessageBox.confirm(
-      '确定要从过程系统同步最新数据吗？',
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
-    
-    loading.value = true
-    const res = await syncInterimResults()
-    ElMessage.success(`同步成功，共 ${res.data.syncCount} 条数据`)
-    await loadData()
-    await loadStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('同步失败')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-async function handleExport() {
-  try {
-    loading.value = true
-    await exportInterimResults({
-      ...filterParams,
-      keyword: searchKeyword.value
-    })
-    ElMessage.success('导出成功')
-  } catch (error) {
-    ElMessage.error('导出失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-function handleSelectionChange(selection: InterimResult[]) {
-  selectedIds.value = selection.map(item => item.id)
-}
-
-async function handleBatchDownload() {
-  ElMessage.info('批量下载功能开发中')
-}
-
 async function viewDetail(item: InterimResult) {
   try {
     const res = await getInterimResultDetail(item.id)
@@ -499,7 +429,7 @@ function canPreview(filename: string) {
 }
 
 function downloadFile(file: any) {
-  const url = file?.url || getAttachmentDownloadUrl(file.id)
+  const url = file?.url
   if (!url) {
     ElMessage.error('附件链接不可用')
     return
@@ -513,6 +443,12 @@ function previewFile(file: any) {
     return
   }
   ElMessage.info('该附件暂不支持在线预览')
+}
+
+function getSubmitterDisplay(item: InterimResult) {
+  const submitter = item.submitter || '-'
+  const dept = item.submitterDept || ''
+  return dept ? `${submitter} (${dept})` : submitter
 }
 </script>
 

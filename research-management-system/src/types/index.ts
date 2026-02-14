@@ -154,6 +154,9 @@ export interface ResearchResult {
   canRequestAccess?: boolean
   rejectedReason?: string
   lastRequestAt?: string
+  reviewComment?: string
+  reviewerName?: string
+  reviewedAt?: string
   content?: string
 }
 
