@@ -135,8 +135,25 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         }).toList();
 
         AchDetailVO vo = new AchDetailVO();
-        KeycloakUser User = keycloakUserServiceImpl.getUserById(Integer.parseInt(base.getCreatedByUserId()));
-        vo.setCreatorName(User.getUsername());
+        String creatorName = "-";
+        if (base.getCreatedByUserId() != null && !base.getCreatedByUserId().isBlank()) {
+            try {
+                int creatorId = Integer.parseInt(base.getCreatedByUserId());
+                KeycloakUser user = keycloakUserServiceImpl.getUserById(creatorId);
+                if (user != null) {
+                    if (user.getUsername() != null && !user.getUsername().isBlank()) {
+                        creatorName = user.getUsername();
+                    } else if (user.getName() != null && !user.getName().isBlank()) {
+                        creatorName = user.getName();
+                    }
+                }
+            } catch (NumberFormatException e) {
+                log.warn("成果详情：createdByUserId 非数字，createdByUserId={}", base.getCreatedByUserId());
+            } catch (Exception e) {
+                log.warn("成果详情：查询创建者失败，createdByUserId={}", base.getCreatedByUserId(), e);
+            }
+        }
+        vo.setCreatorName(creatorName);
         vo.setDocumentId(base.getDocumentId());
 
         vo.setTitle(base.getTitle());
@@ -145,7 +162,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         vo.setReviewerName(base.getReviewerName());
         vo.setReviewComment(base.getReviewComment());
         vo.setReviewedAt(base.getReviewedAt());
-        vo.setCreatorName(User.getUsername());
+        vo.setCreatorName(creatorName);
         vo.setCreatedAt(base.getCreatedAt());
         vo.setUpdatedAt(base.getUpdatedAt());
         vo.setPublishedAt(base.getPublishedAt());

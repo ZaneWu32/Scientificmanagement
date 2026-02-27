@@ -50,8 +50,6 @@
         ON mt.achievement_main_id = m.id
         LEFT JOIN achievement_types t
         ON t.id = mt.achievement_type_id
-        LEFT JOIN business_users au
-        ON au.id = m.created_by_id
 
         <!-- 方式B：如果是 Strapi 多对多/多对一 link 表（按你实际表名改）
         LEFT JOIN achievement_mains_project_id_lnk mp
@@ -64,7 +62,7 @@
         AND m.published_at IS NOT NULL
 
         <!-- 个人成果物：强制按创建者过滤
-        AND m.created_by_id = #{dto.creatorId}-->
+        AND m.created_by_user_id = #{dto.creatorId}-->
         <if test="dto.title!=null and dto.title !=''">
             AND m.title LIKE CONCAT('%', #{dto.title}, '%')
         </if>
@@ -252,7 +250,7 @@
         ON t.id = mt.achievement_type_id
 
         /*LEFT JOIN admin_users au
-        ON au.id = m.created_by_id
+        ON au.id = m.created_by_user_id
 
         LEFT JOIN projects p
         ON p.id = m.project_id*/
@@ -264,7 +262,7 @@
         AND m.visibility_range = 'public'
         AND m.achievement_status = 'APPROVED'
         <!-- 个人成果物：强制按创建者过滤
-        AND m.created_by_id = #{dto.creatorId}-->
+        AND m.created_by_user_id = #{dto.creatorId}-->
         <!-- 成果物类型筛选 -->
         <if test="dto.typeId != null">
             AND mt.achievement_type_id = #{dto.typeId}
@@ -363,7 +361,7 @@
             WHERE m.is_delete = 0
               AND m.published_at IS NOT NULL
               AND m.achievement_status = 'APPROVED'
-              AND m.created_by_id = #{userId}
+              AND m.created_by_user_id = #{userId}
     </select>
     <select id="countMonthNewByUser" resultType="java.lang.Integer">
         SELECT COUNT(1)
@@ -371,7 +369,7 @@
         WHERE m.is_delete = 0
           AND m.published_at IS NOT NULL
           AND m.achievement_status = 'APPROVED'
-          AND m.created_by_id = #{userId}
+          AND m.created_by_user_id = #{userId}
           AND m.created_at <![CDATA[ >= ]]> #{start}
           AND m.created_at <![CDATA[ < ]]> #{end}
     </select>
@@ -386,7 +384,7 @@
             WHERE m.is_delete = 0
               AND m.published_at IS NOT NULL
               AND m.achievement_status = 'APPROVED'
-              AND m.created_by_id = #{userId}
+              AND m.created_by_user_id = #{userId}
               AND t.is_delete = 0
               AND UPPER(t.type_code) LIKE CONCAT('%', UPPER(#{typeCode}), '%')
 
@@ -497,7 +495,7 @@
             ON t.id = mt.achievement_type_id
 
             /*LEFT JOIN admin_users au
-            ON au.id = m.created_by_id
+            ON au.id = m.created_by_user_id
 
             LEFT JOIN projects p
             ON p.id = m.project_id*/
@@ -570,8 +568,6 @@
         ON mt.achievement_main_id = m.id
         LEFT JOIN achievement_types t
         ON t.id = mt.achievement_type_id
-        LEFT JOIN business_users au
-        ON au.id = m.created_by_user_id
 
         <!-- 方式B：如果是 Strapi 多对多/多对一 link 表（按你实际表名改）
         LEFT JOIN achievement_mains_project_id_lnk mp

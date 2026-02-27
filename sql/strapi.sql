@@ -11,7 +11,7 @@
  Target Server Version : 90100 (9.1.0)
  File Encoding         : 65001
 
- Date: 14/02/2026 12:55:09
+ Date: 27/02/2026 14:14:17
 */
 
 SET NAMES utf8mb4;
@@ -231,54 +231,12 @@ CREATE TABLE `achievement_field_defs_achievement_field_value_id_lnk` (
   KEY `achievement_field_defs_achievement_field_valuefeb9f_ifk` (`achievement_field_value_id`) USING BTREE,
   CONSTRAINT `achievement_field_defs_achievement_field_value_feb9f_fk` FOREIGN KEY (`achievement_field_def_id`) REFERENCES `achievement_field_defs` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_field_defs_achievement_field_valuefeb9f_ifk` FOREIGN KEY (`achievement_field_value_id`) REFERENCES `achievement_field_values` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=145 DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_field_defs_achievement_field_value_id_lnk
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (103, 126, 95);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (104, 127, 96);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (105, 128, 97);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (106, 129, 98);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (107, 130, 99);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (108, 131, 100);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (109, 132, 101);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (110, 133, 102);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (111, 134, 103);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (112, 135, 104);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (113, 138, 105);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (114, 139, 106);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (135, 140, 127);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (137, 142, 129);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (139, 144, 131);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (141, 146, 133);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (143, 148, 135);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (83, 150, 75);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (85, 152, 77);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (87, 154, 79);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (89, 156, 81);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (91, 158, 83);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (84, 160, 76);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (86, 161, 78);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (88, 162, 80);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (90, 163, 82);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (92, 164, 84);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (93, 165, 85);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (95, 167, 87);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (97, 169, 89);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (99, 171, 91);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (101, 173, 93);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (94, 180, 86);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (96, 181, 88);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (98, 182, 90);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (100, 183, 92);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (102, 184, 94);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (136, 185, 128);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (138, 186, 130);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (140, 187, 132);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (142, 188, 134);
-INSERT INTO `achievement_field_defs_achievement_field_value_id_lnk` (`id`, `achievement_field_def_id`, `achievement_field_value_id`) VALUES (144, 189, 136);
 COMMIT;
 
 -- ----------------------------
@@ -399,74 +357,12 @@ CREATE TABLE `achievement_field_values` (
   KEY `achievement_field_values_updated_by_id_fk` (`updated_by_id`) USING BTREE,
   CONSTRAINT `achievement_field_values_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `achievement_field_values_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=137 DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_field_values
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (75, 'ffwezq73heugkbat2vf0fdj1', '2026-02-13 16:35:10.383000', '2026-02-13 16:35:10.383000', NULL, NULL, NULL, NULL, 'CN202010134835.1A', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (76, 'ffwezq73heugkbat2vf0fdj1', '2026-02-13 16:35:10.383000', '2026-02-13 16:35:10.383000', '2026-02-13 16:35:10.391000', NULL, NULL, NULL, 'CN202010134835.1A', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (77, 'gzr05cdsx6jltwpj9kdqeuyd', '2026-02-13 16:35:10.410000', '2026-02-13 16:35:10.410000', NULL, NULL, NULL, NULL, '发明专利申请', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (78, 'gzr05cdsx6jltwpj9kdqeuyd', '2026-02-13 16:35:10.410000', '2026-02-13 16:35:10.410000', '2026-02-13 16:35:10.416000', NULL, NULL, NULL, '发明专利申请', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (79, 'pd0i7kvea3aywyux331pneqe', '2026-02-13 16:35:10.432000', '2026-02-13 16:35:10.432000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2020-03-02', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (80, 'pd0i7kvea3aywyux331pneqe', '2026-02-13 16:35:10.432000', '2026-02-13 16:35:10.432000', '2026-02-13 16:35:10.437000', NULL, NULL, NULL, NULL, NULL, NULL, '2020-03-02', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (81, 'v5r40c318t4i16mv3ptr3s3u', '2026-02-13 16:35:10.456000', '2026-02-13 16:35:10.456000', NULL, NULL, NULL, NULL, '邓梅', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (82, 'v5r40c318t4i16mv3ptr3s3u', '2026-02-13 16:35:10.456000', '2026-02-13 16:35:10.456000', '2026-02-13 16:35:10.462000', NULL, NULL, NULL, '邓梅', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (83, 'pft960xl5zz8hhaxsb5dmv0m', '2026-02-13 16:35:10.479000', '2026-02-13 16:35:10.479000', NULL, NULL, NULL, NULL, '邓梅', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (84, 'pft960xl5zz8hhaxsb5dmv0m', '2026-02-13 16:35:10.479000', '2026-02-13 16:35:10.479000', '2026-02-13 16:35:10.482000', NULL, NULL, NULL, '邓梅', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (85, 'wmvt03v7pin56qdqfzdye6ig', '2026-02-13 16:40:03.782000', '2026-02-13 16:40:03.782000', NULL, NULL, NULL, NULL, '10.24432/C5XW20', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (86, 'wmvt03v7pin56qdqfzdye6ig', '2026-02-13 16:40:03.782000', '2026-02-13 16:40:03.782000', '2026-02-13 16:40:03.787000', NULL, NULL, NULL, '10.24432/C5XW20', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (87, 'h1ihl19ogcs8kskks6fqfrej', '2026-02-13 16:40:03.803000', '2026-02-13 16:40:03.803000', NULL, NULL, NULL, NULL, 'UCI Machine Learning Repository', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (88, 'h1ihl19ogcs8kskks6fqfrej', '2026-02-13 16:40:03.803000', '2026-02-13 16:40:03.803000', '2026-02-13 16:40:03.807000', NULL, NULL, NULL, 'UCI Machine Learning Repository', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (89, 't8qhqhj723wszkkxs9oodp1b', '2026-02-13 16:40:03.823000', '2026-02-13 16:40:03.823000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-02-16', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (90, 't8qhqhj723wszkkxs9oodp1b', '2026-02-13 16:40:03.823000', '2026-02-13 16:40:03.823000', '2026-02-13 16:40:03.827000', NULL, NULL, NULL, NULL, NULL, NULL, '2008-02-16', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (91, 'lpcge0ywtry0c9cgn2jo03ch', '2026-02-13 16:40:03.844000', '2026-02-13 16:40:03.844000', NULL, NULL, NULL, NULL, 'CSV', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (92, 'lpcge0ywtry0c9cgn2jo03ch', '2026-02-13 16:40:03.844000', '2026-02-13 16:40:03.844000', '2026-02-13 16:40:03.847000', NULL, NULL, NULL, 'CSV', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (93, 'bfc0w5tzw38qw1u3fobxwjwy', '2026-02-13 16:40:03.863000', '2026-02-13 16:40:03.863000', NULL, NULL, NULL, NULL, '48842', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (94, 'bfc0w5tzw38qw1u3fobxwjwy', '2026-02-13 16:40:03.863000', '2026-02-13 16:40:03.863000', '2026-02-13 16:40:03.866000', NULL, NULL, NULL, '48842', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (95, 'qfxzxtl00gig1akaple5v8nr', '2026-02-13 16:56:59.563000', '2026-02-13 16:56:59.563000', NULL, NULL, NULL, NULL, 'Ashish Vaswani', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (96, 'qfxzxtl00gig1akaple5v8nr', '2026-02-13 16:56:59.563000', '2026-02-13 16:56:59.563000', '2026-02-13 16:56:59.570000', NULL, NULL, NULL, 'Ashish Vaswani', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (97, 's6ety1x54tzx24ok1laf8ydb', '2026-02-13 16:56:59.599000', '2026-02-13 16:56:59.599000', NULL, NULL, NULL, NULL, 'Advances in Neural Information Processing Systems 30 (NeurIPS 2017)', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (98, 's6ety1x54tzx24ok1laf8ydb', '2026-02-13 16:56:59.599000', '2026-02-13 16:56:59.599000', '2026-02-13 16:56:59.605000', NULL, NULL, NULL, 'Advances in Neural Information Processing Systems 30 (NeurIPS 2017)', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (99, 'mp3956wyrnypd7cnjfvy0iid', '2026-02-13 16:56:59.625000', '2026-02-13 16:56:59.625000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2017-06-12', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (100, 'mp3956wyrnypd7cnjfvy0iid', '2026-02-13 16:56:59.625000', '2026-02-13 16:56:59.625000', '2026-02-13 16:56:59.629000', NULL, NULL, NULL, NULL, NULL, NULL, '2017-06-12', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (101, 'undx6tkuudxjegz7cl0cmn9e', '2026-02-13 16:56:59.645000', '2026-02-13 16:56:59.645000', NULL, NULL, NULL, NULL, '1区期刊', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (102, 'undx6tkuudxjegz7cl0cmn9e', '2026-02-13 16:56:59.645000', '2026-02-13 16:56:59.645000', '2026-02-13 16:56:59.649000', NULL, NULL, NULL, '1区期刊', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (103, 'buzu9sw2zf2mbrzmdpm8wa8f', '2026-02-13 16:56:59.667000', '2026-02-13 16:56:59.667000', NULL, NULL, NULL, NULL, '无', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (104, 'buzu9sw2zf2mbrzmdpm8wa8f', '2026-02-13 16:56:59.667000', '2026-02-13 16:56:59.667000', '2026-02-13 16:56:59.671000', NULL, NULL, NULL, '无', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (105, 'u76fgxs7zp0uyhl9jzn3x91o', '2026-02-13 16:56:59.690000', '2026-02-13 16:56:59.690000', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (106, 'u76fgxs7zp0uyhl9jzn3x91o', '2026-02-13 16:56:59.690000', '2026-02-13 16:56:59.690000', '2026-02-13 16:56:59.695000', NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (107, 'coe4doy6a0u5vbocnt44yrkt', '2026-02-13 17:14:31.194000', '2026-02-13 17:14:31.194000', NULL, NULL, NULL, NULL, '2022SR0737642', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (108, 'coe4doy6a0u5vbocnt44yrkt', '2026-02-13 17:14:31.194000', '2026-02-13 17:14:31.194000', '2026-02-13 17:14:31.204000', NULL, NULL, NULL, '2022SR0737642', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (109, 'omyc4kkc5sbqw8s37c3ekrai', '2026-02-13 17:14:31.227000', '2026-02-13 17:14:31.227000', NULL, NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (110, 'omyc4kkc5sbqw8s37c3ekrai', '2026-02-13 17:14:31.227000', '2026-02-13 17:14:31.227000', '2026-02-13 17:14:31.233000', NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (111, 'phvj8za47ifj6sqdoymr9q83', '2026-02-13 17:14:31.253000', '2026-02-13 17:14:31.253000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2022-01-05', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (112, 'phvj8za47ifj6sqdoymr9q83', '2026-02-13 17:14:31.253000', '2026-02-13 17:14:31.253000', '2026-02-13 17:14:31.259000', NULL, NULL, NULL, NULL, NULL, NULL, '2022-01-05', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (113, 'c6zyxkts7msa0ufhe03pczww', '2026-02-13 17:14:31.276000', '2026-02-13 17:14:31.276000', NULL, NULL, NULL, NULL, '邱琳; 马雨豪; 冯妍卉; 欧阳裕新', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (114, 'c6zyxkts7msa0ufhe03pczww', '2026-02-13 17:14:31.276000', '2026-02-13 17:14:31.276000', '2026-02-13 17:14:31.282000', NULL, NULL, NULL, '邱琳; 马雨豪; 冯妍卉; 欧阳裕新', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (115, 'xzz99htj3l67ojql0ay3nglj', '2026-02-13 17:14:31.298000', '2026-02-13 17:14:31.298000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2021-12-20', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (116, 'xzz99htj3l67ojql0ay3nglj', '2026-02-13 17:14:31.298000', '2026-02-13 17:14:31.298000', '2026-02-13 17:14:31.302000', NULL, NULL, NULL, NULL, NULL, NULL, '2021-12-20', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (117, 'tt6bj8yf4tlrikvsjh41gdfr', '2026-02-13 17:36:23.985000', '2026-02-13 17:36:23.985000', NULL, NULL, NULL, NULL, '2014SR159545', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (118, 'tt6bj8yf4tlrikvsjh41gdfr', '2026-02-13 17:36:23.985000', '2026-02-13 17:36:23.985000', '2026-02-13 17:36:23.990000', NULL, NULL, NULL, '2014SR159545', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (119, 'f99aspx5dj40tmugxv0a2krt', '2026-02-13 17:36:24.003000', '2026-02-13 17:36:24.003000', NULL, NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (120, 'f99aspx5dj40tmugxv0a2krt', '2026-02-13 17:36:24.003000', '2026-02-13 17:36:24.003000', '2026-02-13 17:36:24.007000', NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (121, 'fwxigfy3xytdir3zcc9o6zbj', '2026-02-13 17:36:24.019000', '2026-02-13 17:36:24.019000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2014-10-24', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (122, 'fwxigfy3xytdir3zcc9o6zbj', '2026-02-13 17:36:24.019000', '2026-02-13 17:36:24.019000', '2026-02-13 17:36:24.022000', NULL, NULL, NULL, NULL, NULL, NULL, '2014-10-24', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (123, 'lfiz1riyzecqo5yp5v3q2x4o', '2026-02-13 17:36:24.035000', '2026-02-13 17:36:24.035000', NULL, NULL, NULL, NULL, '西安电子科技大学', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (124, 'lfiz1riyzecqo5yp5v3q2x4o', '2026-02-13 17:36:24.035000', '2026-02-13 17:36:24.035000', '2026-02-13 17:36:24.039000', NULL, NULL, NULL, '西安电子科技大学', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (125, 'kcupex0qckwdlb5choiepavi', '2026-02-13 17:36:24.052000', '2026-02-13 17:36:24.052000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2014-09-30', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (126, 'kcupex0qckwdlb5choiepavi', '2026-02-13 17:36:24.052000', '2026-02-13 17:36:24.052000', '2026-02-13 17:36:24.055000', NULL, NULL, NULL, NULL, NULL, NULL, '2014-09-30', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (127, 'z4m4hnu9ux6z952grnsq6iml', '2026-02-14 12:14:49.213000', '2026-02-14 12:14:49.213000', NULL, NULL, NULL, NULL, '2014SR159545', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (128, 'z4m4hnu9ux6z952grnsq6iml', '2026-02-14 12:14:49.213000', '2026-02-14 12:14:49.213000', '2026-02-14 12:14:49.221000', NULL, NULL, NULL, '2014SR159545', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (129, 'b3pji8ba5gneb1254alsuztv', '2026-02-14 12:14:49.246000', '2026-02-14 12:14:49.246000', NULL, NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (130, 'b3pji8ba5gneb1254alsuztv', '2026-02-14 12:14:49.246000', '2026-02-14 12:14:49.246000', '2026-02-14 12:14:49.253000', NULL, NULL, NULL, 'V1.0', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (131, 'k7oehgs7tyiusrafvycqrbji', '2026-02-14 12:14:49.274000', '2026-02-14 12:14:49.274000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (132, 'k7oehgs7tyiusrafvycqrbji', '2026-02-14 12:14:49.274000', '2026-02-14 12:14:49.274000', '2026-02-14 12:14:49.280000', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-07', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (133, 'zn96upkeu2g88gf7t0gxrb4h', '2026-02-14 12:14:49.301000', '2026-02-14 12:14:49.301000', NULL, NULL, NULL, NULL, '西安电子科技大学', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (134, 'zn96upkeu2g88gf7t0gxrb4h', '2026-02-14 12:14:49.301000', '2026-02-14 12:14:49.301000', '2026-02-14 12:14:49.307000', NULL, NULL, NULL, '西安电子科技大学', NULL, NULL, NULL, NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (135, 'bxxy64jmhb3iw4v72gnt67j7', '2026-02-14 12:14:49.324000', '2026-02-14 12:14:49.324000', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-11', NULL, 0, NULL);
-INSERT INTO `achievement_field_values` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `text_value`, `boolean_value`, `number_value`, `date_value`, `email_value`, `is_delete`, `datetime_value`) VALUES (136, 'bxxy64jmhb3iw4v72gnt67j7', '2026-02-14 12:14:49.324000', '2026-02-14 12:14:49.324000', '2026-02-14 12:14:49.329000', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-11', NULL, 0, NULL);
 COMMIT;
 
 -- ----------------------------
@@ -485,74 +381,12 @@ CREATE TABLE `achievement_field_values_achievement_id_lnk` (
   KEY `achievement_field_values_achievement_id_lnk_oifk` (`achievement_field_value_ord`) USING BTREE,
   CONSTRAINT `achievement_field_values_achievement_id_lnk_fk` FOREIGN KEY (`achievement_field_value_id`) REFERENCES `achievement_field_values` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_field_values_achievement_id_lnk_ifk` FOREIGN KEY (`achievement_main_id`) REFERENCES `achievement_mains` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=234 DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_field_values_achievement_id_lnk
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (167, 75, 65, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (168, 76, 66, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (169, 77, 65, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (170, 78, 66, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (171, 79, 65, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (172, 80, 66, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (173, 81, 65, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (174, 82, 66, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (175, 83, 65, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (176, 84, 66, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (177, 85, 67, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (178, 86, 68, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (179, 87, 67, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (180, 88, 68, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (181, 89, 67, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (182, 90, 68, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (183, 91, 67, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (184, 92, 68, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (185, 93, 67, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (186, 94, 68, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (187, 95, 69, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (188, 96, 70, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (189, 97, 69, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (190, 98, 70, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (191, 99, 69, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (192, 100, 70, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (193, 101, 69, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (194, 102, 70, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (195, 103, 69, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (196, 104, 70, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (197, 105, 69, 6);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (198, 106, 70, 6);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (199, 107, 71, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (200, 108, 72, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (201, 109, 71, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (202, 110, 72, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (203, 111, 71, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (204, 112, 72, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (205, 113, 71, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (206, 114, 72, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (207, 115, 71, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (208, 116, 72, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (209, 117, 73, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (211, 119, 73, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (213, 121, 73, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (215, 123, 73, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (217, 125, 73, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (219, 118, 75, 1);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (220, 120, 75, 2);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (221, 122, 75, 3);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (222, 124, 75, 4);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (223, 126, 75, 5);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (224, 127, 73, 6);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (225, 128, 75, 6);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (226, 129, 73, 7);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (227, 130, 75, 7);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (228, 131, 73, 8);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (229, 132, 75, 8);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (230, 133, 73, 9);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (231, 134, 75, 9);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (232, 135, 73, 10);
-INSERT INTO `achievement_field_values_achievement_id_lnk` (`id`, `achievement_field_value_id`, `achievement_main_id`, `achievement_field_value_ord`) VALUES (233, 136, 75, 10);
 COMMIT;
 
 -- ----------------------------
@@ -575,24 +409,12 @@ CREATE TABLE `achievement_files` (
   KEY `achievement_files_updated_by_id_fk` (`updated_by_id`) USING BTREE,
   CONSTRAINT `achievement_files_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `achievement_files_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_files
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (29, 'eb32qm1lke8tjdv0njrpfw2j', 0, '2026-02-13 16:35:10.498000', '2026-02-13 16:35:10.498000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (30, 'eb32qm1lke8tjdv0njrpfw2j', 0, '2026-02-13 16:35:10.498000', '2026-02-13 16:35:10.498000', '2026-02-13 16:35:10.503000', NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (31, 'rt043ibrjwenrvmj7ngud24b', 0, '2026-02-13 16:40:03.881000', '2026-02-13 16:40:03.881000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (32, 'rt043ibrjwenrvmj7ngud24b', 0, '2026-02-13 16:40:03.881000', '2026-02-13 16:40:03.881000', '2026-02-13 16:40:03.886000', NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (33, 'z20dxx52js45oo47x8wwj09u', 0, '2026-02-13 16:56:59.711000', '2026-02-13 16:56:59.711000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (34, 'z20dxx52js45oo47x8wwj09u', 0, '2026-02-13 16:56:59.711000', '2026-02-13 16:56:59.711000', '2026-02-13 16:56:59.716000', NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (35, 'tzx04ytdrm0w9w667n0bp3re', 0, '2026-02-13 17:14:31.317000', '2026-02-13 17:14:31.317000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (36, 'tzx04ytdrm0w9w667n0bp3re', 0, '2026-02-13 17:14:31.317000', '2026-02-13 17:14:31.317000', '2026-02-13 17:14:31.320000', NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (37, 'h4x4bxcsvwu2rfwwsqz0qh27', 1, '2026-02-13 17:36:24.065000', '2026-02-14 12:14:49.361000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (39, 'h4x4bxcsvwu2rfwwsqz0qh27', 1, '2026-02-13 17:36:24.065000', '2026-02-14 12:14:49.361000', '2026-02-14 12:14:49.368000', NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (40, 'rcluo4vm2ahxt60eknuwyamr', 0, '2026-02-14 12:14:49.385000', '2026-02-14 12:14:49.385000', NULL, NULL, NULL, NULL);
-INSERT INTO `achievement_files` (`id`, `document_id`, `is_delete`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`) VALUES (41, 'rcluo4vm2ahxt60eknuwyamr', 0, '2026-02-14 12:14:49.385000', '2026-02-14 12:14:49.385000', '2026-02-14 12:14:49.389000', NULL, NULL, NULL);
 COMMIT;
 
 -- ----------------------------
@@ -611,24 +433,12 @@ CREATE TABLE `achievement_files_achievement_main_id_lnk` (
   KEY `achievement_files_achievement_main_id_lnk_oifk` (`achievement_file_ord`) USING BTREE,
   CONSTRAINT `achievement_files_achievement_main_id_lnk_fk` FOREIGN KEY (`achievement_file_id`) REFERENCES `achievement_files` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_files_achievement_main_id_lnk_ifk` FOREIGN KEY (`achievement_main_id`) REFERENCES `achievement_mains` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_files_achievement_main_id_lnk
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (55, 29, 65, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (56, 30, 66, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (57, 31, 67, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (58, 32, 68, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (59, 33, 69, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (60, 34, 70, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (61, 35, 71, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (62, 36, 72, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (63, 37, 73, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (66, 39, 75, 1);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (67, 40, 73, 2);
-INSERT INTO `achievement_files_achievement_main_id_lnk` (`id`, `achievement_file_id`, `achievement_main_id`, `achievement_file_ord`) VALUES (68, 41, 75, 2);
 COMMIT;
 
 -- ----------------------------
@@ -673,22 +483,12 @@ CREATE TABLE `achievement_mains` (
   KEY `idx_reviewed_at` (`reviewed_at`) USING BTREE,
   CONSTRAINT `achievement_mains_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `achievement_mains_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_mains
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (65, 'h1slpo30z4dxbkksj0kbn7fn', '2026-02-13 16:35:10.350000', '2026-02-13 16:35:10.350000', NULL, NULL, NULL, NULL, '基于申请人信息自动检索专利的方法及装置', 'PENDING', ' 一种基于申请人信息与IPC分类号提升检索准确性的专利检索方法', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2020', '[\"科研管理员\", \"邓梅\"]', '[\"检索方式\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (66, 'h1slpo30z4dxbkksj0kbn7fn', '2026-02-13 16:35:10.350000', '2026-02-13 16:35:10.350000', '2026-02-13 16:35:10.362000', NULL, NULL, NULL, '基于申请人信息自动检索专利的方法及装置', 'PENDING', ' 一种基于申请人信息与IPC分类号提升检索准确性的专利检索方法', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2020', '[\"科研管理员\", \"邓梅\"]', '[\"检索方式\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (67, 'fs95zdarebv3d1t2z0hptp61', '2026-02-13 16:40:03.752000', '2026-02-13 16:40:03.752000', NULL, NULL, NULL, NULL, 'Adult Dataset', 'PENDING', '用于预测个人年收入是否超过50K的经典分类数据集', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2026', '[\"科研管理员\", \"Barry Becker\", \"Ronny Kohavi\"]', '[\"old\", \"年收入\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (68, 'fs95zdarebv3d1t2z0hptp61', '2026-02-13 16:40:03.752000', '2026-02-13 16:40:03.752000', '2026-02-13 16:40:03.759000', NULL, NULL, NULL, 'Adult Dataset', 'PENDING', '用于预测个人年收入是否超过50K的经典分类数据集', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2026', '[\"科研管理员\", \"Barry Becker\", \"Ronny Kohavi\"]', '[\"old\", \"年收入\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (69, 'psewxk4h641lxlyvix50t9np', '2026-02-13 16:56:59.525000', '2026-02-13 16:56:59.525000', NULL, NULL, NULL, NULL, 'Attention Is All You Need', 'PENDING', '提出完全基于注意力机制的 Transformer 架构，去掉 RNN/CNN，显著提升机器翻译效果与并行训练效率。', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'private', '2017', '[\"科研管理员\"]', '[\"PyTorch\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (70, 'psewxk4h641lxlyvix50t9np', '2026-02-13 16:56:59.525000', '2026-02-13 16:56:59.525000', '2026-02-13 16:56:59.536000', NULL, NULL, NULL, 'Attention Is All You Need', 'PENDING', '提出完全基于注意力机制的 Transformer 架构，去掉 RNN/CNN，显著提升机器翻译效果与并行训练效率。', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'private', '2017', '[\"科研管理员\"]', '[\"PyTorch\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (71, 'le5eghcahn8et72rt1ehcdsk', '2026-02-13 17:14:31.162000', '2026-02-13 17:14:31.162000', NULL, NULL, NULL, NULL, '实验员3ω法自动测量程序软件V1.0', 'PENDING', '用于3ω法实验的自动测量与数据采集软件，支持参数配置、自动控制与结果导出。', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2026', '[\"科研管理员\"]', '[\"3ω法\", \"自动测量\", \"热导率\", \" 数据采集\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (72, 'le5eghcahn8et72rt1ehcdsk', '2026-02-13 17:14:31.162000', '2026-02-13 17:14:31.162000', '2026-02-13 17:14:31.172000', NULL, NULL, NULL, '实验员3ω法自动测量程序软件V1.0', 'PENDING', '用于3ω法实验的自动测量与数据采集软件，支持参数配置、自动控制与结果导出。', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2026', '[\"科研管理员\"]', '[\"3ω法\", \"自动测量\", \"热导率\", \" 数据采集\"]', '', '', '5');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (73, 'wibo7xlqys52s8wqy79ab8v1', '2026-02-13 17:36:23.963000', '2026-02-14 12:14:49.156000', NULL, NULL, NULL, NULL, '基于无线MESH网络的多媒体业务接入控制系统软件', 'PENDING', '面向无线MESH网络的多媒体业务接入与控制软件，实现接入控制与业务分发', 0, NULL, NULL, NULL, 6, '专家1', '附件上传错误，请重新上床', '2026-02-14 12:12:26.301612', 'public', '2026', '[\"用户1\"]', '[\"无线MESH\", \"多媒体接入\", \"业务控制\", \"网络系统\"]', '', '', '7');
-INSERT INTO `achievement_mains` (`id`, `document_id`, `created_at`, `updated_at`, `published_at`, `created_by_id`, `updated_by_id`, `locale`, `title`, `achievement_status`, `summary`, `is_delete`, `creator_id`, `creator_name`, `creator_dept`, `reviewer_id`, `reviewer_name`, `review_comment`, `reviewed_at`, `visibility_range`, `year`, `authors`, `keywords`, `project_code`, `project_name`, `created_by_user_id`) VALUES (75, 'wibo7xlqys52s8wqy79ab8v1', '2026-02-13 17:36:23.963000', '2026-02-14 12:14:49.156000', '2026-02-14 12:14:49.172000', NULL, NULL, NULL, '基于无线MESH网络的多媒体业务接入控制系统软件', 'PENDING', '面向无线MESH网络的多媒体业务接入与控制软件，实现接入控制与业务分发', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'public', '2026', '[\"用户1\"]', '[\"无线MESH\", \"多媒体接入\", \"业务控制\", \"网络系统\"]', '', '', '7');
 COMMIT;
 
 -- ----------------------------
@@ -707,22 +507,12 @@ CREATE TABLE `achievement_mains_achievement_type_id_lnk` (
   KEY `achievement_mains_achievement_type_id_lnk_oifk` (`achievement_main_ord`) USING BTREE,
   CONSTRAINT `achievement_mains_achievement_type_id_lnk_fk` FOREIGN KEY (`achievement_main_id`) REFERENCES `achievement_mains` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_mains_achievement_type_id_lnk_ifk` FOREIGN KEY (`achievement_type_id`) REFERENCES `achievement_types` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of achievement_mains_achievement_type_id_lnk
 -- ----------------------------
 BEGIN;
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (89, 65, 62, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (90, 66, 63, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (91, 67, 64, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (92, 68, 65, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (93, 69, 58, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (94, 70, 59, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (95, 71, 60, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (96, 72, 61, 1);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (97, 73, 60, 2);
-INSERT INTO `achievement_mains_achievement_type_id_lnk` (`id`, `achievement_main_id`, `achievement_type_id`, `achievement_main_ord`) VALUES (100, 75, 61, 2);
 COMMIT;
 
 -- ----------------------------
@@ -761,7 +551,7 @@ CREATE TABLE `achievement_reviewer_assignments` (
   CONSTRAINT `achievement_reviewer_assignments_achievement_fk` FOREIGN KEY (`achievement_id`) REFERENCES `achievement_mains` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_reviewer_assignments_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `achievement_reviewer_assignments_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='成果审核人分配表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='成果审核人分配表';
 
 -- ----------------------------
 -- Records of achievement_reviewer_assignments
@@ -803,7 +593,7 @@ CREATE TABLE `achievement_reviews` (
   CONSTRAINT `achievement_reviews_achievement_fk` FOREIGN KEY (`achievement_id`) REFERENCES `achievement_mains` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `achievement_reviews_created_by_id_fk` FOREIGN KEY (`created_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `achievement_reviews_updated_by_id_fk` FOREIGN KEY (`updated_by_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='成果审核记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='成果审核记录表';
 
 -- ----------------------------
 -- Records of achievement_reviews
@@ -1488,19 +1278,12 @@ CREATE TABLE `business_users` (
   `keycloak_user_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Keycloak 用户 UUID',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uk_keycloak_user_id` (`keycloak_user_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='业务用户映射表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='业务用户映射表';
 
 -- ----------------------------
 -- Records of business_users
 -- ----------------------------
 BEGIN;
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (10, '0ea76200-b32e-4a8f-8cb7-12c9cff62eeb');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (8, '135e7d07-de3d-470d-b0f8-a7c0e97d6f4e');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (9, '202a8c85-9fbf-41b7-b200-4905d05bd67d');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (7, '328c0b98-11ec-4019-b809-bd01079d5ec9');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (6, '6ad39eec-46be-473c-8832-1c833d20bbf0');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (5, '9d76e83e-ebd3-4b0e-88c4-b08b1ac61f43');
-INSERT INTO `business_users` (`id`, `keycloak_user_id`) VALUES (11, 'ac528ada-c88a-4d3e-8d6a-6506741d5d5b');
 COMMIT;
 
 -- ----------------------------

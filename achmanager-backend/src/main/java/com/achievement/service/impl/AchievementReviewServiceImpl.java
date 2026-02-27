@@ -265,7 +265,17 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
                 return name.trim();
             }
         }
-        return keycloakUserService.getUserById(reviewerId).getName();
+        KeycloakUser user = keycloakUserService.getUserById(reviewerId);
+        if (user == null) {
+            throw new RuntimeException("审核人不存在或映射失效: reviewerId=" + reviewerId);
+        }
+        if (user.getName() != null && !user.getName().isBlank()) {
+            return user.getName();
+        }
+        if (user.getUsername() != null && !user.getUsername().isBlank()) {
+            return user.getUsername();
+        }
+        return "审核专家";
     }
 
     @Override
