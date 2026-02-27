@@ -23,10 +23,6 @@
               <div class="card-actions">
                 <el-radio-group v-model="distributionDimension" size="small">
                   <el-radio-button label="type">类型</el-radio-button>
-                  <!--目前无法实现下面部分，作为后续功能开发预留-->
-                  <el-radio-button label="indexLevel">收录级别</el-radio-button>
-                  <el-radio-button label="department">部门</el-radio-button>
-                  <el-radio-button label="team">团队</el-radio-button>
                 </el-radio-group>
               </div>
             </div>
@@ -42,10 +38,6 @@
               <div class="card-actions">
                 <el-radio-group v-model="trendDimension" size="small">
                   <el-radio-button label="type">类型</el-radio-button>
-                  <!--目前无法实现下面部分，作为后续功能开发预留-->
-                  <el-radio-button label="indexLevel">收录级别</el-radio-button>
-                  <el-radio-button label="department">部门</el-radio-button>
-                  <el-radio-button label="team">团队</el-radio-button> 
                 </el-radio-group>
                 <el-radio-group v-model="trendRange" size="small" class="range-radio">
                   <el-radio-button label="3y">近3年</el-radio-button>
@@ -79,7 +71,6 @@
                 {{ Array.isArray(row.authors) && row.authors.length ? row.authors.join(', ') : '未知作者' }}
               </template>
             </el-table-column>
-            <el-table-column prop="department" label="所属部门" width="160" show-overflow-tooltip />
             <el-table-column prop="createdAt" label="入库时间" width="160">
               <template #default="{ row }">
                 {{ formatDateTime(row.createdAt) }}
@@ -95,7 +86,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { Document, Tickets, TrophyBase, TrendCharts } from '@element-plus/icons-vue'
-import { getStatistics, getResults, getAdvancedDistribution, getStackedTrend, getTypePie } from '@/api/result'
+import { getStatistics, getResults, getStackedTrend, getTypePie } from '@/api/result'
 import { formatDateTime } from '@/utils/date'
 import * as echarts from 'echarts'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
@@ -109,11 +100,9 @@ const trendDimension = ref('type')
 const trendRange = ref('5y')
 
 const distributionData = ref<any[]>([])
-const indexLevelDistribution = ref<any[]>([])
 const distributionEmpty = ref(false)
 const stackedTimeline = ref<string[]>([])
 const stackedSeries = ref<any[]>([])
-const citationSeries = ref<number[]>([])
 
 const distributionChartRef = ref(null)
 const stackedChartRef = ref(null)
@@ -231,37 +220,29 @@ async function loadSummary() {
 
 async function loadDistribution() {
   try {
-    if (distributionDimension.value === 'type') {
-      const res = await getTypePie()
-      const list = res?.data || []
-      const aggregated = new Map<string, { name: string; value: number }>()
-      list.forEach((item: any) => {
-        const rawCode = item.typeCode ? item.typeCode.toString().trim() : ''
-        const rawName = item.typeName ? item.typeName.toString().trim() : ''
-        const key = (rawCode || rawName || '未命名').replace(/\s+/g, ' ').toUpperCase()
-        const displayName = rawName || rawCode || '未命名'
-        const value = Number(item.count || 0)
-        if (!key || !Number.isFinite(value) || value <= 0) return
+    const res = await getTypePie()
+    const list = res?.data || []
+    const aggregated = new Map<string, { name: string; value: number }>()
+    list.forEach((item: any) => {
+      const rawCode = item.typeCode ? item.typeCode.toString().trim() : ''
+      const rawName = item.typeName ? item.typeName.toString().trim() : ''
+      const key = (rawCode || rawName || '未命名').replace(/\s+/g, ' ').toUpperCase()
+      const displayName = rawName || rawCode || '未命名'
+      const value = Number(item.count || 0)
+      if (!key || !Number.isFinite(value) || value <= 0) return
 
-        if (!aggregated.has(key)) {
-          aggregated.set(key, { name: displayName, value })
-          return
-        }
-        const current = aggregated.get(key)!
-        current.value += value
-        if (!current.name && displayName) {
-          current.name = displayName
-        }
-      })
-      distributionData.value = Array.from(aggregated.values())
-      distributionEmpty.value = distributionData.value.length === 0
-      indexLevelDistribution.value = []
-    } else {
-      const res = await getAdvancedDistribution({ dimension: distributionDimension.value })
-      distributionData.value = res?.data?.items || []
-      indexLevelDistribution.value = res?.data?.indexLevelItems || []
-      distributionEmpty.value = distributionData.value.length === 0
-    }
+      if (!aggregated.has(key)) {
+        aggregated.set(key, { name: displayName, value })
+        return
+      }
+      const current = aggregated.get(key)!
+      current.value += value
+      if (!current.name && displayName) {
+        current.name = displayName
+      }
+    })
+    distributionData.value = Array.from(aggregated.values())
+    distributionEmpty.value = distributionData.value.length === 0
     renderDistributionChart()
   } catch (error) {
     console.error('加载分布数据失败:', error)

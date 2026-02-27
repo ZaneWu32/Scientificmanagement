@@ -131,50 +131,15 @@
 
         <!-- 步骤3: 智能补全 -->
         <div v-show="currentStep === 2" class="step-panel">
-          <h3>智能补全（可选）</h3>
+          <h3>智能补全</h3>
           <el-form label-width="120px">
-            <el-form-item label="补全方式">
-              <el-radio-group v-model="autoFillType">
-                <el-radio label="doi">DOI</el-radio>
-                <el-radio label="arxiv">arXiv ID</el-radio>
-                <el-radio label="wanfang">万方标题</el-radio>
-                <el-radio label="journalRank">期刊等级</el-radio>
-              </el-radio-group>
+            <el-form-item label="功能状态">
+              <el-input model-value="暂未开发" disabled />
             </el-form-item>
-            <el-form-item :label="getAutoFillLabel()">
-              <el-input
-                v-model="autoFillValue"
-                :placeholder="getAutoFillPlaceholder()"
-              >
-                <template #append>
-                  <el-button
-                    :loading="autoFilling"
-                    @click="handleAutoFill"
-                  >
-                    一键补全
-                  </el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-alert
-              v-if="journalRankItems.length"
-              title="期刊等级结果"
-              type="success"
-              :closable="false"
-              class="rank-alert"
-            >
-              <template #default>
-                <div class="rank-result">
-                  <div v-for="(item, index) in journalRankItems" :key="index">
-                    {{ item }}
-                  </div>
-                </div>
-              </template>
-            </el-alert>
           </el-form>
           <el-alert
-            title="提示：智能补全会从外部数据库获取元数据，您可以选择性地覆盖当前表单内容"
-            type="info"
+            title="智能补全迭代中，当前版本无法填写或使用。"
+            type="warning"
             :closable="false"
           />
         </div>
