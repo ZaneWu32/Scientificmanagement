@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/results/access-requests")
+@RequestMapping("/results")
 @RequiredArgsConstructor
 @Tag(name = "访问权限申请相关接口")
 public class AccessRequestController {
@@ -31,7 +31,7 @@ public class AccessRequestController {
      * 获取访问申请列表
      */
     @Operation(description = "获取访问申请列表")
-    @GetMapping
+    @GetMapping("/access-requests")
     public Result<Page<AccessRequestVO>> getAccessRequests(
             AccessRequestQueryDTO queryDTO,
             @CurrentUser KeycloakUser currentUser) {
@@ -46,7 +46,7 @@ public class AccessRequestController {
      * 审核访问申请
      */
     @Operation(description = "审核访问申请")
-    @PostMapping("/{id}/review")
+    @PostMapping("/access-requests/{id}/review")
     public Result<AccessRequestVO> reviewAccessRequest(
             @PathVariable("id") String requestId,
             @Validated @RequestBody AccessRequestReviewDTO reviewDTO,

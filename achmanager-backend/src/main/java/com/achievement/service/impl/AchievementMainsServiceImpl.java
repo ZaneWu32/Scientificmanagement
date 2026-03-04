@@ -2,13 +2,19 @@ package com.achievement.service.impl;
 
 import com.achievement.client.StrapiClient;
 import com.achievement.domain.dto.*;
+import com.achievement.domain.po.AchievementAccessGrant;
+import com.achievement.domain.po.AchievementAccessRequest;
 import com.achievement.domain.po.AchievementMains;
 import com.achievement.domain.vo.*;
+import com.achievement.mapper.AchievementAccessGrantMapper;
+import com.achievement.mapper.AchievementAccessRequestMapper;
 import com.achievement.mapper.AchievementMainsMapper;
 import com.achievement.service.IAchievementMainsService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.achievement.constant.AchievementStatusConstant.APPROVED;
@@ -33,10 +40,13 @@ import static com.achievement.constant.AchievementStatusConstant.APPROVED;
 @Slf4j
 public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMapper, AchievementMains> implements IAchievementMainsService {
     private static final String ACHIEVEMENT_FILE_COLLECTION = "achievement-files";
+    private static final DateTimeFormatter REQUEST_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final StrapiClient strapiClient;
     private final ObjectMapper objectMapper;
     private final AchievementMainsMapper mainsMapper;
+    private final AchievementAccessGrantMapper accessGrantMapper;
+    private final AchievementAccessRequestMapper accessRequestMapper;
     private final KeycloakUserServiceImpl keycloakUserServiceImpl;
     @Override
     public Page<AchListVO> pageList(AchListDTO achListDTO) {
@@ -110,13 +120,42 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
     @Override
     public AchDetailVO selectDetail(String achDocId) {
+        return selectDetail(achDocId, null, true);
+    }
+
+    @Override
+    public AchDetailVO selectDetail(String achDocId, KeycloakUser currentUser, boolean includeRestrictedContent) {
         AchMainBaseRow base = baseMapper.selectMainBaseByDocId(achDocId);
         if (base == null) {
             throw new RuntimeException("成果物不存在或已删除");
         }
-        log.info("用户查询成果物详情，achDocId={}", achDocId);
+        log.info("查询成果物详情，achDocId={}, includeRestrictedContent={}", achDocId, includeRestrictedContent);
+
+        boolean owner = isOwner(base, currentUser);
+        boolean admin = includeRestrictedContent || (currentUser != null && currentUser.hasRole("research_admin"));
+        boolean reviewerAccess = canReviewFullContent(base, currentUser);
+        boolean grantAccess = currentUser != null && currentUser.getId() != null && hasActiveGrant(achDocId, currentUser.getId());
+        boolean approvedAndPublished = isApprovedAndPublished(base);
+        boolean summaryVisible = isSummaryVisible(base.getVisibilityRange());
+
+        if (!admin && !owner && !reviewerAccess && !grantAccess) {
+            if (!approvedAndPublished) {
+                throw new RuntimeException("成果尚未通过审核，无法查看");
+            }
+            if (!summaryVisible) {
+                throw new RuntimeException("无权限查看该成果");
+            }
+        }
+
+        AchievementAccessRequest latestRequest = null;
+        if (currentUser != null && currentUser.getId() != null && !admin && !owner) {
+            latestRequest = findLatestAccessRequest(achDocId, currentUser.getId());
+        }
+        boolean fullAccess = admin || owner || reviewerAccess || grantAccess;
+        boolean effectiveSummaryVisible = fullAccess || summaryVisible;
+
         List<AchFieldRow> rows = Collections.emptyList();
-        if (base.getMainId() != null && base.getTypeId() != null) {
+        if (fullAccess && base.getMainId() != null && base.getTypeId() != null) {
             rows = baseMapper.selectFieldRows(base.getMainId(), base.getTypeId());
         }
 
@@ -176,6 +215,19 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         vo.setProjectCode(base.getProjectCode());
         vo.setProjectName(base.getProjectName());
         vo.setVisibilityRange(base.getVisibilityRange());
+        vo.setPermissionStatus(fullAccess ? "full" : (effectiveSummaryVisible ? "summary" : "denied"));
+        vo.setAccessRequestStatus(latestRequest == null ? "none" : latestRequest.getStatus());
+        vo.setCanRequestAccess(currentUser != null && !fullAccess && approvedAndPublished
+                && effectiveSummaryVisible && canRequestAccess(latestRequest));
+        if (latestRequest != null) {
+            vo.setLastRequestAt(formatRequestTime(latestRequest.getCreatedAt()));
+            if ("rejected".equalsIgnoreCase(latestRequest.getStatus())) {
+                vo.setRejectedReason(latestRequest.getReviewComment());
+            }
+        }
+        vo.setSummaryVisible(effectiveSummaryVisible);
+        vo.setFullContentVisible(fullAccess);
+        vo.setAttachmentDownloadAllowed(fullAccess);
 
         // 解析 JSON 数组字段
         vo.setAuthors(parseJsonArray(base.getAuthorsJson()));
@@ -183,16 +235,20 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
 
         vo.setFields(fields);
 
-        // 附件信息：通过 Strapi 查询 achievement_files，并 populate media(files)
-        try {
-            Map<String, String> params = new LinkedHashMap<>();
-            params.put("filters[achievement_main_id][documentId][$eq]", achDocId);
-            params.put("filters[is_delete][$eq]", "0");
-            params.put("populate", "files");
-            String raw = strapiClient.query(ACHIEVEMENT_FILE_COLLECTION, params);
-            vo.setAttachments(objectMapper.readTree(raw));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        if (fullAccess) {
+            // 附件信息：通过 Strapi 查询 achievement_files，并 populate media(files)
+            try {
+                Map<String, String> params = new LinkedHashMap<>();
+                params.put("filters[achievement_main_id][documentId][$eq]", achDocId);
+                params.put("filters[is_delete][$eq]", "0");
+                params.put("populate", "files");
+                String raw = strapiClient.query(ACHIEVEMENT_FILE_COLLECTION, params);
+                vo.setAttachments(objectMapper.readTree(raw));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            vo.setAttachments(emptyAttachments());
         }
 
         return vo;
@@ -208,6 +264,96 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
         } catch (JsonProcessingException e) {
             return Collections.emptyList();
         }
+    }
+
+    private AchievementAccessRequest findLatestAccessRequest(String achievementDocId, Integer requesterId) {
+        if (achievementDocId == null || achievementDocId.isBlank() || requesterId == null) {
+            return null;
+        }
+        LambdaQueryWrapper<AchievementAccessRequest> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AchievementAccessRequest::getAchievementDocId, achievementDocId)
+                .eq(AchievementAccessRequest::getRequesterId, requesterId)
+                .eq(AchievementAccessRequest::getIsDelete, 0)
+                .orderByDesc(AchievementAccessRequest::getCreatedAt)
+                .orderByDesc(AchievementAccessRequest::getId)
+                .last("LIMIT 1");
+        return accessRequestMapper.selectOne(queryWrapper);
+    }
+
+    private boolean hasActiveGrant(String achievementDocId, Integer granteeId) {
+        if (achievementDocId == null || achievementDocId.isBlank() || granteeId == null) {
+            return false;
+        }
+        LambdaQueryWrapper<AchievementAccessGrant> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AchievementAccessGrant::getAchievementDocId, achievementDocId)
+                .eq(AchievementAccessGrant::getGranteeId, granteeId)
+                .eq(AchievementAccessGrant::getStatus, "active")
+                .eq(AchievementAccessGrant::getIsDelete, 0)
+                .isNull(AchievementAccessGrant::getRevokedAt)
+                .and(wrapper -> wrapper.isNull(AchievementAccessGrant::getExpiresAt)
+                        .or()
+                        .gt(AchievementAccessGrant::getExpiresAt, LocalDateTime.now()))
+                .last("LIMIT 1");
+        return accessGrantMapper.selectOne(queryWrapper) != null;
+    }
+
+    private boolean isOwner(AchMainBaseRow base, KeycloakUser currentUser) {
+        return base != null
+                && currentUser != null
+                && currentUser.getId() != null
+                && base.getCreatedByUserId() != null
+                && base.getCreatedByUserId().equals(String.valueOf(currentUser.getId()));
+    }
+
+    private boolean isApprovedAndPublished(AchMainBaseRow base) {
+        return base != null
+                && "APPROVED".equalsIgnoreCase(base.getAuditStatus())
+                && base.getPublishedAt() != null;
+    }
+
+    private boolean isSummaryVisible(String visibilityRange) {
+        if (visibilityRange == null || visibilityRange.isBlank()) {
+            return false;
+        }
+        return switch (visibilityRange.trim().toLowerCase(Locale.ROOT)) {
+            case "public", "internal", "public_abstract", "internal_abstract", "public_full", "internal_full" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean canRequestAccess(AchievementAccessRequest latestRequest) {
+        if (latestRequest != null && "pending".equalsIgnoreCase(latestRequest.getStatus())) {
+            return false;
+        }
+        if (latestRequest != null && "approved".equalsIgnoreCase(latestRequest.getStatus())) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean canReviewFullContent(AchMainBaseRow base, KeycloakUser currentUser) {
+        if (base == null || currentUser == null || currentUser.getId() == null) {
+            return false;
+        }
+        if (currentUser.hasRole("research_admin")) {
+            return true;
+        }
+        if (!currentUser.hasRole("research_expert")) {
+            return false;
+        }
+        String status = base.getAuditStatus() == null ? "" : base.getAuditStatus().trim().toUpperCase(Locale.ROOT);
+        if (!"UNDER_REVIEW".equals(status) && !"REVIEWING".equals(status)) {
+            return false;
+        }
+        return base.getReviewerId() == null || currentUser.getId().equals(base.getReviewerId());
+    }
+
+    private String formatRequestTime(LocalDateTime time) {
+        return time == null ? null : REQUEST_TIME_FORMATTER.format(time);
+    }
+
+    private JsonNode emptyAttachments() {
+        return objectMapper.createObjectNode().putArray("data");
     }
 
     @Override

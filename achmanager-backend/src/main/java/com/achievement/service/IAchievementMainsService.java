@@ -2,6 +2,7 @@ package com.achievement.service;
 
 import com.achievement.domain.dto.AchListDTO;
 import com.achievement.domain.dto.AchListDTO2;
+import com.achievement.domain.dto.KeycloakUser;
 import com.achievement.domain.dto.TrendQueryDTO;
 import com.achievement.domain.po.AchievementMains;
 import com.achievement.domain.vo.*;
@@ -35,6 +36,8 @@ public interface IAchievementMainsService extends IService<AchievementMains> {
     Page<AchListVO> pageList4User(AchListDTO achListDTO,Integer userId);
 
     AchDetailVO selectDetail(String achDocId);
+
+    AchDetailVO selectDetail(String achDocId, KeycloakUser currentUser, boolean includeRestrictedContent);
 
     Page<AchListVO> pageList4Visibility(AchListDTO2 achListDTO);
 

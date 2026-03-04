@@ -135,8 +135,8 @@ public class AchievementUserController {
     // TODO 用户查询成果物详情 ，与管理员查询成果物详情类似
     @Operation(description = "用户成果物详情接口")
     @GetMapping("/detail")
-    public Result<AchDetailVO> detail(@RequestParam String achDocId) {
+    public Result<AchDetailVO> detail(@RequestParam String achDocId, @CurrentUser KeycloakUser currentUser) {
         log.info("用户查询成果物详情，achDocId={}", achDocId);
-        return Result.success(achievementMainsService.selectDetail(achDocId));
+        return Result.success(achievementMainsService.selectDetail(achDocId, currentUser, false));
     }
 }

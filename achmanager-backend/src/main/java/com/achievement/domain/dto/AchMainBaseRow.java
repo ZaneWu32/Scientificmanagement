@@ -12,6 +12,7 @@ public class AchMainBaseRow {
     private String title;
     private String summary;
     private String auditStatus;
+    private Integer reviewerId;
     private String reviewerName;
     private String reviewComment;
     private LocalDateTime reviewedAt;

@@ -652,6 +652,7 @@ export interface ApiAchievementMainAchievementMain
       'manyToOne',
       'api::achievement-type.achievement-type'
     >;
+    apple: Schema.Attribute.String;
     authors: Schema.Attribute.JSON;
     created_by_user_id: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;

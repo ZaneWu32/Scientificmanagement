@@ -170,6 +170,7 @@
             m.title         AS title,
             m.summary       AS summary,
             m.achievement_status AS auditStatus,
+            m.reviewer_id   AS reviewerId,
             m.reviewer_name AS reviewerName,
             m.review_comment AS reviewComment,
             m.reviewed_at   AS reviewedAt,
@@ -258,8 +259,8 @@
         WHERE m.is_delete = 0
         AND m.published_at IS NOT NULL
 
-        <!-- 只查 ALL 可见 -->
-        AND m.visibility_range = 'public'
+        <!-- 只查对他人可见的成果 -->
+        AND m.visibility_range IN ('public', 'public_abstract', 'public_full', 'internal_abstract', 'internal_full')
         AND m.achievement_status = 'APPROVED'
         <!-- 个人成果物：强制按创建者过滤
         AND m.created_by_user_id = #{dto.creatorId}-->

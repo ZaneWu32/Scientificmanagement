@@ -367,7 +367,11 @@ const stageMap: Record<string, string> = {
 
 const VISIBILITY_TEXT_MAP = {
   [ResultVisibility.PRIVATE]: '私有',
-  [ResultVisibility.PUBLIC]: '公开'
+  [ResultVisibility.PUBLIC]: '公开',
+  public_abstract: '公开摘要',
+  public_full: '公开全文',
+  internal_abstract: '站内摘要',
+  internal_full: '站内全文'
 }
 
 const hasFullAccess = computed(() => {

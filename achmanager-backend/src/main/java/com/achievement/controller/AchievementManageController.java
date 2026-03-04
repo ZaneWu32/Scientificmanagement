@@ -79,9 +79,12 @@ public class AchievementManageController {
      */
     @Operation(description = "查询成果物详情接口")
     @GetMapping("/detail")
-    public Result<AchDetailVO> detail(@RequestParam String achDocId) {
+    public Result<AchDetailVO> detail(@RequestParam String achDocId, @CurrentUser KeycloakUser currentUser) {
+        if (!currentUser.hasRole("research_admin")) {
+            return Result.error(403, "无权限：仅管理员可访问");
+        }
         log.info("查询成果物详情，achDocId={}", achDocId);
-        return Result.success(achievementMainsService.selectDetail(achDocId));
+        return Result.success(achievementMainsService.selectDetail(achDocId, currentUser, true));
     }
 
     /*

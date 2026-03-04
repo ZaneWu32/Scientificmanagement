@@ -36,6 +36,14 @@ public class AchDetailVO {
         private String projectCode;
         private String projectName;
         private String visibilityRange;
+        private String permissionStatus;
+        private String accessRequestStatus;
+        private Boolean canRequestAccess;
+        private String rejectedReason;
+        private String lastRequestAt;
+        private Boolean summaryVisible;
+        private Boolean fullContentVisible;
+        private Boolean attachmentDownloadAllowed;
 
         // 动态字段：字段定义 + 值
         private List<AchFieldVO> fields;
