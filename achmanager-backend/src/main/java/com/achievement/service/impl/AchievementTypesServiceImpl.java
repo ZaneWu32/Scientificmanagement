@@ -97,16 +97,25 @@ public class AchievementTypesServiceImpl extends ServiceImpl<AchievementTypesMap
      */
     @Override
     public AchTypeDetailVO selectDetail(String typeDocId) {
-        AchievementTypes type = this.lambdaQuery()
+        if (typeDocId == null || typeDocId.isBlank()) {
+            throw new RuntimeException("typeDocId 不能为空");
+        }
+
+        List<AchievementTypes> matchedTypes = this.lambdaQuery()
                 .eq(AchievementTypes::getIsDelete, 0)
                 .eq(AchievementTypes::getDocumentId, typeDocId)
                 .isNotNull(AchievementTypes::getPublishedAt) // ✅ 只要已发布
-                .one();
+                .orderByDesc(AchievementTypes::getPublishedAt)
+                .orderByDesc(AchievementTypes::getUpdatedAt)
+                .orderByDesc(AchievementTypes::getId)
+                .list();
 
-        if (type == null) {
+        if (matchedTypes == null || matchedTypes.isEmpty()) {
             throw new RuntimeException("成果物类型不存在或未发布");
         }
 
+        // 容错：同一个 document_id 出现多条已发布记录时，取最新一条避免 one() 抛异常导致 500
+        AchievementTypes type = matchedTypes.get(0);
         return buildDetailVO(type);
     }
     private AchTypeDetailVO buildDetailVO(AchievementTypes type) {
