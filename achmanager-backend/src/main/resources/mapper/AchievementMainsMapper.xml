@@ -264,6 +264,21 @@
         AND m.achievement_status = 'APPROVED'
         <!-- 个人成果物：强制按创建者过滤
         AND m.created_by_user_id = #{dto.creatorId}-->
+        <if test="dto.title!=null and dto.title !=''">
+            AND m.title LIKE CONCAT('%', #{dto.title}, '%')
+        </if>
+        <if test="dto.author != null and dto.author.trim() != ''">
+            AND (
+            JSON_SEARCH(m.authors, 'one', CONCAT('%', TRIM(#{dto.author}), '%')) IS NOT NULL
+            OR JSON_SEARCH(m.authors, 'all', CONCAT('%', TRIM(#{dto.author}), '%')) IS NOT NULL
+            )
+        </if>
+        <if test="dto.keyword != null and dto.keyword.trim() != ''">
+            AND (
+            JSON_SEARCH(m.keywords, 'one', CONCAT('%', TRIM(#{dto.keyword}), '%')) IS NOT NULL
+            OR JSON_SEARCH(m.keywords, 'all', CONCAT('%', TRIM(#{dto.keyword}), '%')) IS NOT NULL
+            )
+        </if>
         <!-- 成果物类型筛选 -->
         <if test="dto.typeId != null">
             AND mt.achievement_type_id = #{dto.typeId}
