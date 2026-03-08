@@ -19,6 +19,8 @@ public class AchListDTO2 {
     @Schema(description = "按成果物类型id 搜索")
     /** 成果物类型ID（achievement_types.id） */
     private Integer typeId;
+    @Schema(description = "作者")
+    private String author;
     @Schema(description = "按成果物类型Code搜索")
     private String typeCode;
     @Schema(description = "按成果物类型Code集合搜索（IN）")
