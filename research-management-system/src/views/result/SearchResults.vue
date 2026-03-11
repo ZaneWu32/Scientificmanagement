@@ -65,15 +65,12 @@
           </el-col>
           <el-col :xs="24" :md="12" :lg="8">
             <el-form-item label="项目">
-              <el-select v-model="searchForm.projectId" placeholder="全部项目" clearable filterable>
-                <el-option :label="'全部项目'" :value="''" />
-                <el-option
-                  v-for="project in projects"
-                  :key="project.id"
-                  :label="getProjectLabel(project)"
-                  :value="project.id"
-                />
-              </el-select>
+              <el-input
+                v-model="searchForm.projectCode"
+                placeholder="输入项目名称或编号"
+                clearable
+                @keyup.enter="handleSearch"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -167,7 +164,6 @@ import dayjs from 'dayjs'
 import { InfoFilled, Search as SearchIcon, RefreshRight as RefreshIcon, Download as DownloadIcon } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getVisibleResults, getResults,getMyResults, exportResults } from '@/api/result'
-import { getProjects } from '@/api/project'
 import { getResultTypes } from '@/api/result'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
@@ -176,7 +172,6 @@ const route = useRoute()
 const userStore = useUserStore()
 const loading = ref(false)
 const tableData = ref([])
-const projects = ref([])
 const exporting = ref(false)
 const canExport = computed(() => userStore.isAdmin)
 const isAdmin = computed(() => userStore.isAdmin)
@@ -190,7 +185,7 @@ const searchForm = reactive({
   type: '',
   yearRange: [],
   author: '',
-  projectId: ''
+  projectCode: ''
 })
 
 const pagination = reactive({
@@ -210,7 +205,6 @@ interface AchievementType {
 
 onMounted(() => {
   initFromQuery()
-  loadProjects()
   loadResultTypes()
   handleSearch()
 })
@@ -263,7 +257,7 @@ function handleReset() {
     type: '',
     yearRange: null,
     author: '',
-    projectId: ''
+    projectCode: ''
   })
   pagination.page = 1
   handleSearch()
@@ -278,27 +272,13 @@ function editResult(row: any) {
   router.push(`/results/${row.id}/edit`)
 }
 
-async function loadProjects() {
-  try {
-    const res = await getProjects()
-    projects.value = res?.data || []
-  } catch (error) {
-    ElMessage.error('加载项目列表失败')
-  }
-}
-
-function getProjectLabel(project) {
-  if (!project) return ''
-  return `${project.name} (${project.code})`
-}
-
 function getSearchParams() {
   const params: Record<string, any> = {
     title: searchForm.title,
     keyword: searchForm.keyword,
     type: searchForm.type,
     author: searchForm.author,
-    projectId: searchForm.projectId,
+    projectCode: searchForm.projectCode,
     excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES]
   }
 
@@ -310,9 +290,9 @@ function getSearchParams() {
 }
 
 function initFromQuery() {
-  const { projectId, keyword } = route.query
-  if (projectId && typeof projectId === 'string') {
-    searchForm.projectId = projectId
+  const { projectCode, keyword } = route.query
+  if (projectCode && typeof projectCode === 'string') {
+    searchForm.projectCode = projectCode
   }
   if (keyword && typeof keyword === 'string') {
     searchForm.keyword = keyword

@@ -61,29 +61,6 @@
                 <el-option :label="currentUserName" :value="currentUserName" />
               </el-select>
             </el-form-item>
-            <el-form-item label="所属项目">
-              <div class="project-select">
-                <el-select
-                  v-model="formData.projectId"
-                  filterable
-                  clearable
-                  placeholder="选择所属项目（可留空表示其他/未归属）"
-                  style="width: 100%"
-                >
-                  <el-option :label="'无所属/其他'" :value="''" />
-                  <el-option
-                    v-for="project in projects"
-                    :key="project.id"
-                    :label="getProjectLabel(project)"
-                    :value="project.id"
-                  />
-                </el-select>
-                <el-button class="create-project-btn" type="primary" link @click="openProjectDialog">
-                  新建项目
-                </el-button>
-              </div>
-              <div class="project-hint">未选择时默认为其他/未归属项目，可在此创建并直接选择新项目。</div>
-            </el-form-item>
             <el-form-item label="年份" prop="year" required>
               <el-date-picker
                 v-model="formData.year"
@@ -191,7 +168,6 @@
             <el-descriptions-item label="年份">{{ formData.year }}</el-descriptions-item>
             <el-descriptions-item label="摘要">{{ formData.abstract }}</el-descriptions-item>
             <el-descriptions-item label="关键词">{{ formData.keywords.join(', ') }}</el-descriptions-item>
-            <el-descriptions-item label="所属项目">{{ formData.projectName }}</el-descriptions-item>
             <el-descriptions-item label="可见范围" :span="2">
               {{ getVisibilityText(formData.visibility) }}
             </el-descriptions-item>
@@ -233,23 +209,6 @@
         </el-button>
         <el-button @click="handleSaveDraft" :loading="saving">保存草稿</el-button>
       </div>
-
-      <el-dialog v-model="projectDialogVisible" title="新建项目" width="480px">
-        <el-form label-width="100px">
-          <el-form-item label="项目名称" required>
-            <el-input v-model="projectForm.name" placeholder="请输入项目名称" />
-          </el-form-item>
-          <el-form-item label="项目编号" required>
-            <el-input v-model="projectForm.code" placeholder="请输入项目编号" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="projectDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="creatingProject" @click="handleCreateProject">
-            创建并选择
-          </el-button>
-        </template>
-      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -272,7 +231,6 @@ import {
   updateAdminResultWithFiles,
   autoFillMetadata
 } from '@/api/result'
-import { getProjects, createProject } from '@/api/project'
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
 import { mapFieldType } from '@/config/dynamicFields'
@@ -283,7 +241,6 @@ const userStore = useUserStore()
 
 const currentStep = ref(0)
 const resultTypes = ref([])
-const projects = ref([])
 const resultId = computed(() => route.params.id?.toString())
 const selectedType = computed(() => resultTypes.value.find((t) => t.id === formData.typeId))
 const currentUserName = computed(() => userStore.userInfo?.name || '')
@@ -294,9 +251,6 @@ const formData = reactive({
   typeId: '',
   title: '',
   authors: [currentUserName],
-  projectId: '',
-  projectName: '',
-  projectCode: '',
   year: new Date().getFullYear().toString(),
   abstract: '',
   keywords: [],
@@ -321,12 +275,6 @@ const lastJournalRankAt = ref(0)
 const submitting = ref(false)
 const saving = ref(false)
 const MAX_FILE_SIZE = 20 * 1024 * 1024
-const projectDialogVisible = ref(false)
-const projectForm = reactive({
-  name: '',
-  code: ''
-})
-const creatingProject = ref(false)
 const confirmExtraFields = computed(() => {
   const type = selectedType.value
   const fields = type?.fields || []
@@ -357,7 +305,7 @@ const confirmFiles = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadResultTypes(), loadProjects()])
+  await loadResultTypes()
   await loadDetail()
 })
 
@@ -437,9 +385,6 @@ async function loadDetail() {
     await loadFieldDefs(formData.typeId)
     formData.title = detail.title || ''
     formData.authors = detail.authors || []
-    formData.projectId = detail.projectId || ''
-    formData.projectName = detail.projectName || ''
-    formData.projectCode = detail.projectCode || ''
     formData.year = detail.year?.toString() || new Date().getFullYear().toString()
     formData.abstract = detail.abstract || ''
     formData.keywords = detail.keywords || []
@@ -453,54 +398,10 @@ async function loadDetail() {
   }
 }
 
-async function loadProjects() {
-  try {
-    const res = await getProjects()
-    projects.value = res?.data || []
-  } catch (error) {
-    ElMessage.error('加载项目列表失败')
-  }
-}
-
 function handleTypeChange() {
   formData.metadata = {}
   if (formData.typeId) {
     loadFieldDefs(formData.typeId)
-  }
-}
-
-function getProjectLabel(project) {
-  if (!project) return ''
-  return `${project.name} (${project.code})`
-}
-
-function openProjectDialog() {
-  projectDialogVisible.value = true
-  projectForm.name = ''
-  projectForm.code = ''
-}
-
-async function handleCreateProject() {
-  if (!projectForm.name || !projectForm.code) {
-    ElMessage.warning('请填写项目名称和编号')
-    return
-  }
-  creatingProject.value = true
-  try {
-    const res = await createProject({ ...projectForm })
-    const newProject = res?.data
-    if (newProject) {
-      projects.value.unshift(newProject)
-      formData.projectId = newProject.id
-      formData.projectName = newProject.name
-      formData.projectCode = newProject.code
-      ElMessage.success('项目创建成功')
-    }
-    projectDialogVisible.value = false
-  } catch (error) {
-    ElMessage.error('项目创建失败')
-  } finally {
-    creatingProject.value = false
   }
 }
 
@@ -687,8 +588,6 @@ function formatFileSize(bytes: number) {
   return `${gb.toFixed(1)} GB`
 }
 function buildPayload() {
-  const project = projects.value.find((p) => p.id === formData.projectId)
-
   // 【新增逻辑】：筛选出当前 fileList 中那些已经是服务器上的旧附件（没有 raw 属性的文件）
   // 这样后端才知道你“保留”了哪些，从而剔除那些你删掉的
   const remainingOldAttachments = fileList.value
@@ -708,8 +607,6 @@ function buildPayload() {
       year: formData.year,
       authors: formData.authors,
       keywords: formData.keywords,
-      projectCode: project?.code || formData.projectCode || '',
-      projectName: project?.name || formData.projectName || '',
       visibilityRange: formData.visibility,
       fields: buildFieldValues(),
       
@@ -819,11 +716,8 @@ function buildFieldValues() {
 }
 
 function buildDraftPayload() {
-  const project = projects.value.find((p) => p.id === formData.projectId)
   return {
     ...formData,
-    projectName: project?.name || formData.projectName || '',
-    projectCode: project?.code || formData.projectCode || '',
     metadata: { ...formData.metadata }
   }
 }
@@ -850,22 +744,6 @@ function buildDraftPayload() {
   margin-bottom: 24px;
   font-size: 18px;
   color: #303133;
-}
-
-.project-select {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.create-project-btn {
-  white-space: nowrap;
-}
-
-.project-hint {
-  margin-top: 4px;
-  color: #909399;
-  font-size: 12px;
 }
 
 .type-info {

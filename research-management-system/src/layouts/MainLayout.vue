@@ -10,24 +10,8 @@
             <!-- <div class="brand-sub">{{ userStore.userInfo?.department || '科研机构' }}</div> -->
           </div>
         </div>
-        <div class="search-bar">
-          <el-input
-            v-model="keyword"
-            placeholder="搜索科研项目、文献或人员"
-            :prefix-icon="Search"
-            clearable
-            size="large"
-          />
-          <div class="status-dot">
-            <span class="dot"></span>
-            <span class="text">系统运行正常</span>
-          </div>
-        </div>
       </div>
       <div class="header-right">
-        <el-button round size="large" @click="showMessages">
-          <Bell class="header-icon" />
-        </el-button>
         <el-button type="primary" round size="large" :icon="Plus" @click="router.push('/results/create')">
           新建成果
         </el-button>
@@ -133,35 +117,15 @@
         </div>
       </el-main>
     </el-container>
-
-    <!-- 消息抽屉 -->
-    <el-drawer v-model="messageDrawer" title="消息中心" size="400px">
-      <div class="message-list">
-        <el-empty v-if="messages.length === 0" description="暂无消息" />
-        <div v-else>
-          <div
-            v-for="msg in messages"
-            :key="msg.id"
-            class="message-item"
-            :class="{ unread: !msg.read }"
-            @click="handleMessageClick(msg)"
-          >
-            <div class="message-title">{{ msg.title }}</div>
-            <div class="message-time">{{ msg.time }}</div>
-          </div>
-        </div>
-      </div>
-    </el-drawer>
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Bell,
   House,
   Plus,
   Document,
@@ -179,16 +143,9 @@ import { redirectToLoginPortal } from '@/utils/portalConfig'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const keyword = ref('')
-
 const currentRoute = computed(() => route)
 const activeMenu = computed(() => route.path)
 const showSystemSettingsCard = computed(() => userStore.isAdmin)
-
-// 消息相关
-const messageDrawer = ref(false)
-const unreadCount = ref(0)
-const messages = ref([])
 
 // 菜单配置
 const menuItems = computed(() => {
@@ -354,17 +311,6 @@ function hasPermission(roles) {
   return userStore.hasRole(roles)
 }
 
-// 显示消息
-function showMessages() {
-  messageDrawer.value = true
-}
-
-// 处理消息点击
-function handleMessageClick(msg) {
-  // TODO: 跳转到相关页面
-  console.log('Message clicked:', msg)
-}
-
 function goSystemSettings() {
   router.push('/admin/system-settings')
 }
@@ -448,46 +394,10 @@ async function handleCommand(command) {
   color: #6b7280;
 }
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-  max-width: 720px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 10px 14px;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
-  border: 1px solid #eef2f7;
-}
-
-.status-dot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: #f3f6ff;
-  color: #1d5bff;
-  border-radius: 12px;
-  font-size: 12px;
-}
-
-.status-dot .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
-}
-
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.message-badge {
-  cursor: pointer;
 }
 
 .user-info {
@@ -749,33 +659,4 @@ async function handleCommand(command) {
   opacity: 0;
 }
 
-.message-list {
-  padding: 0;
-}
-
-.message-item {
-  padding: 16px;
-  border-bottom: 1px solid #e4e7ed;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.message-item:hover {
-  background-color: #f5f6fa;
-}
-
-.message-item.unread {
-  background-color: #ecf5ff;
-}
-
-.message-title {
-  font-size: 14px;
-  color: #303133;
-  margin-bottom: 8px;
-}
-
-.message-time {
-  font-size: 12px;
-  color: #909399;
-}
 </style>

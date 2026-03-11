@@ -581,11 +581,12 @@ function downloadFile(file) {
 }
 
 function goProjectFilter(item) {
-  if (!item?.projectId) return
+  const projectCode = item?.projectCode || item?.projectName
+  if (!projectCode) return
   router.push({
     path: '/results/search',
     query: {
-      projectId: item.projectId,
+      projectCode,
       keyword: item.projectName || ''
     }
   })
