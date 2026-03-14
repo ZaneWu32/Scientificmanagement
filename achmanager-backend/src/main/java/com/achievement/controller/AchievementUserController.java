@@ -139,4 +139,11 @@ public class AchievementUserController {
         log.info("用户查询成果物详情，achDocId={}", achDocId);
         return Result.success(achievementMainsService.selectDetail(achDocId, currentUser, false));
     }
+    @Operation(description = "用户成果物详情接口-对科研项目端")
+    @GetMapping("/detailForProjectSystem")
+    public Result<AchDetailVO> detailForProjectSystem(@RequestParam String achDocId, @CurrentUser KeycloakUser currentUser) {
+        log.info("科研项目端-用户查询成果物详情，achDocId={}", achDocId);
+        return Result.success(achievementMainsService.selectDetailForProjectSystem(achDocId));
+    }
+
 }

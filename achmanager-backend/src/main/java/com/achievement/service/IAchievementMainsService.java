@@ -36,6 +36,7 @@ public interface IAchievementMainsService extends IService<AchievementMains> {
     Page<AchListVO> pageList4User(AchListDTO achListDTO,Integer userId);
 
     AchDetailVO selectDetail(String achDocId);
+    AchDetailVO selectDetailForProjectSystem(String achDocId);
 
     AchDetailVO selectDetail(String achDocId, KeycloakUser currentUser, boolean includeRestrictedContent);
 

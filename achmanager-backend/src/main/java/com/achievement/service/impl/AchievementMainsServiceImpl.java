@@ -119,7 +119,7 @@ public class AchievementMainsServiceImpl extends ServiceImpl<AchievementMainsMap
     }
 
     @Override
-    public AchDetailVO selectDetail(String achDocId) {
+    public AchDetailVO selectDetailForProjectSystem(String achDocId) {
         return selectDetail(achDocId, null, true);
     }
 
