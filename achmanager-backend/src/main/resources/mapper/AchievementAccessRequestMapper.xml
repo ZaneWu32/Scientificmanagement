@@ -22,11 +22,33 @@
             ar.reviewed_at       AS reviewedAt
         FROM achievement_access_requests ar
         LEFT JOIN achievement_mains m
-            ON m.document_id = ar.achievement_doc_id
-        LEFT JOIN achievement_mains_achievement_type_id_lnk mt
-            ON mt.achievement_main_id = m.id
+            ON m.id = (
+                SELECT m1.id
+                FROM achievement_mains m1
+                WHERE m1.document_id = ar.achievement_doc_id
+                  AND m1.is_delete = 0
+                ORDER BY
+                    CASE WHEN m1.published_at IS NOT NULL THEN 1 ELSE 0 END DESC,
+                    m1.updated_at DESC,
+                    m1.id DESC
+                LIMIT 1
+            )
         LEFT JOIN achievement_types t
-            ON t.id = mt.achievement_type_id
+            ON t.id = (
+                SELECT t1.id
+                FROM achievement_mains_achievement_type_id_lnk mt1
+                JOIN achievement_types t1
+                    ON t1.id = mt1.achievement_type_id
+                   AND (t1.is_delete IS NULL OR t1.is_delete = 0)
+                WHERE mt1.achievement_main_id = m.id
+                ORDER BY
+                    CASE WHEN mt1.achievement_main_ord IS NULL THEN 1 ELSE 0 END ASC,
+                    mt1.achievement_main_ord ASC,
+                    CASE WHEN t1.published_at IS NOT NULL THEN 1 ELSE 0 END DESC,
+                    t1.updated_at DESC,
+                    t1.id DESC
+                LIMIT 1
+            )
         WHERE ar.is_delete = 0
         
         <!-- 关键词搜索：成果标题或申请人 -->

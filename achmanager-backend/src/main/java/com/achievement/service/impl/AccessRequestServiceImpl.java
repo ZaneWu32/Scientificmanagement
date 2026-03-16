@@ -184,6 +184,7 @@ public class AccessRequestServiceImpl implements IAccessRequestService {
         LocalDateTime now = LocalDateTime.now();
 
         // 4. 更新申请状态
+        // Keycloak 业务用户不映射 Strapi admin_users，避免写入审计外键字段。
         LambdaUpdateWrapper<AchievementAccessRequest> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(AchievementAccessRequest::getDocumentId, requestId)
                 .set(AchievementAccessRequest::getStatus, newStatus)
@@ -192,7 +193,7 @@ public class AccessRequestServiceImpl implements IAccessRequestService {
                 .set(AchievementAccessRequest::getReviewComment, reviewDTO.getComment())
                 .set(AchievementAccessRequest::getReviewedAt, now)
                 .set(AchievementAccessRequest::getUpdatedAt, now)
-                .set(AchievementAccessRequest::getUpdatedById, reviewer.getId());
+                .set(AchievementAccessRequest::getUpdatedById, null);
 
         accessRequestMapper.update(null, updateWrapper);
 
@@ -301,7 +302,8 @@ public class AccessRequestServiceImpl implements IAccessRequestService {
                     .set(AchievementAccessGrant::getGrantedAt, now)
                     .set(AchievementAccessGrant::getRevokedAt, null)
                     .set(AchievementAccessGrant::getRevokeReason, null)
-                    .set(AchievementAccessGrant::getUpdatedAt, now);
+                    .set(AchievementAccessGrant::getUpdatedAt, now)
+                    .set(AchievementAccessGrant::getUpdatedById, null);
             accessGrantMapper.update(null, updateWrapper);
             return;
         }
@@ -321,8 +323,8 @@ public class AccessRequestServiceImpl implements IAccessRequestService {
                 .setGrantedAt(now)
                 .setCreatedAt(now)
                 .setUpdatedAt(now)
-                .setCreatedById(reviewer.getId())
-                .setUpdatedById(reviewer.getId())
+                .setCreatedById(null)
+                .setUpdatedById(null)
                 .setIsDelete(0);
         accessGrantMapper.insert(grant);
     }
