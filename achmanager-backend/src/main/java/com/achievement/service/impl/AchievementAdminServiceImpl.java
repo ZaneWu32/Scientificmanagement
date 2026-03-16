@@ -175,7 +175,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
                 mainData.put("reviewer_name","");
                 mainData.put("reviewer_id", "");
                 mainData.put("review_comment","");
-                mainData.put("review_time","");
+                mainData.put("reviewed_at","");
             } else {
                 // 管理员修改成果物：保留原有状态
                 mainData.remove("achievement_status");

@@ -207,7 +207,6 @@
         <el-button v-if="currentStep === 4" type="success" :loading="submitting" @click="handleSubmit">
           保存修改
         </el-button>
-        <el-button @click="handleSaveDraft" :loading="saving">保存草稿</el-button>
       </div>
     </el-card>
   </div>
@@ -224,7 +223,6 @@ import {
   getFieldDefsByType,
   getResult,
   getAdminResult,
-  saveDraft,
   updateResult,
   updateResultWithFiles,
   updateAdminResult,
@@ -273,7 +271,6 @@ const autoFilling = ref(false)
 const journalRankItems = ref<string[]>([])
 const lastJournalRankAt = ref(0)
 const submitting = ref(false)
-const saving = ref(false)
 const MAX_FILE_SIZE = 20 * 1024 * 1024
 const confirmExtraFields = computed(() => {
   const type = selectedType.value
@@ -639,20 +636,6 @@ function handleClearAttachmentsChange(val: boolean) {
   }
 }
 
-async function handleSaveDraft() {
-  if (!resultId.value) return
-  saving.value = true
-  try {
-    const payload = { ...buildDraftPayload(), status: 'draft' }
-    await saveDraft(payload)
-    ElMessage.success('草稿已保存（Mock）')
-  } catch (error) {
-    ElMessage.error('保存草稿失败')
-  } finally {
-    saving.value = false
-  }
-}
-
 async function handleSubmit() {
   if (!resultId.value) return
   submitting.value = true
@@ -713,13 +696,6 @@ function buildFieldValues() {
       return payload
     })
     .filter(Boolean)
-}
-
-function buildDraftPayload() {
-  return {
-    ...formData,
-    metadata: { ...formData.metadata }
-  }
 }
 
 

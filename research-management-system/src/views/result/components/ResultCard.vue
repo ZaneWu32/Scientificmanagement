@@ -27,10 +27,6 @@
           <el-icon><Calendar /></el-icon>
           <span>{{ formatDate(result.createdAt) }}</span>
         </div>
-        <div class="meta-item">
-          <el-icon><View /></el-icon>
-          <span>{{ result.viewCount || 0 }}</span>
-        </div>
       </div>
     </div>
 
@@ -60,7 +56,6 @@ interface Props {
     authors: string[]
     status: string
     createdAt: string
-    viewCount?: number
   }
 }
 
@@ -273,5 +268,4 @@ function handleClick() {
   justify-content: flex-end;
 }
 </style>
-
 
