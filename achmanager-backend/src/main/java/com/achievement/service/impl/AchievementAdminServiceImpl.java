@@ -172,6 +172,10 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             if (forcePending) {
                 // 用户修改成果物：强制将审核状态置为 PENDING
                 mainData.put("achievement_status", "PENDING");
+                mainData.put("reviewer_name","");
+                mainData.put("reviewer_id", "");
+                mainData.put("review_comment","");
+                mainData.put("review_time","");
             } else {
                 // 管理员修改成果物：保留原有状态
                 mainData.remove("achievement_status");
