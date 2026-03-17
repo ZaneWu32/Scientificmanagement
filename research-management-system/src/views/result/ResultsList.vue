@@ -40,13 +40,6 @@
             <el-option label="近5年" value="5y" />
           </el-select>
         </el-form-item>
-        <el-form-item label="排序方式">
-          <el-select v-model="filters.sortBy" style="width: 120px">
-            <el-option label="最新发布" value="latest" />
-            <el-option label="最多浏览" value="hot" />
-            <el-option label="最多引用" value="cited" />
-          </el-select>
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
@@ -128,8 +121,7 @@ const userStore = useUserStore()
 // 筛选条件
 const filters = reactive({
   type: '',
-  year: 'all',
-  sortBy: 'latest'
+  year: 'all'
 })
 
 // 分页
@@ -194,8 +186,7 @@ function handleSearch() {
 function handleReset() {
   Object.assign(filters, {
     type: '',
-    year: '1y',
-    sortBy: 'latest'
+    year: '1y'
   })
   pagination.page = 1
   loadResults()
@@ -219,7 +210,6 @@ function handleViewDetail(item: any) {
 function buildQueryParams() {
   const params: Record<string, any> = {
     type: filters.type,
-    sortBy: filters.sortBy,
     excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES]
   }
   const yearRange = resolveYearRange(filters.year)
