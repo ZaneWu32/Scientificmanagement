@@ -111,6 +111,18 @@ const typeChartRef = ref(null)
 const trendChartRef = ref(null)
 const typeChartInstance = ref(null)
 const trendChartInstance = ref(null)
+const TYPE_DISTRIBUTION_COLORS = [
+  '#4C6EF5',
+  '#F06595',
+  '#845EC2',
+  '#43C59E',
+  '#FFC107',
+  '#20A4D8',
+  '#FF9F43',
+  '#5B5F97',
+  '#B8DE29',
+  '#5470C6'
+]
 
 const STATUS_TYPE_MAP = {
   [ResultStatus.DRAFT]: 'info',
@@ -196,12 +208,7 @@ async function loadData() {
 
     // 处理真实分布数据
     if (typePieRes?.data) {
-      // 映射后端数据结构，保留 typeCode 以便进行稳定的逻辑判断
-      const realTypeData = typePieRes.data.map((item: any) => ({
-        name: item.typeName || '未命名',
-        value: Number(item.count || 0),
-        typeCode: item.typeCode || '' // 透传 typeCode
-      }))
+      const realTypeData = normalizeTypeDistribution(typePieRes.data)
       
       statistics.value.typeDistribution = realTypeData
       
@@ -238,30 +245,7 @@ async function loadData() {
 function initCharts() {
   disposeCharts()
 
-  if (typeChartRef.value) {
-    typeChartInstance.value = echarts.init(typeChartRef.value)
-    typeChartInstance.value.setOption({
-      tooltip: { trigger: 'item' },
-      legend: { bottom: 10 },
-      series: [
-        {
-          type: 'pie',
-          radius: ['40%', '70%'],
-          avoidLabelOverlap: false,
-          itemStyle: {
-            borderRadius: 10,
-            borderColor: '#fff',
-            borderWidth: 2
-          },
-          label: { show: false },
-          emphasis: {
-            label: { show: true, fontSize: 16, fontWeight: 'bold' }
-          },
-          data: statistics.value?.typeDistribution || []
-        }
-      ]
-    })
-  }
+  renderTypeChart()
 
   if (trendChartRef.value) {
     const trendData = statistics.value?.yearlyTrend || []
@@ -293,6 +277,7 @@ function initCharts() {
 }
 
 function handleResize() {
+  renderTypeChart()
   typeChartInstance.value?.resize()
   trendChartInstance.value?.resize()
 }
@@ -314,6 +299,138 @@ function getStatusText(status) {
 
 function viewDetail(id) {
   router.push(`/results/${id}`)
+}
+
+function normalizeTypeDistribution(items: any[] = []) {
+  const aggregated = new Map<string, { name: string; value: number; typeCode: string }>()
+
+  items.forEach((item: any) => {
+    const rawCode = item?.typeCode ? String(item.typeCode).trim() : ''
+    const rawName = item?.typeName ? String(item.typeName).trim() : ''
+    const key = (rawCode || rawName || '未命名').replace(/\s+/g, ' ').toUpperCase()
+    const value = Number(item?.count ?? item?.value ?? 0)
+
+    if (!key || !Number.isFinite(value) || value <= 0) return
+
+    const current = aggregated.get(key)
+    const displayName = rawName || rawCode || '未命名'
+
+    if (current) {
+      current.value += value
+      if (!current.name && displayName) {
+        current.name = displayName
+      }
+      if (!current.typeCode && rawCode) {
+        current.typeCode = rawCode
+      }
+      return
+    }
+
+    aggregated.set(key, {
+      name: displayName,
+      value,
+      typeCode: rawCode
+    })
+  })
+
+  return Array.from(aggregated.values()).sort((a, b) => b.value - a.value)
+}
+
+function truncateLegendLabel(name: string, maxLength: number) {
+  if (!name || name.length <= maxLength) return name
+  return `${name.slice(0, maxLength)}...`
+}
+
+function renderTypeChart() {
+  if (!typeChartRef.value) return
+
+  if (!typeChartInstance.value) {
+    typeChartInstance.value = echarts.init(typeChartRef.value)
+  }
+
+  const distribution = Array.isArray(statistics.value?.typeDistribution)
+    ? statistics.value.typeDistribution
+    : []
+  const hasData = distribution.length > 0
+  const chartWidth = typeChartRef.value?.clientWidth || 0
+  const compact = chartWidth < 520
+
+  typeChartInstance.value.setOption(
+    {
+      color: TYPE_DISTRIBUTION_COLORS,
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}<br/>{c} ({d}%)'
+      },
+      legend: hasData
+        ? compact
+          ? {
+              type: 'scroll',
+              bottom: 0,
+              left: 'center',
+              icon: 'roundRect',
+              itemWidth: 10,
+              itemHeight: 10,
+              itemGap: 12,
+              formatter: (name: string) => truncateLegendLabel(name, 10)
+            }
+          : {
+              type: 'scroll',
+              orient: 'vertical',
+              top: 'middle',
+              right: 0,
+              icon: 'roundRect',
+              itemWidth: 10,
+              itemHeight: 10,
+              itemGap: 12,
+              formatter: (name: string) => truncateLegendLabel(name, 14)
+            }
+        : { show: false },
+      graphic: hasData
+        ? []
+        : [
+            {
+              type: 'text',
+              left: 'center',
+              top: 'middle',
+              style: {
+                text: '暂无成果数据',
+                fill: '#94a3b8',
+                fontSize: 14
+              }
+            }
+          ],
+      series: hasData
+        ? [
+            {
+              type: 'pie',
+              radius: compact ? ['42%', '66%'] : ['46%', '72%'],
+              center: compact ? ['50%', '42%'] : ['34%', '50%'],
+              avoidLabelOverlap: true,
+              label: { show: false },
+              labelLine: { show: false },
+              itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+              },
+              emphasis: {
+                scale: true,
+                scaleSize: 6,
+                label: { show: false },
+                itemStyle: {
+                  shadowBlur: 12,
+                  shadowOffsetY: 4,
+                  shadowColor: 'rgba(15, 23, 42, 0.16)'
+                }
+              },
+              data: distribution
+            }
+          ]
+        : []
+    },
+    true
+  )
 }
 </script>
 
@@ -421,11 +538,11 @@ function viewDetail(id) {
 .chart-card {
   border-radius: 16px;
   padding: 16px;
-  height: 360px;
+  height: 384px;
 }
 
 .chart-container {
-  height: 280px;
+  height: 304px;
 }
 
 .recent-results {

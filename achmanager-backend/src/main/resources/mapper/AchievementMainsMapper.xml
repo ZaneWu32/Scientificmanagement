@@ -160,6 +160,7 @@
         </if>
         WHERE t.is_delete = 0
         GROUP BY t.id, t.type_name, t.type_code
+        HAVING COUNT(DISTINCT m.id) > 0
         ORDER BY count DESC
     </select>
 

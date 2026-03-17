@@ -14,6 +14,12 @@ public class AchievementStatServiceImpl implements AchievementStatService {
     private final AchievementMainsMapper mainsMapper;
     @Override
     public List<TypeCountVO> typePie(Integer creatorId) {
-        return mainsMapper.countByType(creatorId);
+        List<TypeCountVO> rows = mainsMapper.countByType(creatorId);
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        return rows.stream()
+                .filter(item -> item != null && item.getCount() != null && item.getCount() > 0)
+                .toList();
     }
 }
