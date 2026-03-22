@@ -1,6 +1,5 @@
 import { useUserStore } from "@/stores/user";
 import { UserRole } from "@/types";
-import { getPortalConfig, redirectToLoginPortal } from "@/utils/portalConfig";
 import { storeToRefs } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -179,8 +178,7 @@ router.beforeEach((to, from, next) => {
   // 需要登录的页面
   if (to.meta.requiresAuth !== false) {
     if (!isLoggedIn.value) {
-      // next({ path: "/login", query: { redirect: to.fullPath } });
-      redirectToLoginPortal(window.location.origin + to.fullPath);
+      next({ path: "/login", query: { redirect: to.fullPath } });
       return;
     }
 
@@ -189,8 +187,7 @@ router.beforeEach((to, from, next) => {
       // 等待 userInfo 加载完成
       if (!userInfo.value) {
         console.warn("用户信息未加载,拒绝访问:", to.path);
-        // next({ path: "/login", query: { redirect: to.fullPath } });
-        redirectToLoginPortal(window.location.origin + to.fullPath);
+        next({ path: "/login", query: { redirect: to.fullPath } });
         return;
       }
 

@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { parseUserFromToken, verifyToken } from '@/api/auth'
+import { exchangeLoginTicket, parseUserFromToken, resolveUserProfile } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { redirectToLoginPortal } from '@/utils/portalConfig'
 import { Loading } from '@element-plus/icons-vue'
@@ -58,12 +58,22 @@ const message = ref('正在验证身份...')
 
 onMounted(async () => {
   try {
-    // 从 URL 查询参数或 hash 中提取 token
-    const accessToken = extractTokenFromUrl()
+    const params = new URLSearchParams(window.location.search)
+    const ticket = params.get('ticket')
+    const state = params.get('state')
 
-    if (!accessToken) {
-      throw new Error('未找到有效的 token，请从 login-portal 登录')
+    if (!ticket) {
+      const redirect = route.query.redirect as string
+      const target = redirect && isValidRedirect(redirect) ? redirect : '/dashboard'
+      const redirectUri = encodeURIComponent(`${window.location.origin}${window.location.pathname}?redirect=${encodeURIComponent(target)}`)
+      message.value = '正在跳转到统一登录门户...'
+      await redirectToLoginPortal(redirectUri)
+      return
     }
+
+    const tokenRes = await exchangeLoginTicket(ticket, state || undefined)
+    const accessToken = tokenRes.access_token
+    const refreshToken = tokenRes.refresh_token
 
     message.value = '正在解析用户信息...'
 
@@ -75,23 +85,12 @@ onMounted(async () => {
 
     message.value = '正在完整化用户数据...'
 
-    // 从 URL 中获取 refresh_token（如果有）
-    const refreshToken = extractRefreshTokenFromUrl()
     if (!refreshToken) {
       throw new Error('未找到 refresh token，请重新登录')
     }
 
-    // 调用后端验证接口补全系统 ID
-    let fullUser = partialUser
-    try {
-      const verifyRes = await verifyToken(accessToken)
-      if (verifyRes?.data) {
-        fullUser = verifyRes.data
-      }
-    } catch (e) {
-      // console.warn('后端验证失败，使用前端解析的用户信息:', e)
-      throw new Error('Token 验证失败，请重试')
-    }
+    // 新认证流程下采用“可降级补全”：verify -> current -> JWT fallback
+    const fullUser = await resolveUserProfile(accessToken, partialUser)
 
     // 保存 token 和用户信息到 store
     const success = userStore.login(accessToken, refreshToken, fullUser, false)
@@ -105,62 +104,27 @@ onMounted(async () => {
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     // 获取重定向目标
-    const redirect = getRedirectTarget()
+    const redirectFromQuery = route.query.redirect as string
+    const redirect = (redirectFromQuery && isValidRedirect(redirectFromQuery)) ? redirectFromQuery : getRedirectTarget()
+
+    const cleanUrl = window.location.origin + window.location.pathname
+    window.history.replaceState({}, document.title, cleanUrl)
+
     router.replace(redirect)
   } catch (error) {
     console.error('登录回调处理失败:', error)
     message.value = `错误：${error instanceof Error ? error.message : '未知错误'}`
     ElMessage.error(`登录失败：${error instanceof Error ? error.message : '未知错误'}`)
 
-    // 3秒后跳转到 login-portal
+    // 3秒后回门户重登
     setTimeout(() => {
-      redirectToLoginPortal()
+      const redirect = route.query.redirect as string
+      const target = redirect && isValidRedirect(redirect) ? redirect : '/dashboard'
+      const redirectUri = encodeURIComponent(`${window.location.origin}${window.location.pathname}?redirect=${encodeURIComponent(target)}`)
+      redirectToLoginPortal(redirectUri)
     }, 3000)
   }
 })
-
-/**
- * 从 URL 中提取 access_token
- * 支持格式：
- * - ?token=xxx
- * - ?access_token=xxx
- * - #token=xxx
- * - #access_token=xxx
- */
-function extractTokenFromUrl(): string {
-  const params = new URLSearchParams(location.search)
-  let token = params.get('access_token')
-  if (!token) {
-    const hashParams = new URLSearchParams(location.hash.substring(1))
-    token = hashParams.get('access_token')
-  }
-
-  if (!token) {
-    // 兼容 token 参数
-    token = params.get('token')
-    if (!token) {
-      const hashParams = new URLSearchParams(location.hash.substring(1))
-      token = hashParams.get('token')
-    }
-  }
-
-  return token || '';
-}
-
-/**
- * 从 URL 中提取 refresh_token
- */
-function extractRefreshTokenFromUrl(): string {
-  const params = new URLSearchParams(location.search)
-  let token = params.get('refresh_token')
-
-  if (!token) {
-    const hashParams = new URLSearchParams(location.hash.substring(1))
-    token = hashParams.get('refresh_token')
-  }
-
-  return token || ''
-}
 
 /**
  * 获取重定向目标
