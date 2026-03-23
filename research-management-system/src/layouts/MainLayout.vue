@@ -38,39 +38,23 @@
     <el-container class="main-container">
       <!-- 左侧导航 -->
       <el-aside width="240px" class="sidebar glass">
-        <el-menu
-          :default-active="activeMenu"
-          :router="true"
-          class="sidebar-menu"
-        >
+        <el-menu :default-active="activeMenu" :router="true" class="sidebar-menu">
           <template v-for="item in menuItems" :key="item.path">
-            <el-menu-item
-              v-if="!item.children && hasPermission(item.roles)"
-              :index="item.path"
-              class="menu-pill"
-            >
+            <el-menu-item v-if="!item.children && hasPermission(item.roles)" :index="item.path" class="menu-pill">
               <el-icon class="menu-icon" size="18">
                 <component :is="item.icon" />
               </el-icon>
               <span>{{ item.title }}</span>
             </el-menu-item>
 
-            <el-sub-menu
-              v-else-if="item.children && hasPermission(item.roles)"
-              :index="item.path"
-              class="menu-pill"
-            >
+            <el-sub-menu v-else-if="item.children && hasPermission(item.roles)" :index="item.path" class="menu-pill">
               <template #title>
                 <el-icon class="menu-icon" size="18">
                   <component :is="item.icon" />
                 </el-icon>
                 <span>{{ item.title }}</span>
               </template>
-              <el-menu-item
-                v-for="child in item.children"
-                :key="child.path"
-                :index="child.path"
-              >
+              <el-menu-item v-for="child in item.children" :key="child.path" :index="child.path">
                 {{ child.title }}
               </el-menu-item>
             </el-sub-menu>
@@ -78,11 +62,7 @@
         </el-menu>
 
         <div class="sidebar-footer">
-          <div
-            v-if="showSystemSettingsCard"
-            class="footer-card"
-            @click="goSystemSettings"
-          >
+          <div v-if="showSystemSettingsCard" class="footer-card" @click="goSystemSettings">
             <div class="footer-title">系统设置</div>
             <div class="footer-desc">通知、偏好、主题</div>
           </div>
@@ -121,24 +101,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { logout as backendLogout } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  House,
-  Plus,
-  Document,
-  Search,
-  Checked,
-  DataAnalysis,
-  Setting,
-  User,
-  List,
-  FolderOpened
-} from '@element-plus/icons-vue'
 import { UserRole } from '@/types'
 import { redirectToLoginPortal } from '@/utils/portalConfig'
+import {
+  Checked,
+  DataAnalysis,
+  Document,
+  House,
+  List,
+  Plus,
+  Search,
+  Setting
+} from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -324,6 +303,13 @@ async function handleCommand(command) {
         cancelButtonText: '取消',
         type: 'warning'
       })
+
+      try {
+        await backendLogout()
+      } catch (error) {
+        console.warn('后端登出接口调用失败，继续执行本地登出', error)
+      }
+
       userStore.logout()
       await redirectToLoginPortal()
       ElMessage.success('已退出登录')
@@ -658,5 +644,4 @@ async function handleCommand(command) {
 .fade-leave-to {
   opacity: 0;
 }
-
 </style>

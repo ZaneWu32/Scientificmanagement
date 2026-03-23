@@ -25,6 +25,7 @@ import com.achievement.domain.dto.KeycloakTokenResponse;
 import com.achievement.domain.dto.KeycloakUser;
 import com.achievement.domain.vo.UserProfileVO;
 import com.achievement.result.Result;
+import com.achievement.service.IKeycloakUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthController {
 
     private final KeycloakConfig keycloakConfig;
+    private final IKeycloakUserService keycloakUserService;
     private final Map<String, Long> consumedTicketMap = new ConcurrentHashMap<>();
 
     @Data
@@ -101,10 +103,11 @@ public class AuthController {
     public Result<Void> logout(@CurrentUser KeycloakUser currentUser) {
         log.info("用户登出: userId={}, username={}", currentUser.getId(), currentUser.getUsername());
 
-        // 后端可在此处执行一些登出相关的操作，如：
-        // - 记录登出日志
-        // - 清除会话信息
-        // - 将 token 加入黑名单（如果需要）
+        boolean success = keycloakUserService.logoutUserSessions(currentUser.getUuid());
+        if (!success) {
+            log.warn("Keycloak会话注销失败: userId={}, username={}", currentUser.getUuid(), currentUser.getUsername());
+            return Result.error("认证服务登出失败，已执行本地登出");
+        }
 
         return Result.success();
     }

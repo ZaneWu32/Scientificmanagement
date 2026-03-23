@@ -175,6 +175,22 @@ public class KeycloakUserServiceImpl implements IKeycloakUserService {
         return Optional.ofNullable(realName);
     }
 
+    @Override
+    public boolean logoutUserSessions(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+
+        try {
+            getRealmResource().users().get(userId).logout();
+            log.info("Keycloak user sessions logged out: userId={}", userId);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to logout Keycloak user sessions: userId={}", userId, e);
+            return false;
+        }
+    }
+
     /**
      * 构建完整姓名
      *
