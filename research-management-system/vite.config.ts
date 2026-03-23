@@ -20,13 +20,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      // 代理 Keycloak token endpoint 和相关接口
-      "/auth": {
-        target: "https://dataforge.chat/kc",
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/auth/, ""),
-      },
       // 代理 Strapi 上传的文件
       "/uploads": {
         target: "http://localhost:1337",

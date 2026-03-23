@@ -69,8 +69,6 @@ interface BackendUserProfile {
   roles?: string[];
 }
 
-const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID;
-
 /**
  * 刷新 Keycloak token
  * @param refreshToken 刷新令牌
@@ -80,10 +78,7 @@ export async function refreshKeycloakToken(refreshToken: string): Promise<Keyclo
     url: "/auth/refresh",
     method: "post",
     skipAuth: true,
-    data: {
-      refreshToken,
-      clientId,
-    },
+    data: { refreshToken },
   })) as ApiResponse<KeycloakTokenResponse>;
 
   return res.data;
@@ -105,7 +100,6 @@ export async function exchangeAuthorizationCode(
       code,
       redirectUri,
       codeVerifier,
-      clientId,
     },
   })) as ApiResponse<KeycloakTokenResponse>;
 
@@ -126,7 +120,6 @@ export async function exchangeLoginTicket(
     data: {
       ticket,
       state,
-      clientId,
     },
   })) as ApiResponse<KeycloakTokenResponse>;
 

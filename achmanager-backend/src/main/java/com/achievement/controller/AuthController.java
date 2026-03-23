@@ -56,20 +56,17 @@ public class AuthController {
         private String state;
         private String redirectUri;
         private String codeVerifier;
-        private String clientId;
     }
 
     @Data
     public static class RefreshRequest {
         private String refreshToken;
-        private String clientId;
     }
 
     @Data
     public static class TicketExchangeRequest {
         private String ticket;
         private String state;
-        private String clientId;
     }
 
     /**
@@ -126,17 +123,11 @@ public class AuthController {
     @Operation(description = "使用授权码交换 token")
     @PostMapping("/exchange-code")
     public Result<KeycloakTokenResponse> exchangeCode(@RequestBody CodeExchangeRequest request) {
-        String tokenEndpoint = keycloakConfig.getAuthServerUrl()
-                + "/realms/"
-                + keycloakConfig.getRealm()
-                + "/protocol/openid-connect/token";
-        String clientId = (request.getClientId() == null || request.getClientId().isBlank())
-                ? keycloakConfig.getClientId()
-                : request.getClientId();
+        String tokenEndpoint = keycloakConfig.getOidcTokenUri();
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
-        body.add("client_id", clientId);
+        body.add("client_id", keycloakConfig.getPortalClientId());
         body.add("code", request.getCode());
         body.add("redirect_uri", request.getRedirectUri());
         body.add("code_verifier", request.getCodeVerifier());
@@ -196,24 +187,17 @@ public class AuthController {
         exchangeRequest.setCode(code);
         exchangeRequest.setCodeVerifier(codeVerifier);
         exchangeRequest.setRedirectUri(redirectUri);
-        exchangeRequest.setClientId(request.getClientId());
         return exchangeCode(exchangeRequest);
     }
 
     @Operation(description = "刷新 token")
     @PostMapping("/refresh")
     public Result<KeycloakTokenResponse> refresh(@RequestBody RefreshRequest request) {
-        String tokenEndpoint = keycloakConfig.getAuthServerUrl()
-                + "/realms/"
-                + keycloakConfig.getRealm()
-                + "/protocol/openid-connect/token";
-        String clientId = (request.getClientId() == null || request.getClientId().isBlank())
-                ? keycloakConfig.getClientId()
-                : request.getClientId();
+        String tokenEndpoint = keycloakConfig.getOidcTokenUri();
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "refresh_token");
-        body.add("client_id", clientId);
+        body.add("client_id", keycloakConfig.getPortalClientId());
         body.add("refresh_token", request.getRefreshToken());
 
         HttpHeaders headers = new HttpHeaders();

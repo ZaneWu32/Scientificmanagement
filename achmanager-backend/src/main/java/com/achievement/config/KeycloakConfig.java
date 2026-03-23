@@ -35,9 +35,14 @@ public class KeycloakConfig {
     private String clientId;
     private String clientSecret;
     private String realmDefaultRoles;
+    private String portalClientId;
 
     public String getJwkSetUri() {
         return authServerUrl + "/realms/" + realm + "/protocol/openid-connect/certs";
+    }
+
+    public String getOidcTokenUri() {
+        return authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
     }
 
     @Bean

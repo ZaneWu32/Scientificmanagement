@@ -12,9 +12,7 @@ interface ImportMetaEnv {
   readonly VITE_STRAPI_BASE_URL: string;
   readonly VITE_USE_MOCK: string;
 
-  // 认证相关配置
-  readonly VITE_KEYCLOAK_REALM: string;
-  readonly VITE_KEYCLOAK_CLIENT_ID: string;
+  // 仅开发环境存在
   readonly VITE_LOGIN_PORTAL_URL: string;
 }
 
