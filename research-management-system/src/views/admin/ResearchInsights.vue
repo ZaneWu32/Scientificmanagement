@@ -43,16 +43,13 @@
               </div>
             </div>
           </template>
-          
+
           <!-- 图表容器 -->
           <div ref="keywordChartRef" class="chart-container"></div>
-          
+
           <!-- 空态提示 -->
-          <el-empty 
-            v-if="!loading && (!keywordGraph.nodes || keywordGraph.nodes.length === 0)"
-            description="暂无关键词数据"
-            :image-size="120"
-          >
+          <el-empty v-if="!loading && (!keywordGraph.nodes || keywordGraph.nodes.length === 0)" description="暂无关键词数据"
+            :image-size="120">
             <el-button type="primary" @click="loadKeywordCloud">重新加载</el-button>
           </el-empty>
         </el-card>
@@ -63,7 +60,9 @@
     <el-card class="info-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <el-icon :size="18"><InfoFilled /></el-icon>
+          <el-icon :size="18">
+            <InfoFilled />
+          </el-icon>
           <span>使用说明</span>
         </div>
       </template>
@@ -71,7 +70,9 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <div class="info-item">
-              <el-icon class="info-icon" color="#409EFF"><CircleCheck /></el-icon>
+              <el-icon class="info-icon" color="#409EFF">
+                <CircleCheck />
+              </el-icon>
               <div>
                 <h4>节点大小</h4>
                 <p>节点越大表示该关键词出现频率越高，是当前时间范围内的研究热点</p>
@@ -80,7 +81,9 @@
           </el-col>
           <el-col :span="8">
             <div class="info-item">
-              <el-icon class="info-icon" color="#67C23A"><Connection /></el-icon>
+              <el-icon class="info-icon" color="#67C23A">
+                <Connection />
+              </el-icon>
               <div>
                 <h4>连线关系</h4>
                 <p>连线表示关键词之间存在共现关系，揭示学科交叉与研究关联</p>
@@ -89,7 +92,9 @@
           </el-col>
           <el-col :span="8">
             <div class="info-item">
-              <el-icon class="info-icon" color="#E6A23C"><Pointer /></el-icon>
+              <el-icon class="info-icon" color="#E6A23C">
+                <Pointer />
+              </el-icon>
               <div>
                 <h4>交互操作</h4>
                 <p>支持鼠标拖拽、滚轮缩放，点击节点可高亮显示相关联的关键词</p>
@@ -103,17 +108,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { Refresh, TrendCharts, InfoFilled, CircleCheck, Connection, Pointer } from '@element-plus/icons-vue'
 import { getKeywordCloud } from '@/api/result'
-import * as echarts from 'echarts'
+import { CircleCheck, Connection, InfoFilled, Pointer, Refresh, TrendCharts } from '@element-plus/icons-vue'
+import type { EChartsType } from 'echarts/core'
 import { ElMessage } from 'element-plus'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
 const keywordRange = ref('1y')
 const keywordGraph = ref<{ nodes: any[]; links: any[] }>({ nodes: [], links: [] })
 const keywordChartRef = ref(null)
-const keywordChartInstance = ref<echarts.ECharts | null>(null)
+const keywordChartInstance = ref<EChartsType | null>(null)
+let echartsModule: typeof import('echarts/core') | null = null
+let echartsReadyPromise: Promise<typeof import('echarts/core')> | null = null
 
 const colorPalette = ['#1d5bff', '#4c7eff', '#00c892', '#ff9d3c', '#7c3aed', '#0ea5e9', '#f97316']
 
@@ -130,13 +137,31 @@ onBeforeUnmount(() => {
 
 watch(keywordRange, () => loadKeywordCloud())
 
+async function ensureECharts() {
+  if (echartsModule) return echartsModule
+  if (!echartsReadyPromise) {
+    echartsReadyPromise = (async () => {
+      const echarts = await import('echarts/core')
+      const [{ GraphChart }, { TooltipComponent, LegendComponent }, { CanvasRenderer }] = await Promise.all([
+        import('echarts/charts'),
+        import('echarts/components'),
+        import('echarts/renderers')
+      ])
+      echarts.use([GraphChart, TooltipComponent, LegendComponent, CanvasRenderer])
+      echartsModule = echarts
+      return echarts
+    })()
+  }
+  return echartsReadyPromise
+}
+
 async function loadKeywordCloud() {
   loading.value = true
   try {
     const res = await getKeywordCloud({ range: keywordRange.value })
     keywordGraph.value = res?.data || { nodes: [], links: [] }
     await nextTick()
-    renderKeywordChart()
+    await renderKeywordChart()
     ElMessage.success('数据加载成功')
   } catch (error) {
     console.error('加载关键词数据失败:', error)
@@ -146,9 +171,10 @@ async function loadKeywordCloud() {
   }
 }
 
-function renderKeywordChart() {
+async function renderKeywordChart() {
   if (!keywordChartRef.value) return
   if (!keywordChartInstance.value) {
+    const echarts = await ensureECharts()
     keywordChartInstance.value = echarts.init(keywordChartRef.value)
   }
 
@@ -167,8 +193,8 @@ function renderKeywordChart() {
       tooltip: {
         formatter: (params: any) => `${params.data.name}<br/>热度: ${params.data.value}`
       },
-      legend: { 
-        data: categories.map((item) => item.name), 
+      legend: {
+        data: categories.map((item) => item.name),
         top: 10,
         textStyle: { fontSize: 12 }
       },
@@ -311,5 +337,3 @@ function disposeChart() {
   line-height: 1.6;
 }
 </style>
-
-
