@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
     <div class="login-hero">
-      <div class="hero-badge">LabNexus</div>
+      <div class="hero-badge">科研成果管理系统</div>
       <h1 class="hero-title">欢迎回来，科研人</h1>
       <p class="hero-sub">统一成果 · 高效协同 · 智能洞察</p>
       <div class="hero-stats">

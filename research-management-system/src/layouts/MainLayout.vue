@@ -4,9 +4,9 @@
     <el-header class="header glass">
       <div class="header-left">
         <div class="brand">
-          <div class="brand-logo">Lab</div>
+          <div class="brand-logo">科</div>
           <div class="brand-text">
-            <div class="brand-title">Nexus</div>
+            <div class="brand-title">科研成果管理系统</div>
             <!-- <div class="brand-sub">{{ userStore.userInfo?.department || '科研机构' }}</div> -->
           </div>
         </div>

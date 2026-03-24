@@ -865,7 +865,7 @@ export const crawlerSettings = {
   retryLimit: 3,
   autoTagging: true,
   deduplicateThreshold: 0.78,
-  notifyEmails: ['ops@labnexus.cn', 'pm@labnexus.cn'],
+  notifyEmails: ['ops@research-system.cn', 'pm@research-system.cn'],
   notifyWebhook: ''
 }
 
