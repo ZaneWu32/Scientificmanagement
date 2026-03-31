@@ -1,5 +1,6 @@
 package com.achievement.controller;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -196,7 +197,7 @@ public class AuthController {
     @Operation(description = "刷新 token")
     @PostMapping("/refresh")
     public Result<KeycloakTokenResponse> refresh(@RequestBody RefreshRequest request) {
-        String tokenEndpoint = keycloakConfig.getOidcTokenUri();
+        String tokenEndpoint = resolveRefreshTokenEndpoint(request.getRefreshToken());
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "refresh_token");
@@ -213,6 +214,63 @@ public class AuthController {
                 KeycloakTokenResponse.class);
 
         return Result.success(response.getBody());
+    }
+
+    private String resolveRefreshTokenEndpoint(String refreshToken) {
+        String issuer = parseIssuerFromJwt(refreshToken);
+        if (issuer == null || issuer.isBlank()) {
+            return keycloakConfig.getOidcTokenUri();
+        }
+
+        String normalizedIssuer = normalizeIssuer(issuer);
+        String endpoint = normalizedIssuer + "/protocol/openid-connect/token";
+        log.debug("刷新令牌使用issuer派生端点: {}", endpoint);
+        return endpoint;
+    }
+
+    private String normalizeIssuer(String issuer) {
+        String trimmedIssuer = issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
+
+        try {
+            URI parsed = URI.create(trimmedIssuer);
+            if ("http".equalsIgnoreCase(parsed.getScheme()) && parsed.getPort() == 443) {
+                URI normalized = new URI(
+                        "https",
+                        parsed.getUserInfo(),
+                        parsed.getHost(),
+                        parsed.getPort(),
+                        parsed.getPath(),
+                        parsed.getQuery(),
+                        parsed.getFragment());
+                return normalized.toString();
+            }
+        } catch (Exception e) {
+            log.warn("归一化issuer失败，继续使用原始值: {}", e.getMessage());
+        }
+
+        return trimmedIssuer;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String parseIssuerFromJwt(String jwtToken) {
+        if (jwtToken == null || jwtToken.isBlank()) {
+            return null;
+        }
+
+        try {
+            String[] parts = jwtToken.split("\\.");
+            if (parts.length < 2) {
+                return null;
+            }
+
+            byte[] payloadBytes = Base64.getUrlDecoder().decode(parts[1]);
+            Map<String, Object> payload = new ObjectMapper().readValue(payloadBytes, Map.class);
+            Object iss = payload.get("iss");
+            return iss == null ? null : iss.toString();
+        } catch (Exception e) {
+            log.warn("解析refresh_token issuer失败，回退默认端点: {}", e.getMessage());
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")
