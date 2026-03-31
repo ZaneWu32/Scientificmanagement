@@ -84,12 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { Document, Tickets, TrophyBase, TrendCharts } from '@element-plus/icons-vue'
-import { getStatistics, getResults, getStackedTrend, getTypePie } from '@/api/result'
-import { formatDateTime } from '@/utils/date'
-import * as echarts from 'echarts'
+import { getResults, getStackedTrend, getStatistics, getTypePie } from '@/api/result'
+import type { StatisticsData, StrapiPaginatedResponse } from '@/api/types'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
+import { formatDateTime } from '@/utils/date'
+import { Document, Tickets, TrendCharts, TrophyBase } from '@element-plus/icons-vue'
+import type { EChartsType } from 'echarts/core'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
 const statistics = ref(null)
@@ -106,8 +107,10 @@ const stackedSeries = ref<any[]>([])
 
 const distributionChartRef = ref(null)
 const stackedChartRef = ref(null)
-const distributionChartInstance = ref<echarts.ECharts | null>(null)
-const stackedChartInstance = ref<echarts.ECharts | null>(null)
+const distributionChartInstance = ref<EChartsType | null>(null)
+const stackedChartInstance = ref<EChartsType | null>(null)
+let echartsModule: typeof import('echarts/core') | null = null
+let echartsReadyPromise: Promise<typeof import('echarts/core')> | null = null
 
 const colorPalette = ['#1d5bff', '#4c7eff', '#00c892', '#ff9d3c', '#7c3aed', '#0ea5e9', '#f97316']
 
@@ -165,6 +168,33 @@ onBeforeUnmount(() => {
 watch(distributionDimension, () => loadDistribution())
 watch([trendDimension, trendRange], () => loadStackedTrend())
 
+async function ensureECharts() {
+  if (echartsModule) return echartsModule
+  if (!echartsReadyPromise) {
+    echartsReadyPromise = (async () => {
+      const echarts = await import('echarts/core')
+      const [{ PieChart, BarChart, LineChart }, { TooltipComponent, LegendComponent, GridComponent, GraphicComponent }, { CanvasRenderer }] = await Promise.all([
+        import('echarts/charts'),
+        import('echarts/components'),
+        import('echarts/renderers')
+      ])
+      echarts.use([
+        PieChart,
+        BarChart,
+        LineChart,
+        TooltipComponent,
+        LegendComponent,
+        GridComponent,
+        GraphicComponent,
+        CanvasRenderer
+      ])
+      echartsModule = echarts
+      return echarts
+    })()
+  }
+  return echartsReadyPromise
+}
+
 async function loadSummary() {
   loading.value = true
   try {
@@ -173,9 +203,9 @@ async function loadSummary() {
       getResults({ page: 1, pageSize: 10, excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES] }),
       getTypePie()
     ])
-    const statsData = statsRes?.data || {}
-    const resultsData = resultsRes?.data || {}
-    
+    const statsData: StatisticsData = statsRes?.data || {}
+    const resultsData: Partial<StrapiPaginatedResponse["data"]> = resultsRes?.data || {}
+
     statistics.value = statsData
     recentResults.value = resultsData.list || []
 
@@ -188,21 +218,21 @@ async function loadSummary() {
     if (typePieRes?.data && Array.isArray(typePieRes.data)) {
       const list = typePieRes.data
       total = list.reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
-      
+
       // 优先使用 typeCode 判断 (PAPER/PATENT)，中文名称匹配作为 fallback
       papers = list
         .filter((item: any) => {
-           const code = String(item.typeCode || '').toUpperCase()
-           const name = String(item.typeName || '')
-           return code.includes('PAPER') || name.includes('论文')
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.typeName || '')
+          return code.includes('PAPER') || name.includes('论文')
         })
         .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
 
       patents = list
         .filter((item: any) => {
-           const code = String(item.typeCode || '').toUpperCase()
-           const name = String(item.typeName || '')
-           return code.includes('PATENT') || name.includes('专利')
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.typeName || '')
+          return code.includes('PATENT') || name.includes('专利')
         })
         .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
     }
@@ -243,7 +273,7 @@ async function loadDistribution() {
     })
     distributionData.value = Array.from(aggregated.values())
     distributionEmpty.value = distributionData.value.length === 0
-    renderDistributionChart()
+    await renderDistributionChart()
   } catch (error) {
     console.error('加载分布数据失败:', error)
     distributionEmpty.value = true
@@ -259,7 +289,7 @@ async function loadStackedTrend() {
     stackedSeries.value = []
     totalCounts.value = []
     approvedCounts.value = []
-    renderStackedChart()
+    await renderStackedChart()
     return
   }
 
@@ -280,7 +310,7 @@ async function loadStackedTrend() {
     totalCounts.value = Array.isArray(data.totalCounts) ? data.totalCounts : []
     approvedCounts.value = Array.isArray(data.approvedCounts) ? data.approvedCounts : []
 
-    renderStackedChart()
+    await renderStackedChart()
   } catch (error) {
     console.error('加载趋势数据失败:', error)
   }
@@ -288,9 +318,10 @@ async function loadStackedTrend() {
 
 
 
-function renderDistributionChart() {
+async function renderDistributionChart() {
   if (!distributionChartRef.value) return
   if (!distributionChartInstance.value) {
+    const echarts = await ensureECharts()
     distributionChartInstance.value = echarts.init(distributionChartRef.value)
   }
   distributionChartInstance.value.clear()
@@ -304,39 +335,40 @@ function renderDistributionChart() {
       graphic: hasData
         ? []
         : [
-            {
-              type: 'text',
-              left: 'center',
-              top: 'middle',
-              style: {
-                text: '暂无数据',
-                fill: '#94a3b8',
-                fontSize: 14
-              }
+          {
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: '暂无数据',
+              fill: '#94a3b8',
+              fontSize: 14
             }
-          ],
+          }
+        ],
       series: hasData
         ? [
-            {
-              type: 'pie',
-              radius: ['46%', '74%'],
-              label: { show: false },
-              itemStyle: { borderColor: '#fff', borderWidth: 2 },
-              emphasis: {
-                label: { show: true, fontWeight: 'bold', fontSize: 14 }
-              },
-              data: distributionData.value
-            }
-          ]
+          {
+            type: 'pie',
+            radius: ['46%', '74%'],
+            label: { show: false },
+            itemStyle: { borderColor: '#fff', borderWidth: 2 },
+            emphasis: {
+              label: { show: true, fontWeight: 'bold', fontSize: 14 }
+            },
+            data: distributionData.value
+          }
+        ]
         : []
     },
     true
   )
 }
 
-function renderStackedChart() {
+async function renderStackedChart() {
   if (!stackedChartRef.value) return
   if (!stackedChartInstance.value) {
+    const echarts = await ensureECharts()
     stackedChartInstance.value = echarts.init(stackedChartRef.value)
   }
 
@@ -347,36 +379,36 @@ function renderStackedChart() {
 
   const barSeries = hasData
     ? (stackedSeries.value || []).map((item, index) => ({
-        name: item.name,
-        type: 'bar',
-        stack: 'total',
-        barMaxWidth: 38,
-        emphasis: { focus: 'series' },
-        itemStyle: { color: colorPalette[index % colorPalette.length] },
-        data: item.data || []
-      }))
+      name: item.name,
+      type: 'bar',
+      stack: 'total',
+      barMaxWidth: 38,
+      emphasis: { focus: 'series' },
+      itemStyle: { color: colorPalette[index % colorPalette.length] },
+      data: item.data || []
+    }))
     : []
 
   const lineTotal = hasData
     ? {
-        name: '总提交',
-        type: 'line',
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 7,
-        data: totalCounts.value || []
-      }
+      name: '总提交',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data: totalCounts.value || []
+    }
     : null
 
   const lineApproved = hasData
     ? {
-        name: '已通过',
-        type: 'line',
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 7,
-        data: approvedCounts.value || []
-      }
+      name: '已通过',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data: approvedCounts.value || []
+    }
     : null
 
   stackedChartInstance.value.clear()
@@ -386,14 +418,14 @@ function renderStackedChart() {
 
       tooltip: hasData
         ? {
-            trigger: 'item',
-            formatter: (p: any) => {
-              const year = p?.name ?? ''
-              const seriesName = p?.seriesName ?? ''
-              const val = Number(p?.value ?? 0)
-              return `${year}<br/>${p.marker}${seriesName}：${val}`
-            }
+          trigger: 'item',
+          formatter: (p: any) => {
+            const year = p?.name ?? ''
+            const seriesName = p?.seriesName ?? ''
+            const val = Number(p?.value ?? 0)
+            return `${year}<br/>${p.marker}${seriesName}：${val}`
           }
+        }
         : { show: false },
 
       legend: { bottom: 10, show: hasData },
@@ -401,17 +433,17 @@ function renderStackedChart() {
       graphic: hasData
         ? []
         : [
-            {
-              type: 'text',
-              left: 'center',
-              top: 'middle',
-              style: {
-                text: stackedUnsupported.value ? '该维度暂不支持' : '暂无数据',
-                fill: '#94a3b8',
-                fontSize: 14
-              }
+          {
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: stackedUnsupported.value ? '该维度暂不支持' : '暂无数据',
+              fill: '#94a3b8',
+              fontSize: 14
             }
-          ],
+          }
+        ],
 
       grid: { left: '3%', right: '4%', bottom: 55, containLabel: true },
 

@@ -20,4 +20,12 @@ public interface IKeycloakUserService {
     Integer getOrCreateUserId(String keycloakUserId);
 
     Optional<String> getUserRealName(String userId);
+
+    /**
+     * 注销用户在 Keycloak 的会话
+     *
+     * @param userId Keycloak 用户 ID
+     * @return 是否注销成功
+     */
+    boolean logoutUserSessions(String userId);
 }

@@ -1,6 +1,5 @@
 package com.achievement.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +22,7 @@ public class SecurityConfig {
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests -> {
                     requests.requestMatchers("/health").permitAll();
                     requests.requestMatchers("/api/v1/process-system/**").permitAll();
+                    requests.requestMatchers("/auth/exchange-code", "/auth/exchange-ticket", "/auth/refresh")
+                            .permitAll();
                     // 其他请求配置...
                     // requests.requestMatchers("xxx").hasRole("YYY");
                     requests.anyRequest().authenticated();

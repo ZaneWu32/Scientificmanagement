@@ -103,14 +103,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { Document, Tickets, TrophyBase, TrendCharts } from '@element-plus/icons-vue'
-import { getMyStatistics, getMyResults, getTypePie4User } from '@/api/result'
-import { formatDateTime } from '@/utils/date'
-import * as echarts from 'echarts'
-import { ResultStatus } from '@/types'
+import { getMyResults, getMyStatistics, getTypePie4User } from '@/api/result'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
+import { ResultStatus } from '@/types'
+import { formatDateTime } from '@/utils/date'
+import { Document, Tickets, TrendCharts, TrophyBase } from '@element-plus/icons-vue'
+import type { EChartsType } from 'echarts/core'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const loading = ref(false)
@@ -120,8 +120,10 @@ const greetingName = ref('同学')
 
 const typeChartRef = ref(null)
 const trendChartRef = ref(null)
-const typeChartInstance = ref(null)
-const trendChartInstance = ref(null)
+const typeChartInstance = ref<EChartsType | null>(null)
+const trendChartInstance = ref<EChartsType | null>(null)
+let echartsModule: typeof import('echarts/core') | null = null
+let echartsReadyPromise: Promise<typeof import('echarts/core')> | null = null
 const TYPE_DISTRIBUTION_COLORS = [
   '#4C6EF5',
   '#F06595',
@@ -194,7 +196,7 @@ const stats = computed(() => [
 
 onMounted(async () => {
   await loadData()
-  initCharts()
+  await initCharts()
   window.addEventListener('resize', handleResize)
 })
 
@@ -218,28 +220,28 @@ async function loadData() {
     // 处理真实分布数据
     if (typePieRes?.data) {
       const realTypeData = normalizeTypeDistribution(typePieRes.data)
-      
+
       statistics.value.typeDistribution = realTypeData
-      
+
       // 基于真实数据计算统计指标 (优先使用 typeCode，中文名作为降级兜底)
       const total = realTypeData.reduce((sum: number, item: any) => sum + item.value, 0)
-      
+
       const papers = realTypeData
         .filter((item: any) => {
-           const code = String(item.typeCode || '').toUpperCase()
-           const name = String(item.name || '')
-           return code.includes('PAPER') || name.includes('论文')
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.name || '')
+          return code.includes('PAPER') || name.includes('论文')
         })
         .reduce((sum: number, item: any) => sum + item.value, 0)
 
       const patents = realTypeData
         .filter((item: any) => {
-           const code = String(item.typeCode || '').toUpperCase()
-           const name = String(item.name || '')
-           return code.includes('PATENT') || name.includes('专利')
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.name || '')
+          return code.includes('PATENT') || name.includes('专利')
         })
         .reduce((sum: number, item: any) => sum + item.value, 0)
-        
+
       statistics.value.totalResults = total
       statistics.value.paperCount = papers
       statistics.value.patentCount = patents
@@ -251,12 +253,39 @@ async function loadData() {
   }
 }
 
-function initCharts() {
+async function ensureECharts() {
+  if (echartsModule) return echartsModule
+  if (!echartsReadyPromise) {
+    echartsReadyPromise = (async () => {
+      const echarts = await import('echarts/core')
+      const [{ PieChart, LineChart }, { TooltipComponent, LegendComponent, GridComponent, GraphicComponent }, { CanvasRenderer }] = await Promise.all([
+        import('echarts/charts'),
+        import('echarts/components'),
+        import('echarts/renderers')
+      ])
+      echarts.use([
+        PieChart,
+        LineChart,
+        TooltipComponent,
+        LegendComponent,
+        GridComponent,
+        GraphicComponent,
+        CanvasRenderer
+      ])
+      echartsModule = echarts
+      return echarts
+    })()
+  }
+  return echartsReadyPromise
+}
+
+async function initCharts() {
   disposeCharts()
 
-  renderTypeChart()
+  await renderTypeChart()
 
   if (trendChartRef.value) {
+    const echarts = await ensureECharts()
     const trendData = statistics.value?.yearlyTrend || []
     trendChartInstance.value = echarts.init(trendChartRef.value)
     trendChartInstance.value.setOption({
@@ -286,7 +315,9 @@ function initCharts() {
 }
 
 function handleResize() {
-  renderTypeChart()
+  if (typeChartInstance.value) {
+    void renderTypeChart()
+  }
   typeChartInstance.value?.resize()
   trendChartInstance.value?.resize()
 }
@@ -355,10 +386,11 @@ function truncateLegendLabel(name: string, maxLength: number) {
   return `${name.slice(0, maxLength)}...`
 }
 
-function renderTypeChart() {
+async function renderTypeChart() {
   if (!typeChartRef.value) return
 
   if (!typeChartInstance.value) {
+    const echarts = await ensureECharts()
     typeChartInstance.value = echarts.init(typeChartRef.value)
   }
 
@@ -379,68 +411,68 @@ function renderTypeChart() {
       legend: hasData
         ? compact
           ? {
-              type: 'scroll',
-              bottom: 0,
-              left: 'center',
-              icon: 'roundRect',
-              itemWidth: 10,
-              itemHeight: 10,
-              itemGap: 12,
-              formatter: (name: string) => truncateLegendLabel(name, 10)
-            }
+            type: 'scroll',
+            bottom: 0,
+            left: 'center',
+            icon: 'roundRect',
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap: 12,
+            formatter: (name: string) => truncateLegendLabel(name, 10)
+          }
           : {
-              type: 'scroll',
-              orient: 'vertical',
-              top: 'middle',
-              right: 0,
-              icon: 'roundRect',
-              itemWidth: 10,
-              itemHeight: 10,
-              itemGap: 12,
-              formatter: (name: string) => truncateLegendLabel(name, 14)
-            }
+            type: 'scroll',
+            orient: 'vertical',
+            top: 'middle',
+            right: 0,
+            icon: 'roundRect',
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap: 12,
+            formatter: (name: string) => truncateLegendLabel(name, 14)
+          }
         : { show: false },
       graphic: hasData
         ? []
         : [
-            {
-              type: 'text',
-              left: 'center',
-              top: 'middle',
-              style: {
-                text: '暂无成果数据',
-                fill: '#94a3b8',
-                fontSize: 14
-              }
+          {
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: '暂无成果数据',
+              fill: '#94a3b8',
+              fontSize: 14
             }
-          ],
+          }
+        ],
       series: hasData
         ? [
-            {
-              type: 'pie',
-              radius: compact ? ['42%', '66%'] : ['46%', '72%'],
-              center: compact ? ['50%', '42%'] : ['34%', '50%'],
-              avoidLabelOverlap: true,
+          {
+            type: 'pie',
+            radius: compact ? ['42%', '66%'] : ['46%', '72%'],
+            center: compact ? ['50%', '42%'] : ['34%', '50%'],
+            avoidLabelOverlap: true,
+            label: { show: false },
+            labelLine: { show: false },
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            emphasis: {
+              scale: true,
+              scaleSize: 6,
               label: { show: false },
-              labelLine: { show: false },
               itemStyle: {
-                borderRadius: 10,
-                borderColor: '#fff',
-                borderWidth: 2
-              },
-              emphasis: {
-                scale: true,
-                scaleSize: 6,
-                label: { show: false },
-                itemStyle: {
-                  shadowBlur: 12,
-                  shadowOffsetY: 4,
-                  shadowColor: 'rgba(15, 23, 42, 0.16)'
-                }
-              },
-              data: distribution
-            }
-          ]
+                shadowBlur: 12,
+                shadowOffsetY: 4,
+                shadowColor: 'rgba(15, 23, 42, 0.16)'
+              }
+            },
+            data: distribution
+          }
+        ]
         : []
     },
     true

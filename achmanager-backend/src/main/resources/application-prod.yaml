@@ -33,3 +33,4 @@ keycloak:
   client-id: ${KEYCLOAK_CLIENT_ID:achmanager-backend}
   client-secret: ${KEYCLOAK_CLIENT_SECRET:}
   realm-default-roles: default-roles-research-management|uma_authorization|offline_access
+  portal-client-id: ${KEYCLOAK_PORTAL_CLIENT_ID:research-management-portal}

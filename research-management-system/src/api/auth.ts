@@ -1,6 +1,4 @@
 import request from "@/utils/request";
-import type { AxiosInstance } from "axios";
-import axios from "axios";
 import type { ApiResponse } from "./types";
 
 /**
@@ -61,46 +59,14 @@ export interface UserProfile {
   roles: string[];
 }
 
-// ============ Keycloak Token Endpoint ============
-
-const clientId = import.meta.env.VITE_KEYCLOAK_CLIENT_ID;
-const realm = import.meta.env.VITE_KEYCLOAK_REALM;
-const tokenEndpoint = `/realms/${realm}/protocol/openid-connect/token`;
-
-let keycloakClient: AxiosInstance | null = null;
-
-function getKeycloakClient(): AxiosInstance {
-  if (!keycloakClient) {
-    keycloakClient = axios.create({
-      baseURL: "/auth",
-      timeout: 10000,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
-  }
-  return keycloakClient;
-}
-
-/**
- * 获取 Keycloak token（密码授权流程）
- * 前端直接调用，不走 backend 代理
- * @param username 用户名
- * @param password 密码
- */
-export async function getKeycloakToken(
-  username: string,
-  password: string,
-): Promise<KeycloakTokenResponse> {
-  const params = new URLSearchParams();
-  params.append("grant_type", "password");
-  params.append("client_id", clientId);
-  params.append("username", username);
-  params.append("password", password);
-
-  const client = getKeycloakClient();
-  const response = await client.post<KeycloakTokenResponse>(tokenEndpoint, params);
-  return response.data;
+interface BackendUserProfile {
+  id?: number | string;
+  uuid?: string;
+  username?: string;
+  name?: string;
+  realName?: string;
+  email?: string;
+  roles?: string[];
 }
 
 /**
@@ -108,14 +74,56 @@ export async function getKeycloakToken(
  * @param refreshToken 刷新令牌
  */
 export async function refreshKeycloakToken(refreshToken: string): Promise<KeycloakTokenResponse> {
-  const params = new URLSearchParams();
-  params.append("grant_type", "refresh_token");
-  params.append("client_id", clientId);
-  params.append("refresh_token", refreshToken);
+  const res = (await request({
+    url: "/auth/refresh",
+    method: "post",
+    skipAuth: true,
+    data: { refreshToken },
+  })) as ApiResponse<KeycloakTokenResponse>;
 
-  const client = getKeycloakClient();
-  const response = await client.post<KeycloakTokenResponse>(tokenEndpoint, params);
-  return response.data;
+  return res.data;
+}
+
+/**
+ * 使用授权码交换 token（Authorization Code + PKCE）
+ */
+export async function exchangeAuthorizationCode(
+  code: string,
+  codeVerifier: string,
+  redirectUri: string,
+): Promise<KeycloakTokenResponse> {
+  const res = (await request({
+    url: "/auth/exchange-code",
+    method: "post",
+    skipAuth: true,
+    data: {
+      code,
+      redirectUri,
+      codeVerifier,
+    },
+  })) as ApiResponse<KeycloakTokenResponse>;
+
+  return res.data;
+}
+
+/**
+ * 使用 one-time ticket 交换 token
+ */
+export async function exchangeLoginTicket(
+  ticket: string,
+  state?: string,
+): Promise<KeycloakTokenResponse> {
+  const res = (await request({
+    url: "/auth/exchange-ticket",
+    method: "post",
+    skipAuth: true,
+    data: {
+      ticket,
+      state,
+    },
+  })) as ApiResponse<KeycloakTokenResponse>;
+
+  return res.data;
 }
 
 /**
@@ -159,6 +167,8 @@ export function verifyToken(accessToken: string) {
   return request({
     url: "/auth/verify",
     method: "post",
+    skipAuth: true,
+    silent: true,
     data: { accessToken },
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -184,4 +194,59 @@ export function getCurrentUser() {
     url: "/auth/current",
     method: "get",
   }) as Promise<ApiResponse<UserProfile>>;
+}
+
+export function getCurrentUserByToken(accessToken: string) {
+  return request({
+    url: "/auth/current",
+    method: "get",
+    skipAuth: true,
+    silent: true,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }) as Promise<ApiResponse<BackendUserProfile>>;
+}
+
+function normalizeUserProfile(backendUser: BackendUserProfile, fallback: UserProfile): UserProfile {
+  const normalizedId = Number(backendUser.id);
+  return {
+    id: Number.isFinite(normalizedId) ? normalizedId : fallback.id,
+    uuid: backendUser.uuid || fallback.uuid,
+    username: backendUser.username || fallback.username,
+    name: backendUser.name || backendUser.realName || fallback.name,
+    email: backendUser.email || fallback.email,
+    roles: backendUser.roles && backendUser.roles.length > 0 ? backendUser.roles : fallback.roles,
+  };
+}
+
+/**
+ * 在新认证流程下补全用户信息：
+ * 1) /auth/verify（兼容旧设计）
+ * 2) /auth/current（直接取当前用户）
+ * 3) 回退到 JWT 解析出的基础信息
+ */
+export async function resolveUserProfile(
+  accessToken: string,
+  fallback: UserProfile,
+): Promise<UserProfile> {
+  try {
+    const verifyRes = await verifyToken(accessToken);
+    if (verifyRes?.data) {
+      return normalizeUserProfile(verifyRes.data as BackendUserProfile, fallback);
+    }
+  } catch (e) {
+    console.warn("verifyToken failed, fallback to current user endpoint:", e);
+  }
+
+  try {
+    const currentRes = await getCurrentUserByToken(accessToken);
+    if (currentRes?.data) {
+      return normalizeUserProfile(currentRes.data, fallback);
+    }
+  } catch (e) {
+    console.warn("getCurrentUserByToken failed, use JWT parsed user:", e);
+  }
+
+  return fallback;
 }
