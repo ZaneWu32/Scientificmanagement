@@ -17,7 +17,11 @@
     <!-- 统计卡片 -->
     <el-row :gutter="16" class="stat-cards">
       <el-col :xs="24" :sm="12" :md="6" v-for="stat in stats" :key="stat.key">
-        <div class="stat-card glass">
+        <div
+          class="stat-card glass"
+          :class="{ 'stat-card--interactive': Boolean(stat.route) }"
+          @click="handleStatClick(stat)"
+        >
           <div class="stat-icon" :style="{ background: stat.tint }">
             <component :is="stat.icon" />
           </div>
@@ -25,9 +29,16 @@
             <div class="stat-label">{{ stat.label }}</div>
             <div class="stat-value">{{ stat.value }}</div>
           </div>
-          <div class="stat-pill" :style="{ color: stat.accent }">
+          <el-button
+            v-if="stat.tip"
+            type="primary"
+            text
+            class="stat-pill stat-link"
+            :style="{ color: stat.accent }"
+            @click.stop="handleStatClick(stat)"
+          >
             {{ stat.tip }}
-          </div>
+          </el-button>
         </div>
       </el-col>
     </el-row>
@@ -152,7 +163,8 @@ const stats = computed(() => [
     icon: Document,
     tint: 'rgba(29, 91, 255, 0.12)',
     accent: '#1d5bff',
-    tip: '全部成果'
+    tip: '全部成果',
+    route: '/results/my'
   },
   {
     key: 'paper',
@@ -160,8 +172,7 @@ const stats = computed(() => [
     value: statistics.value?.paperCount || 0,
     icon: Tickets,
     tint: 'rgba(76, 126, 255, 0.12)',
-    accent: '#4c7eff',
-    tip: '含会议/期刊'
+    accent: '#4c7eff'
   },
   {
     key: 'patent',
@@ -169,8 +180,7 @@ const stats = computed(() => [
     value: statistics.value?.patentCount || 0,
     icon: TrophyBase,
     tint: 'rgba(0, 200, 146, 0.12)',
-    accent: '#00c892',
-    tip: '含授权/申请'
+    accent: '#00c892'
   },
   {
     key: 'monthly',
@@ -178,8 +188,7 @@ const stats = computed(() => [
     value: statistics.value?.monthlyNew || 0,
     icon: TrendCharts,
     tint: 'rgba(255, 163, 64, 0.12)',
-    accent: '#ff9d3c',
-    tip: '近期提交'
+    accent: '#ff9d3c'
   }
 ])
 
@@ -299,6 +308,11 @@ function getStatusText(status) {
 
 function viewDetail(id) {
   router.push(`/results/${id}`)
+}
+
+function handleStatClick(stat: { route?: string }) {
+  if (!stat.route) return
+  router.push(stat.route)
 }
 
 function normalizeTypeDistribution(items: any[] = []) {
@@ -492,11 +506,15 @@ function renderTypeChart() {
   align-items: center;
   gap: 14px;
   transition: transform 0.25s;
-  cursor: pointer;
+  cursor: default;
   background: #fff;
 }
 
-.stat-card:hover {
+.stat-card--interactive {
+  cursor: pointer;
+}
+
+.stat-card--interactive:hover {
   transform: translateY(-4px);
 }
 
@@ -529,6 +547,10 @@ function renderTypeChart() {
   margin-left: auto;
   font-size: 12px;
   font-weight: 600;
+}
+
+.stat-link {
+  padding: 0;
 }
 
 .chart-section {
