@@ -420,7 +420,8 @@ export function createResultWithFiles(data: Record<string, any>, files: File[]):
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 120 * 1000,
   })
 }
 
@@ -446,7 +447,8 @@ export function updateResultWithFiles(id: string, data: Record<string, any>, fil
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 120 * 1000,
   })
 }
 
@@ -472,7 +474,8 @@ export function updateAdminResultWithFiles(id: string, data: Record<string, any>
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 120 * 1000,
   })
 }
 
@@ -594,7 +597,8 @@ export function uploadAttachment(file: File): Promise<ApiResponse<any>> {
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 120 * 1000,
   })
 }
 
