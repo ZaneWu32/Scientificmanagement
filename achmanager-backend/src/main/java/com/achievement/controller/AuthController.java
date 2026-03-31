@@ -234,14 +234,9 @@ public class AuthController {
         try {
             URI parsed = URI.create(trimmedIssuer);
             if ("http".equalsIgnoreCase(parsed.getScheme()) && parsed.getPort() == 443) {
-                URI normalized = new URI(
-                        "https",
-                        parsed.getUserInfo(),
-                        parsed.getHost(),
-                        parsed.getPort(),
-                        parsed.getPath(),
-                        parsed.getQuery(),
-                        parsed.getFragment());
+                URI normalized = new URI("https",
+                        parsed.getUserInfo(), parsed.getHost(), parsed.getPort(),
+                        parsed.getPath(), parsed.getQuery(), parsed.getFragment());
                 return normalized.toString();
             }
         } catch (Exception e) {
