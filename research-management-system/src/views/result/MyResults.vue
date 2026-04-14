@@ -21,17 +21,6 @@
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="项目">
-          <el-select v-model="searchForm.projectId" placeholder="全部项目" clearable filterable>
-            <el-option :label="'全部'" :value="''" />
-            <el-option
-              v-for="project in projects"
-              :key="project.id"
-              :label="getProjectLabel(project)"
-              :value="project.id"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
@@ -145,7 +134,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getMyResults, deleteResult as deleteResultApi } from '@/api/result'
-import { getProjects } from '@/api/project'
 import { ResultStatus, ResultVisibility } from '@/types'
 import { formatDateTime } from '@/utils/date'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
@@ -153,7 +141,6 @@ import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
-const projects = ref([])
 
 const STATUS_TYPE_MAP = {
   [ResultStatus.DRAFT]: 'info',
@@ -183,8 +170,7 @@ const VISIBILITY_TEXT_MAP = {
 
 const searchForm = reactive({
   status: ResultStatus.ALL,
-  keyword: '',
-  projectId: ''
+  keyword: ''
 })
 
 const pagination = reactive({
@@ -194,7 +180,6 @@ const pagination = reactive({
 })
 
 onMounted(() => {
-  loadProjects()
   handleSearch()
 })
 
@@ -204,7 +189,6 @@ async function handleSearch() {
     const params = {
       ...searchForm,
       status: searchForm.status === ResultStatus.ALL ? '' : searchForm.status,
-      projectId: searchForm.projectId === ResultStatus.ALL ? '' : searchForm.projectId,
       excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES],
       page: pagination.page,
       pageSize: pagination.pageSize
@@ -224,7 +208,6 @@ async function handleSearch() {
 function handleReset() {
   searchForm.status = ResultStatus.ALL
   searchForm.keyword = ''
-  searchForm.projectId = ''
   pagination.page = 1
   handleSearch()
 }
@@ -271,20 +254,6 @@ function getStatusText(status) {
 
 function getVisibilityText(visibility) {
   return VISIBILITY_TEXT_MAP[visibility] || visibility
-}
-
-function getProjectLabel(project) {
-  if (!project) return ''
-  return `${project.name} (${project.code})`
-}
-
-async function loadProjects() {
-  try {
-    const res = await getProjects()
-    projects.value = res?.data || []
-  } catch (error) {
-    ElMessage.error('加载项目列表失败')
-  }
 }
 </script>
 
