@@ -1,5 +1,6 @@
 import { useUserStore } from "@/stores/user";
 import { UserRole } from "@/types";
+import { ElMessage } from "element-plus";
 import { storeToRefs } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -134,7 +135,12 @@ const router = createRouter({
           path: "/admin/system-settings",
           name: "SystemSettings",
           component: () => import("@/views/admin/SystemSettings.vue"),
-          meta: { title: "系统设置", roles: [UserRole.ADMIN] },
+          meta: {
+            title: "系统设置",
+            roles: [UserRole.ADMIN],
+            comingSoon: true,
+            comingSoonMessage: "开发中，请等待",
+          },
         },
         {
           path: "/admin/research-insights",
@@ -198,6 +204,21 @@ router.beforeEach((to, from, next) => {
         return;
       }
     }
+  }
+
+  const isComingSoon = to.meta.comingSoon === true;
+  if (isComingSoon) {
+    const message =
+      typeof to.meta.comingSoonMessage === "string" ? to.meta.comingSoonMessage : "开发中，请等待";
+    ElMessage.info(message);
+
+    if (from.matched.length > 0) {
+      next(false);
+      return;
+    }
+
+    next({ path: "/admin/dashboard", replace: true });
+    return;
   }
 
   // 已登录用户访问登录页，重定向到首页
