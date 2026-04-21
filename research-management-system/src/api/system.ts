@@ -24,6 +24,9 @@ export interface CrawlerDataSource {
   lastSuccessAt?: string
   status?: CrawlerStatus
   failureReason?: string
+  curationStrategy?: string
+  sampleCount?: number
+  lastCurationAt?: string
 }
 
 export interface CrawlerSettings {

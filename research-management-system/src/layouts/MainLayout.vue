@@ -180,10 +180,10 @@ const menuItems = computed(() => {
       ]
     })
 
-    // 3. 科技助手
+    // 3. 智能洞察
     items.push({
       path: '/insights',
-      title: '科技助手',
+      title: '智能洞察',
       icon: DataAnalysis,
       roles: [UserRole.ADMIN],
       children: [
@@ -194,7 +194,7 @@ const menuItems = computed(() => {
 
     // 5. 系统配置（低频维护）
     const systemConfigChildren = [
-      { path: '/admin/system-settings', title: '系统设置' }
+      { path: '/admin/system-settings', title: '数据源管理' }
     ]
 
     // 只有管理员可以访问成果类型配置

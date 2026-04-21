@@ -68,6 +68,20 @@ export type AccessRequestStatus = typeof AccessRequestStatus[keyof typeof Access
 
 // 企业需求匹配
 export type DemandStatus = 'unmatched' | 'matched' | 'in_follow_up'
+export type DemandFollowUpStatus = 'new' | 'confirmed' | 'in_progress' | 'completed'
+
+export interface DemandTimelineItem {
+  time: string
+  title: string
+  actor?: string
+  status?: 'done' | 'active' | 'pending'
+  note?: string
+}
+
+export interface EvidenceLink {
+  label: string
+  url: string
+}
 
 export interface DemandMatch {
   resultId: string
@@ -78,6 +92,7 @@ export interface DemandMatch {
   reason?: string
   sourceSnippet?: string
   updatedAt?: string
+  matchEvidence?: string[]
 }
 
 export interface DemandItem {
@@ -91,13 +106,137 @@ export interface DemandItem {
   industry?: string
   region?: string
   sourceCategory?: string
+  sourceName?: string
   sourceSite?: string
   sourceUrl?: string
+  publishDate?: string
+  capturedDate?: string
   capturedAt?: string
   confidence?: number
   status: DemandStatus
+  followUpStatus?: DemandFollowUpStatus
+  followUpOwner?: string
+  evidenceText?: string
+  curationNote?: string
+  timeline?: DemandTimelineItem[]
   bestMatchScore?: number
   matches?: DemandMatch[]
+}
+
+export interface DemandSourceStat {
+  name: string
+  count: number
+  url?: string
+}
+
+export interface DemandStats {
+  total: number
+  matched: number
+  inFollowUp: number
+  unmatched: number
+  averageConfidence: number
+  sources: DemandSourceStat[]
+  industries: string[]
+  regions: string[]
+  sourceCategories: string[]
+}
+
+export interface ResearchInsightSummaryCard {
+  key: string
+  label: string
+  value: number
+  note?: string
+}
+
+export interface ResearchInsightTopic {
+  topicName: string
+  hotScore: number
+  trendDelta: number
+  demandCount: number
+  paperCount: number
+  insightSummary: string
+  evidenceLinks: EvidenceLink[]
+}
+
+export interface ResearchInsightTrendSeries {
+  topicName: string
+  periods: string[]
+  values: number[]
+}
+
+export interface ResearchInsightComparisonItem {
+  topicName: string
+  hotScore: number
+  demandCount: number
+  paperCount: number
+  externalHeat: number
+  internalSupply: number
+  gap: string
+  action: string
+  evidenceLinks: EvidenceLink[]
+}
+
+export interface ResearchInsightOverview {
+  updatedAt: string
+  summaryCards: ResearchInsightSummaryCard[]
+  hotTopics: ResearchInsightTopic[]
+  trendSeries: ResearchInsightTrendSeries[]
+  supplyDemandComparison: ResearchInsightComparisonItem[]
+  insightBrief: string[]
+  keywordGraph: {
+    nodes: Array<{ name: string; value: number; category?: string }>
+    links: Array<{ source: string; target: string; value?: number }>
+  }
+}
+
+export interface AutoFillRecognizedField {
+  key: string
+  label: string
+  value: any
+  confidence: number
+}
+
+export interface AutoFillFieldEvidence {
+  fieldKey: string
+  evidenceText: string
+  sourceHint?: string
+}
+
+export interface AutoFillPendingConfirmation {
+  fieldKey: string
+  label: string
+  reason: string
+}
+
+export interface AutoFillSampleMeta {
+  id: string
+  fileName: string
+  format: string
+  sourceName: string
+  sourceUrl: string
+  publishDate: string
+  capturedDate: string
+  title: string
+}
+
+export interface AutoFillDemoSample {
+  id: string
+  sampleFileMeta: AutoFillSampleMeta
+  title: string
+  authors: string[]
+  abstract: string
+  keywords: string[]
+  year: string
+  metadata: Record<string, any>
+  recognizedFields: AutoFillRecognizedField[]
+  fieldEvidence: AutoFillFieldEvidence[]
+  pendingConfirmations: AutoFillPendingConfirmation[]
+  sourceName: string
+  sourceUrl: string
+  publishDate: string
+  capturedDate: string
+  evidenceText: string
+  curationNote: string
 }
 
 export const FieldType = {
