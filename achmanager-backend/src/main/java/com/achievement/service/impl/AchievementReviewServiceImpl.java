@@ -277,6 +277,9 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         if (user == null) {
             throw new RuntimeException("审核人不存在或映射失效: reviewerId=" + reviewerId);
         }
+        if (!user.isEnabled()) {
+            throw new RuntimeException("审核人已被禁用，无法分配: reviewerId=" + reviewerId);
+        }
         if (!user.hasAnyRole(RoleConstants.RESEARCH_ADMIN, RoleConstants.RESEARCH_EXPERT)) {
             throw new RuntimeException("审核人必须是科研管理员或科研专家: reviewerId=" + reviewerId);
         }

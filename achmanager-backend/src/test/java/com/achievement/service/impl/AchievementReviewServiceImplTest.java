@@ -147,4 +147,39 @@ class AchievementReviewServiceImplTest {
         verify(achievementMainsMapper, never()).update(eq(null), any());
         verify(assignmentMapper, never()).insert(any());
     }
+
+    @Test
+    void assignReviewersShouldRejectDisabledReviewerBeforeWriting() {
+        AchievementMains achievement = new AchievementMains()
+                .setId(12)
+                .setDocumentId("ach-doc-3")
+                .setPublishedAt(LocalDateTime.now())
+                .setIsDelete(0);
+        KeycloakUser assigner = KeycloakUser.builder()
+                .id(100)
+                .uuid("assigner-uuid")
+                .name("分配管理员")
+                .roles(List.of(RoleConstants.RESEARCH_ADMIN))
+                .enabled(true)
+                .build();
+        KeycloakUser disabledReviewer = KeycloakUser.builder()
+                .id(400)
+                .uuid("reviewer-uuid")
+                .name("已禁用管理员")
+                .roles(List.of(RoleConstants.RESEARCH_ADMIN))
+                .enabled(false)
+                .build();
+        AssignReviewerDTO dto = new AssignReviewerDTO();
+        dto.setReviewerIds(List.of(400));
+
+        when(achievementMainsMapper.selectOne(any())).thenReturn(achievement);
+        when(keycloakUserService.getUserById(400)).thenReturn(disabledReviewer);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> achievementReviewService.assignReviewers("ach-doc-3", dto, assigner));
+
+        assertTrue(exception.getMessage().contains("审核人已被禁用"));
+        verify(achievementMainsMapper, never()).update(eq(null), any());
+        verify(assignmentMapper, never()).insert(any());
+    }
 }
