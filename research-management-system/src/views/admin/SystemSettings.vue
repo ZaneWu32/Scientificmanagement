@@ -2,20 +2,14 @@
   <div class="system-settings">
     <div class="page-header">
       <div>
-        <h2>数据源管理</h2>
-        <p class="subtitle">统一管理真实来源白名单、策展策略与抓取节奏，说明需求洞察的数据承载基础。</p>
+        <h2>系统设置 · 爬虫数据源</h2>
+        <p class="subtitle">集中配置需求爬虫的数据源、抓取频率与通知策略，确保数据持续更新</p>
       </div>
       <el-button :loading="sourcesLoading" @click="loadSources">
         <el-icon style="margin-right: 4px"><Refresh /></el-icon>
         刷新
       </el-button>
     </div>
-
-    <el-alert
-      title="当前演示版采用公开官方/平台来源的离线策展数据，不做现场实时抓取，也不包装为全网自动发现平台。"
-      type="info"
-      :closable="false"
-    />
 
     <el-row :gutter="16">
       <el-col :xs="24" :lg="16">
@@ -24,7 +18,7 @@
             <div class="card-header">
               <div>
                 <div class="card-title">数据源列表</div>
-                <div class="card-desc">管理外部网站、通知页和平台入口的白名单策略与样本策展方式</div>
+                <div class="card-desc">管理外部网站、API、RSS 等数据源的抓取配置</div>
               </div>
               <el-button type="primary" @click="openCreate">
                 <el-icon style="margin-right: 4px"><Plus /></el-icon>
@@ -76,14 +70,6 @@
                   <span class="status-time">
                     上次成功：{{ row.lastSuccessAt || '—' }}
                   </span>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column label="样本/策展" min-width="220">
-              <template #default="{ row }">
-                <div class="stack-cell">
-                  <span>{{ row.sampleCount || 0 }} 条样本 / {{ row.lastCurationAt || '未策展' }}</span>
-                  <span class="muted">{{ row.curationStrategy || '暂无策展说明' }}</span>
                 </div>
               </template>
             </el-table-column>
@@ -164,10 +150,6 @@
               </el-button>
             </el-form-item>
           </el-form>
-          <div class="strategy-note">
-            <div class="note-title">演示版默认策略</div>
-            <p>只保留公开官方/平台来源，优先策展高质量线索，不承诺首版覆盖所有站点与所有详情页。</p>
-          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -575,12 +557,6 @@ onMounted(() => {
   gap: 4px;
 }
 
-.stack-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .status-time {
   color: #9ca3af;
   font-size: 12px;
@@ -601,25 +577,5 @@ onMounted(() => {
 .basic-auth {
   display: flex;
   gap: 8px;
-}
-
-.strategy-note {
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-}
-
-.note-title {
-  margin-bottom: 8px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.strategy-note p {
-  margin: 0;
-  color: #6b7280;
-  line-height: 1.7;
 }
 </style>

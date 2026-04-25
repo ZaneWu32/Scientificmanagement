@@ -1,12 +1,3 @@
-import {
-  curatedAutoFillSamples,
-  curatedCrawlerSettings,
-  curatedCrawlerSources,
-  curatedDemands,
-  curatedResearchInsightsOverview,
-  curatedResultPatches
-} from './curatedDemoData'
-
 // 基础模拟数据，用于前端演示
 const nowYear = new Date().getFullYear()
 
@@ -877,21 +868,6 @@ export const crawlerSettings = {
   notifyEmails: ['ops@research-system.cn', 'pm@research-system.cn'],
   notifyWebhook: ''
 }
-
-Object.entries(curatedResultPatches).forEach(([id, patch]) => {
-  const target = results.find((item) => item.id === id)
-  if (target) {
-    Object.assign(target, patch)
-  }
-})
-
-dashboardAnalytics.keywordGraph = curatedResearchInsightsOverview.keywordGraph
-demands.splice(0, demands.length, ...curatedDemands)
-crawlerSources.splice(0, crawlerSources.length, ...curatedCrawlerSources)
-Object.assign(crawlerSettings, curatedCrawlerSettings)
-
-export const researchInsightsOverview = curatedResearchInsightsOverview
-export const autoFillSamples = curatedAutoFillSamples
 
 export function nextId(prefix = 'r') {
   return `${prefix}-${Math.random().toString(16).slice(2, 8)}`

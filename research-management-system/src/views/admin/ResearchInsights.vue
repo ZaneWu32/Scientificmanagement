@@ -1,175 +1,132 @@
 <template>
   <div class="research-insights">
+    <!-- 页面标题 -->
     <div class="page-header">
       <div>
-        <h2>研究洞察</h2>
-        <p class="subtitle">
-          基于真实需求线索与开放论文样本，先输出管理层可读的方向结论，再用图谱辅助解释主题关系。
-        </p>
-      </div>
-      <div class="header-actions">
-        <el-tag effect="plain" type="warning">管理增值能力</el-tag>
-        <el-button :loading="loading" @click="loadInsights">
-          <el-icon><Refresh /></el-icon>
-          刷新数据
-        </el-button>
+        <h2>研究洞察 · Research Insights</h2>
+        <p class="subtitle">通过关键词分析洞察科研热点与学科关联，助力科研决策</p>
       </div>
     </div>
 
-    <el-row :gutter="16" class="summary-row">
-      <el-col :xs="24" :md="6" v-for="card in insights?.summaryCards || []" :key="card.key">
-        <el-card shadow="never" class="summary-card">
-          <div class="summary-label">{{ card.label }}</div>
-          <div class="summary-value">{{ card.value }}</div>
-          <div class="summary-note">{{ card.note }}</div>
+    <!-- 筛选区域 -->
+    <el-card class="filter-card" shadow="never">
+      <el-form :inline="true" class="filter-form">
+        <el-form-item label="时间范围">
+          <el-radio-group v-model="keywordRange" size="default">
+            <el-radio-button label="1y">近1年</el-radio-button>
+            <el-radio-button label="3y">近3年</el-radio-button>
+            <el-radio-button label="all">全部</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="Refresh" @click="loadKeywordCloud">
+            刷新数据
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 词云图谱展示区域 -->
+    <el-row :gutter="20">
+      <el-col :span="24">
+        <el-card class="chart-card" v-loading="loading">
+          <template #header>
+            <div class="card-header">
+              <div class="header-left">
+                <el-icon class="header-icon" :size="20">
+                  <TrendCharts />
+                </el-icon>
+                <span class="header-title">研究热点词云 / 关联图谱</span>
+              </div>
+              <div class="header-tip">
+                <el-tag size="small" type="info">节点大小代表热度，可拖拽缩放</el-tag>
+              </div>
+            </div>
+          </template>
+
+          <!-- 图表容器 -->
+          <div ref="keywordChartRef" class="chart-container"></div>
+
+          <!-- 空态提示 -->
+          <el-empty v-if="!loading && (!keywordGraph.nodes || keywordGraph.nodes.length === 0)" description="暂无关键词数据"
+            :image-size="120">
+            <el-button type="primary" @click="loadKeywordCloud">重新加载</el-button>
+          </el-empty>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card shadow="never" class="panel-card">
+    <!-- 说明卡片 -->
+    <el-card class="info-card" shadow="never">
       <template #header>
-        <div class="section-head">
-          <div>
-            <div class="section-title">方向摘要</div>
-            <div class="section-desc">先给结论，不把词云或图谱当作最终价值。</div>
-          </div>
-          <div class="update-text">更新时间：{{ insights?.updatedAt || '—' }}</div>
+        <div class="card-header">
+          <el-icon :size="18">
+            <InfoFilled />
+          </el-icon>
+          <span>使用说明</span>
         </div>
       </template>
-      <el-skeleton :loading="loading" animated :rows="3">
-        <template #default>
-          <div class="brief-list">
-            <div v-for="brief in insights?.insightBrief || []" :key="brief" class="brief-item">
-              {{ brief }}
-            </div>
-          </div>
-        </template>
-      </el-skeleton>
-    </el-card>
-
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="14">
-        <el-card shadow="never" class="panel-card">
-          <template #header>
-            <div class="section-head">
+      <div class="info-content">
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <div class="info-item">
+              <el-icon class="info-icon" color="#409EFF">
+                <CircleCheck />
+              </el-icon>
               <div>
-                <div class="section-title">热点主题</div>
-                <div class="section-desc">结合外部真实线索与开放论文样本形成管理层阅读视图。</div>
+                <h4>节点大小</h4>
+                <p>节点越大表示该关键词出现频率越高，是当前时间范围内的研究热点</p>
               </div>
             </div>
-          </template>
-          <div class="topic-list">
-            <div v-for="topic in insights?.hotTopics || []" :key="topic.topicName" class="topic-card">
-              <div class="topic-header">
-                <div>
-                  <div class="topic-title">{{ topic.topicName }}</div>
-                  <div class="topic-meta">
-                    <span>外部线索 {{ topic.demandCount }}</span>
-                    <span class="dot">·</span>
-                    <span>论文样本 {{ topic.paperCount }}</span>
-                  </div>
-                </div>
-                <div class="topic-score">
-                  <div class="score-number">{{ topic.hotScore }}</div>
-                  <div class="score-trend">+{{ topic.trendDelta }}</div>
-                </div>
-              </div>
-              <p class="topic-copy">{{ topic.insightSummary }}</p>
-              <div class="link-group">
-                <el-link
-                  v-for="link in topic.evidenceLinks"
-                  :key="`${topic.topicName}-${link.url}`"
-                  :href="link.url"
-                  target="_blank"
-                  type="primary"
-                >
-                  {{ link.label }}
-                </el-link>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :lg="10">
-        <el-card shadow="never" class="panel-card">
-          <template #header>
-            <div class="section-head">
+          </el-col>
+          <el-col :span="8">
+            <div class="info-item">
+              <el-icon class="info-icon" color="#67C23A">
+                <Connection />
+              </el-icon>
               <div>
-                <div class="section-title">趋势变化</div>
-                <div class="section-desc">适合现场解释“哪些方向正在升温”。</div>
+                <h4>连线关系</h4>
+                <p>连线表示关键词之间存在共现关系，揭示学科交叉与研究关联</p>
               </div>
             </div>
-          </template>
-          <div class="trend-list">
-            <div v-for="series in insights?.trendSeries || []" :key="series.topicName" class="trend-card">
-              <div class="trend-title">{{ series.topicName }}</div>
-              <div class="trend-points">
-                <div v-for="(period, index) in series.periods" :key="`${series.topicName}-${period}`" class="trend-point">
-                  <div class="point-label">{{ period }}</div>
-                  <div class="point-bar">
-                    <div class="point-fill" :style="{ width: `${series.values[index]}%` }"></div>
-                  </div>
-                  <div class="point-value">{{ series.values[index] }}</div>
-                </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="info-item">
+              <el-icon class="info-icon" color="#E6A23C">
+                <Pointer />
+              </el-icon>
+              <div>
+                <h4>交互操作</h4>
+                <p>支持鼠标拖拽、滚轮缩放，点击节点可高亮显示相关联的关键词</p>
               </div>
             </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card shadow="never" class="panel-card">
-      <template #header>
-        <div class="section-head">
-          <div>
-            <div class="section-title">供需对照</div>
-            <div class="section-desc">把外部热度和当前成果样本基础放在一张表里，便于讨论后续投入方向。</div>
-          </div>
-        </div>
-      </template>
-      <el-table :data="insights?.supplyDemandComparison || []" border>
-        <el-table-column prop="topicName" label="主题方向" min-width="240" />
-        <el-table-column prop="externalHeat" label="外部热度" width="120" />
-        <el-table-column prop="internalSupply" label="当前基础" width="120" />
-        <el-table-column prop="gap" label="判断" min-width="180" />
-        <el-table-column prop="action" label="建议动作" min-width="260" />
-      </el-table>
-    </el-card>
-
-    <el-card shadow="never" class="panel-card">
-      <template #header>
-        <div class="section-head">
-          <div>
-            <div class="section-title">主题关系图谱</div>
-            <div class="section-desc">图谱是辅助展示形式，用于解释主题联动，不替代方向结论。</div>
-          </div>
-        </div>
-      </template>
-      <div ref="keywordChartRef" class="chart-container"></div>
-      <el-empty v-if="!loading && !(insights?.keywordGraph?.nodes || []).length" description="暂无图谱数据" />
+          </el-col>
+        </el-row>
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { getResearchInsightsOverview } from '@/api/result'
-import type { ResearchInsightOverview } from '@/types'
-import { Refresh } from '@element-plus/icons-vue'
+import { getKeywordCloud } from '@/api/result'
+import { CircleCheck, Connection, InfoFilled, Pointer, Refresh, TrendCharts } from '@element-plus/icons-vue'
 import type { EChartsType } from 'echarts/core'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
-const insights = ref<ResearchInsightOverview | null>(null)
-const keywordChartRef = ref<HTMLElement | null>(null)
+const keywordRange = ref('1y')
+const keywordGraph = ref<{ nodes: any[]; links: any[] }>({ nodes: [], links: [] })
+const keywordChartRef = ref(null)
 const keywordChartInstance = ref<EChartsType | null>(null)
 let echartsModule: typeof import('echarts/core') | null = null
 let echartsReadyPromise: Promise<typeof import('echarts/core')> | null = null
 
-const colorPalette = ['#0f766e', '#0284c7', '#1d4ed8', '#f97316', '#7c3aed', '#e11d48', '#16a34a']
+const colorPalette = ['#1d5bff', '#4c7eff', '#00c892', '#ff9d3c', '#7c3aed', '#0ea5e9', '#f97316']
 
 onMounted(async () => {
-  await loadInsights()
+  await loadKeywordCloud()
+  await nextTick()
   window.addEventListener('resize', handleResize)
 })
 
@@ -177,6 +134,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   disposeChart()
 })
+
+watch(keywordRange, () => loadKeywordCloud())
 
 async function ensureECharts() {
   if (echartsModule) return echartsModule
@@ -196,53 +155,60 @@ async function ensureECharts() {
   return echartsReadyPromise
 }
 
-async function loadInsights() {
+async function loadKeywordCloud() {
   loading.value = true
   try {
-    const res = await getResearchInsightsOverview()
-    insights.value = res?.data || null
+    const res = await getKeywordCloud({ range: keywordRange.value })
+    keywordGraph.value = res?.data || { nodes: [], links: [] }
     await nextTick()
     await renderKeywordChart()
+    ElMessage.success('数据加载成功')
+  } catch (error) {
+    console.error('加载关键词数据失败:', error)
+    ElMessage.error('加载数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 async function renderKeywordChart() {
-  if (!keywordChartRef.value || !(insights.value?.keywordGraph?.nodes || []).length) return
+  if (!keywordChartRef.value) return
   if (!keywordChartInstance.value) {
     const echarts = await ensureECharts()
     keywordChartInstance.value = echarts.init(keywordChartRef.value)
   }
 
-  const nodes = (insights.value?.keywordGraph.nodes || []).map((item, index) => ({
+  const nodes = (keywordGraph.value.nodes || []).map((item, index) => ({
     ...item,
-    symbolSize: Math.max(16, Math.min(42, item.value)),
+    symbolSize: Math.max(14, Math.min(42, item.value)),
     itemStyle: { color: colorPalette[index % colorPalette.length] }
   }))
 
-  const categories = Array.from(new Set(nodes.map((item) => item.category).filter(Boolean))).map((name) => ({ name }))
+  const categories = Array.from(new Set(nodes.map((item) => item.category).filter(Boolean))).map(
+    (name) => ({ name })
+  )
 
   keywordChartInstance.value.setOption(
     {
       tooltip: {
-        formatter: (params: any) => `${params.data.name}<br/>热度指数：${params.data.value}`
+        formatter: (params: any) => `${params.data.name}<br/>热度: ${params.data.value}`
       },
       legend: {
         data: categories.map((item) => item.name),
-        top: 8
+        top: 10,
+        textStyle: { fontSize: 12 }
       },
       series: [
         {
           type: 'graph',
           layout: 'force',
           roam: true,
-          force: { repulsion: 120, edgeLength: [50, 140] },
+          force: { repulsion: 90, edgeLength: [50, 140] },
           data: nodes,
-          links: insights.value?.keywordGraph.links || [],
+          links: keywordGraph.value.links || [],
           categories,
           label: { show: true, formatter: '{b}', color: '#0f172a', fontSize: 12 },
-          lineStyle: { color: '#cbd5e1', opacity: 0.7 },
+          lineStyle: { color: '#cbd5e1', opacity: 0.6 },
           emphasis: { focus: 'adjacency', lineStyle: { width: 3 } }
         }
       ]
@@ -265,170 +231,109 @@ function disposeChart() {
 .research-insights {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.page-header,
-.section-head,
-.topic-header {
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
 .page-header h2 {
   margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
 }
 
-.subtitle,
-.section-desc,
-.topic-copy {
-  color: #64748b;
-  line-height: 1.7;
+.subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.filter-card {
+  border: 1px solid #eef2f7;
 }
 
-.summary-row {
+.filter-form {
   margin: 0;
 }
 
-.summary-card,
-.panel-card {
-  border: 1px solid #e5eef7;
-  border-radius: 18px;
+.filter-form :deep(.el-form-item) {
+  margin-bottom: 0;
 }
 
-.summary-label {
-  font-size: 14px;
-  color: #64748b;
+.chart-card {
+  min-height: 600px;
 }
 
-.summary-value {
-  margin-top: 14px;
-  font-size: 30px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.summary-note,
-.update-text {
-  margin-top: 10px;
-  font-size: 13px;
-  color: #64748b;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.brief-list,
-.topic-list,
-.trend-list {
+.card-header {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
 }
 
-.brief-item,
-.topic-card,
-.trend-card {
-  padding: 16px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-}
-
-.topic-title,
-.trend-title {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.topic-meta {
-  margin-top: 6px;
+.header-left {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.topic-score {
-  text-align: right;
-}
-
-.score-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #0f766e;
-}
-
-.score-trend {
-  color: #f97316;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.link-group {
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
-.trend-points {
+.header-icon {
+  color: #1d5bff;
+}
+
+.header-title {
+  font-size: 16px;
+  color: #111827;
+}
+
+.header-tip {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.trend-point {
-  display: grid;
-  grid-template-columns: 70px 1fr 42px;
-  gap: 10px;
   align-items: center;
-}
-
-.point-label,
-.point-value {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.point-bar {
-  height: 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
-  overflow: hidden;
-}
-
-.point-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #0ea5e9, #0f766e);
+  gap: 8px;
 }
 
 .chart-container {
   width: 100%;
-  height: 420px;
+  height: 500px;
 }
 
-.dot {
-  color: #94a3b8;
+.info-card {
+  border: 1px solid #eef2f7;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f9fafb 100%);
 }
 
-@media (max-width: 960px) {
-  .page-header,
-  .topic-header {
-    flex-direction: column;
-  }
+.info-content {
+  padding: 8px 0;
+}
+
+.info-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info-item h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.info-item p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
 }
 </style>

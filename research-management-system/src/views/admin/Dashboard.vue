@@ -1,128 +1,82 @@
 <template>
   <div class="admin-dashboard">
-    <section class="hero-card">
-      <div>
-        <p class="eyebrow">下一版本能力总览</p>
-        <h2>科研成果管理系统演示版</h2>
-        <p class="hero-copy">
-          以公开官方真实数据优先，围绕需求洞察主线组织演示，同时串联研究洞察与成果物自动补全，方便与甲方现场对齐交付边界。
-        </p>
-      </div>
-      <div class="hero-actions">
-        <el-button type="primary" @click="router.push('/insights/demands')">进入需求洞察</el-button>
-        <el-button @click="router.push('/admin/system-settings')">查看数据源</el-button>
-      </div>
-    </section>
-
-    <el-row :gutter="16" class="summary-grid">
-      <el-col :xs="24" :md="8" v-for="card in capabilityCards" :key="card.key">
-        <el-card shadow="never" class="summary-card">
-          <div class="summary-top">
-            <span class="summary-label">{{ card.label }}</span>
-            <el-tag :type="card.tagType" effect="plain">{{ card.tag }}</el-tag>
+    <el-row :gutter="20" class="stat-cards">
+      <el-col :span="6" v-for="stat in stats" :key="stat.key">
+        <div class="stat-card" :style="{ background: stat.color }">
+          <div class="stat-icon">
+            <component :is="stat.icon" />
           </div>
-          <div class="summary-value">{{ card.value }}</div>
-          <p class="summary-note">{{ card.note }}</p>
-          <el-button type="primary" link @click="router.push(card.to)">
-            {{ card.action }}
-          </el-button>
+          <div class="stat-content">
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="chart-section">
+      <el-col :xs="24" :md="12">
+        <el-card class="chart-card">
+          <template #header>
+            <div class="card-header">
+              <span>成果分布</span>
+              <div class="card-actions">
+                <el-radio-group v-model="distributionDimension" size="small">
+                  <el-radio-button label="type">类型</el-radio-button>
+                </el-radio-group>
+              </div>
+            </div>
+          </template>
+          <div ref="distributionChartRef" class="chart-container large"></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :md="12">
+        <el-card class="chart-card">
+          <template #header>
+            <div class="card-header">
+              <span>成果年度趋势</span>
+              <div class="card-actions">
+                <el-radio-group v-model="trendDimension" size="small">
+                  <el-radio-button label="type">类型</el-radio-button>
+                </el-radio-group>
+                <el-radio-group v-model="trendRange" size="small" class="range-radio">
+                  <el-radio-button label="3y">近3年</el-radio-button>
+                  <el-radio-button label="5y">近5年</el-radio-button>
+                </el-radio-group>
+              </div>
+            </div>
+          </template>
+          <div ref="stackedChartRef" class="chart-container large"></div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="15">
-        <el-card shadow="never" class="detail-card">
+    <el-row :gutter="20" class="chart-section">
+      <el-col :span="24">
+        <el-card class="recent-results">
           <template #header>
-            <div class="section-header">
-              <div>
-                <div class="section-title">推荐演示顺序</div>
-                <div class="section-desc">按主线、增值、提效三层组织讲解，避免能力边界混淆。</div>
-              </div>
+            <div class="card-header">
+              <span>最新入库成果</span>
+              <el-button type="primary" size="small" link @click="$router.push('/admin/results')">
+                查看全部
+              </el-button>
             </div>
           </template>
-          <el-timeline>
-            <el-timeline-item
-              v-for="item in demoSteps"
-              :key="item.title"
-              :timestamp="item.step"
-              placement="top"
-            >
-              <div class="timeline-title">{{ item.title }}</div>
-              <p class="timeline-copy">{{ item.copy }}</p>
-            </el-timeline-item>
-          </el-timeline>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :lg="9">
-        <el-card shadow="never" class="detail-card">
-          <template #header>
-            <div class="section-header">
-              <div>
-                <div class="section-title">真实来源快照</div>
-                <div class="section-desc">演示数据以公开官方/平台来源为主，不使用敏感内部材料。</div>
-              </div>
-            </div>
-          </template>
-          <el-skeleton :loading="loading" animated :rows="4">
-            <template #default>
-              <div class="source-list">
-                <div v-for="source in topSources" :key="source.name" class="source-item">
-                  <div>
-                    <div class="source-name">{{ source.name }}</div>
-                    <div class="source-meta">样本 {{ source.count }} 条</div>
-                  </div>
-                  <el-link v-if="source.url" :href="source.url" target="_blank" type="primary">
-                    查看来源
-                  </el-link>
-                </div>
-              </div>
-            </template>
-          </el-skeleton>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="never" class="detail-card">
-          <template #header>
-            <div class="section-header">
-              <div>
-                <div class="section-title">演示口径</div>
-                <div class="section-desc">对外统一强调辅助识别、辅助判断与人工确认。</div>
-              </div>
-            </div>
-          </template>
-          <div class="tag-cloud">
-            <el-tag v-for="item in messagingTags" :key="item" effect="plain" round>{{ item }}</el-tag>
-          </div>
-          <p class="section-copy">
-            需求洞察是主线能力，研究洞察体现管理增值，成果物自动补全体现录入提效。当前演示版重点是把真实来源、页面承载与交互路径讲清楚，而不是包装为已成熟自动化系统。
-          </p>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="never" class="detail-card">
-          <template #header>
-            <div class="section-header">
-              <div>
-                <div class="section-title">管理层摘要</div>
-                <div class="section-desc">来自研究洞察聚合结果，用于首页快速预告。</div>
-              </div>
-            </div>
-          </template>
-          <el-skeleton :loading="loading" animated :rows="3">
-            <template #default>
-              <div class="brief-list">
-                <div v-for="brief in insightBrief" :key="brief" class="brief-item">
-                  {{ brief }}
-                </div>
-              </div>
-            </template>
-          </el-skeleton>
+          <el-table :data="recentResults" v-loading="loading" size="default">
+            <el-table-column prop="title" label="成果名称" min-width="240" show-overflow-tooltip />
+            <el-table-column prop="type" label="类型" width="120" />
+            <!-- <el-table-column prop="author" label="作者" width="140" show-overflow-tooltip /> -->
+            <el-table-column label="作者" width="180" show-overflow-tooltip>
+              <template #default="{ row }">
+                {{ Array.isArray(row.authors) && row.authors.length ? row.authors.join(', ') : '未知作者' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="createdAt" label="入库时间" width="160">
+              <template #default="{ row }">
+                {{ formatDateTime(row.createdAt) }}
+              </template>
+            </el-table-column>
+          </el-table>
         </el-card>
       </el-col>
     </el-row>
@@ -130,270 +84,464 @@
 </template>
 
 <script setup lang="ts">
-import { getDemandStats } from '@/api/demand'
-import { getResearchInsightsOverview } from '@/api/result'
-import { getCrawlerSources } from '@/api/system'
-import type { DemandSourceStat, ResearchInsightOverview } from '@/types'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
+import { getResults, getStackedTrend, getStatistics, getTypePie } from '@/api/result'
+import type { StatisticsData, StrapiPaginatedResponse } from '@/api/types'
+import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
+import { formatDateTime } from '@/utils/date'
+import { Document, Tickets, TrendCharts, TrophyBase } from '@element-plus/icons-vue'
+import type { EChartsType } from 'echarts/core'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
-const demandStats = ref<{ total: number; matched: number; inFollowUp: number } | null>(null)
-const sources = ref<DemandSourceStat[]>([])
-const researchInsights = ref<ResearchInsightOverview | null>(null)
+const statistics = ref(null)
+const recentResults = ref([])
 
-const capabilityCards = computed(() => [
+const distributionDimension = ref('type')
+const trendDimension = ref('type')
+const trendRange = ref('5y')
+
+const distributionData = ref<any[]>([])
+const distributionEmpty = ref(false)
+const stackedTimeline = ref<string[]>([])
+const stackedSeries = ref<any[]>([])
+
+const distributionChartRef = ref(null)
+const stackedChartRef = ref(null)
+const distributionChartInstance = ref<EChartsType | null>(null)
+const stackedChartInstance = ref<EChartsType | null>(null)
+let echartsModule: typeof import('echarts/core') | null = null
+let echartsReadyPromise: Promise<typeof import('echarts/core')> | null = null
+
+const colorPalette = ['#1d5bff', '#4c7eff', '#00c892', '#ff9d3c', '#7c3aed', '#0ea5e9', '#f97316']
+
+const totalCounts = ref<number[]>([])
+const approvedCounts = ref<number[]>([])
+const stackedUnsupported = ref(false)
+
+
+const stats = ref([
   {
-    key: 'demand',
-    label: '需求洞察',
-    value: `${demandStats.value?.total || 0} 条真实线索`,
-    note: `已结构化 ${demandStats.value?.matched || 0} 条可匹配线索，${demandStats.value?.inFollowUp || 0} 条处于跟进中。`,
-    tag: '主线能力',
-    tagType: 'success',
-    action: '查看需求池',
-    to: '/insights/demands'
+    key: 'total',
+    label: '总成果数',
+    value: 0,
+    icon: Document,
+    color: 'var(--primary-gradient)'
   },
   {
-    key: 'research',
-    label: '研究洞察',
-    value: `${researchInsights.value?.hotTopics.length || 0} 个热点主题`,
-    note: '基于真实线索与开放论文样本形成热点、趋势和供需对照摘要。',
-    tag: '管理增值',
-    tagType: 'warning',
-    action: '查看管理视图',
-    to: '/admin/research-insights'
+    key: 'paper',
+    label: '论文数',
+    value: 0,
+    icon: Tickets,
+    color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
   },
   {
-    key: 'autofill',
-    label: '成果物自动补全',
-    value: '3 个公开 PDF 样本',
-    note: '演示上传附件后的字段预填、原文依据与待确认项。',
-    tag: '录入提效',
-    tagType: 'info',
-    action: '进入创建成果',
-    to: '/results/create'
+    key: 'patent',
+    label: '专利数',
+    value: 0,
+    icon: TrophyBase,
+    color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+  },
+  {
+    key: 'monthly',
+    label: '本月新增',
+    value: 0,
+    icon: TrendCharts,
+    color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
   }
 ])
 
-const topSources = computed(() => sources.value.slice(0, 4))
-const insightBrief = computed(() => researchInsights.value?.insightBrief || [])
-
-const demoSteps = [
-  {
-    step: 'Step 1',
-    title: '从首页说明演示边界',
-    copy: '先向甲方明确三项能力都进入下一版本，但都坚持“辅助识别、辅助判断、人工确认”的统一口径。'
-  },
-  {
-    step: 'Step 2',
-    title: '进入需求洞察主线',
-    copy: '用真实来源的需求池、详情、匹配和跟进状态解释“需求采集 -> 需求入池 -> 匹配 -> 跟进”的业务闭环。'
-  },
-  {
-    step: 'Step 3',
-    title: '切到研究洞察管理视图',
-    copy: '强调热点主题、趋势变化和供需对照是管理视图，不把图谱包装成完整结论。'
-  },
-  {
-    step: 'Step 4',
-    title: '展示成果物自动补全',
-    copy: '用公开 PDF 样本走一遍上传、识别、原文依据和人工确认回填，突出录入提效价值。'
-  }
-]
-
-const messagingTags = [
-  '公开官方真实数据优先',
-  '需求洞察主线推进',
-  '研究洞察服务管理层',
-  '自动补全不替代人工校对'
-]
-
 onMounted(async () => {
+  await Promise.all([
+    loadSummary(),
+    loadDistribution(),
+    loadStackedTrend()
+  ])
+  await nextTick()
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  disposeCharts()
+})
+
+watch(distributionDimension, () => loadDistribution())
+watch([trendDimension, trendRange], () => loadStackedTrend())
+
+async function ensureECharts() {
+  if (echartsModule) return echartsModule
+  if (!echartsReadyPromise) {
+    echartsReadyPromise = (async () => {
+      const echarts = await import('echarts/core')
+      const [{ PieChart, BarChart, LineChart }, { TooltipComponent, LegendComponent, GridComponent, GraphicComponent }, { CanvasRenderer }] = await Promise.all([
+        import('echarts/charts'),
+        import('echarts/components'),
+        import('echarts/renderers')
+      ])
+      echarts.use([
+        PieChart,
+        BarChart,
+        LineChart,
+        TooltipComponent,
+        LegendComponent,
+        GridComponent,
+        GraphicComponent,
+        CanvasRenderer
+      ])
+      echartsModule = echarts
+      return echarts
+    })()
+  }
+  return echartsReadyPromise
+}
+
+async function loadSummary() {
   loading.value = true
   try {
-    const [statsRes, sourceRes, researchRes] = await Promise.all([
-      getDemandStats(),
-      getCrawlerSources(),
-      getResearchInsightsOverview()
+    const [statsRes, resultsRes, typePieRes] = await Promise.all([
+      getStatistics(),
+      getResults({ page: 1, pageSize: 10, excludeTypeCodes: [...PROCESS_RESULT_TYPE_CODES] }),
+      getTypePie()
     ])
+    const statsData: StatisticsData = statsRes?.data || {}
+    const resultsData: Partial<StrapiPaginatedResponse["data"]> = resultsRes?.data || {}
 
-    demandStats.value = {
-      total: statsRes?.data?.total || 0,
-      matched: statsRes?.data?.matched || 0,
-      inFollowUp: statsRes?.data?.inFollowUp || 0
+    statistics.value = statsData
+    recentResults.value = resultsData.list || []
+
+    let total = statsData.totalResults || 0
+    let papers = statsData.paperCount || 0
+    let patents = statsData.patentCount || 0
+    let monthly = statsData.monthlyNew || 0
+
+    // 使用真实分布数据覆盖统计
+    if (typePieRes?.data && Array.isArray(typePieRes.data)) {
+      const list = typePieRes.data
+      total = list.reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
+
+      // 优先使用 typeCode 判断 (PAPER/PATENT)，中文名称匹配作为 fallback
+      papers = list
+        .filter((item: any) => {
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.typeName || '')
+          return code.includes('PAPER') || name.includes('论文')
+        })
+        .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
+
+      patents = list
+        .filter((item: any) => {
+          const code = String(item.typeCode || '').toUpperCase()
+          const name = String(item.typeName || '')
+          return code.includes('PATENT') || name.includes('专利')
+        })
+        .reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0)
     }
-    const rawSourceData = sourceRes?.data as any
-    sources.value = statsRes?.data?.sources || rawSourceData?.list || rawSourceData || []
-    researchInsights.value = researchRes?.data || null
+
+    if (stats.value[0]) stats.value[0].value = total
+    if (stats.value[1]) stats.value[1].value = papers
+    if (stats.value[2]) stats.value[2].value = patents
+    if (stats.value[3]) stats.value[3].value = monthly
+  } catch (error) {
+    console.error('加载数据失败:', error)
   } finally {
     loading.value = false
   }
-})
+}
+
+async function loadDistribution() {
+  try {
+    const res = await getTypePie()
+    const list = res?.data || []
+    const aggregated = new Map<string, { name: string; value: number }>()
+    list.forEach((item: any) => {
+      const rawCode = item.typeCode ? item.typeCode.toString().trim() : ''
+      const rawName = item.typeName ? item.typeName.toString().trim() : ''
+      const key = (rawCode || rawName || '未命名').replace(/\s+/g, ' ').toUpperCase()
+      const displayName = rawName || rawCode || '未命名'
+      const value = Number(item.count || 0)
+      if (!key || !Number.isFinite(value) || value <= 0) return
+
+      if (!aggregated.has(key)) {
+        aggregated.set(key, { name: displayName, value })
+        return
+      }
+      const current = aggregated.get(key)!
+      current.value += value
+      if (!current.name && displayName) {
+        current.name = displayName
+      }
+    })
+    distributionData.value = Array.from(aggregated.values())
+    distributionEmpty.value = distributionData.value.length === 0
+    await renderDistributionChart()
+  } catch (error) {
+    console.error('加载分布数据失败:', error)
+    distributionEmpty.value = true
+  }
+}
+
+async function loadStackedTrend() {
+  stackedUnsupported.value = trendDimension.value !== 'type'
+
+  // 只支持 type，其它先不请求后端
+  if (stackedUnsupported.value) {
+    stackedTimeline.value = []
+    stackedSeries.value = []
+    totalCounts.value = []
+    approvedCounts.value = []
+    await renderStackedChart()
+    return
+  }
+
+  try {
+    const res = await getStackedTrend({
+      dimension: trendDimension.value,
+      range: trendRange.value
+    })
+
+    const data = res?.data || {}
+    stackedTimeline.value = data.timeline || []
+
+    stackedSeries.value = (data.series || []).map((s: any) => ({
+      name: s.typeName || s.typeCode || '未知类型',
+      data: Array.isArray(s.total) ? s.total : []
+    }))
+
+    totalCounts.value = Array.isArray(data.totalCounts) ? data.totalCounts : []
+    approvedCounts.value = Array.isArray(data.approvedCounts) ? data.approvedCounts : []
+
+    await renderStackedChart()
+  } catch (error) {
+    console.error('加载趋势数据失败:', error)
+  }
+}
+
+
+
+async function renderDistributionChart() {
+  if (!distributionChartRef.value) return
+  if (!distributionChartInstance.value) {
+    const echarts = await ensureECharts()
+    distributionChartInstance.value = echarts.init(distributionChartRef.value)
+  }
+  distributionChartInstance.value.clear()
+
+  const hasData = !distributionEmpty.value && distributionData.value.length > 0
+  distributionChartInstance.value.setOption(
+    {
+      color: colorPalette,
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 10, show: hasData },
+      graphic: hasData
+        ? []
+        : [
+          {
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: '暂无数据',
+              fill: '#94a3b8',
+              fontSize: 14
+            }
+          }
+        ],
+      series: hasData
+        ? [
+          {
+            type: 'pie',
+            radius: ['46%', '74%'],
+            label: { show: false },
+            itemStyle: { borderColor: '#fff', borderWidth: 2 },
+            emphasis: {
+              label: { show: true, fontWeight: 'bold', fontSize: 14 }
+            },
+            data: distributionData.value
+          }
+        ]
+        : []
+    },
+    true
+  )
+}
+
+async function renderStackedChart() {
+  if (!stackedChartRef.value) return
+  if (!stackedChartInstance.value) {
+    const echarts = await ensureECharts()
+    stackedChartInstance.value = echarts.init(stackedChartRef.value)
+  }
+
+  const hasData =
+    !stackedUnsupported.value &&
+    stackedTimeline.value?.length > 0 &&
+    stackedSeries.value?.length > 0
+
+  const barSeries = hasData
+    ? (stackedSeries.value || []).map((item, index) => ({
+      name: item.name,
+      type: 'bar',
+      stack: 'total',
+      barMaxWidth: 38,
+      emphasis: { focus: 'series' },
+      itemStyle: { color: colorPalette[index % colorPalette.length] },
+      data: item.data || []
+    }))
+    : []
+
+  const lineTotal = hasData
+    ? {
+      name: '总提交',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data: totalCounts.value || []
+    }
+    : null
+
+  const lineApproved = hasData
+    ? {
+      name: '已通过',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data: approvedCounts.value || []
+    }
+    : null
+
+  stackedChartInstance.value.clear()
+  stackedChartInstance.value.setOption(
+    {
+      color: colorPalette,
+
+      tooltip: hasData
+        ? {
+          trigger: 'item',
+          formatter: (p: any) => {
+            const year = p?.name ?? ''
+            const seriesName = p?.seriesName ?? ''
+            const val = Number(p?.value ?? 0)
+            return `${year}<br/>${p.marker}${seriesName}：${val}`
+          }
+        }
+        : { show: false },
+
+      legend: { bottom: 10, show: hasData },
+
+      graphic: hasData
+        ? []
+        : [
+          {
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: stackedUnsupported.value ? '该维度暂不支持' : '暂无数据',
+              fill: '#94a3b8',
+              fontSize: 14
+            }
+          }
+        ],
+
+      grid: { left: '3%', right: '4%', bottom: 55, containLabel: true },
+
+      xAxis: { type: 'category', data: hasData ? stackedTimeline.value : [] },
+      yAxis: { type: 'value', name: '数量' },
+
+      series: hasData ? [...barSeries, lineTotal!, lineApproved!] : []
+    },
+    true
+  )
+}
+
+
+
+function handleResize() {
+  distributionChartInstance.value?.resize()
+  stackedChartInstance.value?.resize()
+}
+
+function disposeCharts() {
+  distributionChartInstance.value?.dispose()
+  stackedChartInstance.value?.dispose()
+  distributionChartInstance.value = null
+  stackedChartInstance.value = null
+}
 </script>
 
 <style scoped>
-.admin-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.stat-cards {
+  margin-bottom: 20px;
 }
 
-.hero-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+.stat-card {
   padding: 24px;
-  border-radius: 20px;
-  color: #0f172a;
-  background:
-    radial-gradient(circle at top right, rgba(14, 165, 233, 0.18), transparent 32%),
-    radial-gradient(circle at left bottom, rgba(16, 185, 129, 0.16), transparent 36%),
-    linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f6fffb 100%);
-  border: 1px solid #dbeafe;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #0f766e;
-}
-
-.hero-card h2 {
-  margin: 0 0 12px;
-  font-size: 28px;
-}
-
-.hero-copy {
-  max-width: 780px;
-  margin: 0;
-  line-height: 1.7;
-  color: #475569;
-}
-
-.hero-actions {
+  border-radius: 8px;
+  color: white;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.summary-grid {
-  margin: 0;
-}
-
-.summary-card,
-.detail-card {
-  border: 1px solid #e5eef7;
-  border-radius: 18px;
-}
-
-.summary-top {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  transition: transform 0.3s;
+  cursor: pointer;
 }
 
-.summary-label {
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-icon {
+  font-size: 48px;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.stat-label {
   font-size: 14px;
-  color: #64748b;
+  opacity: 0.9;
 }
 
-.summary-value {
-  margin-top: 18px;
-  font-size: 28px;
-  font-weight: 700;
-  color: #0f172a;
+.chart-section {
+  margin-bottom: 20px;
 }
 
-.summary-note,
-.section-copy {
-  margin: 12px 0 0;
-  line-height: 1.7;
-  color: #64748b;
+.chart-container {
+  height: 300px;
 }
 
-.section-header {
+.chart-container.large {
+  height: 340px;
+}
+
+.chart-card {
+  min-height: 360px;
+}
+
+.card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.section-desc {
-  margin-top: 6px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.timeline-title {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.timeline-copy {
-  margin: 8px 0 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.source-list,
-.brief-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.source-item,
-.brief-item {
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-}
-
-.source-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
   align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
 }
 
-.source-name {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.source-meta {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.tag-cloud {
+.card-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-@media (max-width: 960px) {
-  .hero-card {
-    flex-direction: column;
-  }
+.range-radio {
+  margin-left: 6px;
+}
 
-  .hero-actions {
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
+.recent-results {
+  min-height: 400px;
 }
 </style>

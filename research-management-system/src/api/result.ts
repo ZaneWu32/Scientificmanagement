@@ -8,7 +8,6 @@ import type {
   KeywordCloudData
 } from './types'
 import { isProcessResultTypeCode } from '@/config/resultTypeScope'
-import type { AutoFillDemoSample, ResearchInsightOverview } from '@/types'
 
 function normalizePageResult(res: any, mapper?: (item: any) => any): StrapiPaginatedResponse<any> {
   const page = (res && res.data) || {}
@@ -278,13 +277,6 @@ export function getKeywordCloud(params?: QueryParams): Promise<ApiResponse<Keywo
     url: '/results/keywords',
     method: 'get',
     params
-  })
-}
-
-export function getResearchInsightsOverview(): Promise<ApiResponse<ResearchInsightOverview>> {
-  return request({
-    url: '/results/research-insights',
-    method: 'get'
   })
 }
 
@@ -589,13 +581,6 @@ export function autoFillMetadata(params?: QueryParams): Promise<ApiResponse<any>
     url: '/results/auto-fill',
     method: 'get',
     params
-  })
-}
-
-export function getAutoFillSamples(): Promise<ApiResponse<AutoFillDemoSample[]>> {
-  return request({
-    url: '/results/auto-fill-samples',
-    method: 'get'
   })
 }
 

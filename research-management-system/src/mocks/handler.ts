@@ -1,19 +1,4 @@
-import {
-  users,
-  results,
-  resultTypes,
-  projects,
-  uploads,
-  nextId,
-  demands,
-  dashboardAnalytics,
-  crawlerSources,
-  crawlerSettings,
-  resultAccessRequests,
-  interimResults,
-  researchInsightsOverview,
-  autoFillSamples
-} from './data'
+import { users, results, resultTypes, projects, uploads, nextId, demands, dashboardAnalytics, crawlerSources, crawlerSettings, resultAccessRequests, interimResults } from './data'
 
 const now = () => new Date().toISOString().slice(0, 10)
 const nowWithTime = () => new Date().toISOString().replace('T', ' ').slice(0, 19)
@@ -125,10 +110,6 @@ export function handleMockRequest(config: Record<string, any> = {}) {
       nodes: dashboardAnalytics.keywordGraph.nodes,
       links: dashboardAnalytics.keywordGraph.links
     })
-  }
-
-  if (method === 'get' && url === '/results/research-insights') {
-    return success(researchInsightsOverview)
   }
 
   // 成果类型
@@ -608,43 +589,20 @@ export function handleMockRequest(config: Record<string, any> = {}) {
   }
 
   // 智能补全
-  if (method === 'get' && url === '/results/auto-fill-samples') {
-    return success(autoFillSamples)
-  }
-
   if (method === 'get' && url === '/results/auto-fill') {
     const value = params.value || body.value
     const type = params.type || body.type
-    const sample = findAutoFillSample(type, value)
-    if (sample) {
-      return success({
-        ...sample,
-        title: sample.title,
-        authors: sample.authors,
-        abstract: sample.abstract,
-        keywords: sample.keywords,
-        year: sample.year
-      }, '已完成演示识别')
-    }
-
-    const fallback = {
+    const sample = {
       title: `智能推荐的成果标题${type ? `（${type}）` : ''}`,
       authors: value ? [value, '合作者A'] : ['作者A', '作者B'],
       abstract: '这是根据标识符自动补全的摘要示例，可根据需要修改。',
       keywords: ['自动补全', '示例'],
-      year: now().slice(0, 4),
-      recognizedFields: [],
-      fieldEvidence: [],
-      pendingConfirmations: []
+      year: now().slice(0, 4)
     }
-    return success(fallback, '已补全')
+    return success(sample, '已补全')
   }
 
   // 企业需求列表
-  if (method === 'get' && url === '/demand/stats') {
-    return success(buildDemandStats(demands))
-  }
-
   if (method === 'get' && url === '/demand') {
     return success(pageDemands(demands, params))
   }
@@ -1066,8 +1024,6 @@ function pageDemands(source, params) {
         item.summary?.includes(keyword) ||
         item.industry?.includes(keyword) ||
         item.region?.includes(keyword) ||
-        item.sourceName?.includes(keyword) ||
-        item.evidenceText?.includes(keyword) ||
         item.tags?.some((t) => t.includes(keyword))
     )
   }
@@ -1098,58 +1054,6 @@ function pageDemands(source, params) {
     page,
     pageSize
   }
-}
-
-function buildDemandStats(source) {
-  const total = source.length
-  const matched = source.filter((item) => item.status === 'matched').length
-  const inFollowUp = source.filter((item) => item.status === 'in_follow_up').length
-  const unmatched = source.filter((item) => item.status === 'unmatched').length
-  const avg = total
-    ? source.reduce((sum, item) => sum + Number(item.confidence || 0), 0) / total
-    : 0
-
-  const sourceMap = new Map()
-  source.forEach((item) => {
-    const key = item.sourceName || item.sourceSite || '未知来源'
-    const current = sourceMap.get(key) || {
-      name: key,
-      count: 0,
-      url: item.sourceUrl || ''
-    }
-    current.count += 1
-    if (!current.url && item.sourceUrl) {
-      current.url = item.sourceUrl
-    }
-    sourceMap.set(key, current)
-  })
-
-  return {
-    total,
-    matched,
-    inFollowUp,
-    unmatched,
-    averageConfidence: Number(avg.toFixed(2)),
-    sources: Array.from(sourceMap.values()),
-    industries: Array.from(new Set(source.map((item) => item.industry).filter(Boolean))),
-    regions: Array.from(new Set(source.map((item) => item.region).filter(Boolean))),
-    sourceCategories: Array.from(new Set(source.map((item) => item.sourceCategory).filter(Boolean)))
-  }
-}
-
-function findAutoFillSample(type, value) {
-  if (type === 'sample_pdf' && value) {
-    return autoFillSamples.find((item) => item.id === value) || null
-  }
-
-  if (value) {
-    return autoFillSamples.find((item) =>
-      item.title.toLowerCase().includes(String(value).toLowerCase()) ||
-      item.metadata?.doi?.toLowerCase?.() === String(value).toLowerCase()
-    ) || null
-  }
-
-  return autoFillSamples[0] || null
 }
 
 // ==================== 中期成果物辅助函数 ====================

@@ -136,8 +136,10 @@ const router = createRouter({
           name: "SystemSettings",
           component: () => import("@/views/admin/SystemSettings.vue"),
           meta: {
-            title: "数据源管理",
+            title: "系统设置",
             roles: [UserRole.ADMIN],
+            comingSoon: true,
+            comingSoonMessage: "开发中，请等待",
           },
         },
         {

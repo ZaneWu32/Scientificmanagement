@@ -124,9 +124,6 @@
                   拖拽文件到此处或 <em>点击上传</em>
                 </div>
               </el-upload>
-              <div class="upload-hint">
-                当前演示版会使用公开 PDF 样本展示“上传后预填”的效果。上传任意演示附件后，可在下一步选择公开样本完成识别。
-              </div>
             </el-form-item>
             <el-form-item label="可见范围" required>
               <el-radio-group v-model="formData.visibility">
@@ -140,167 +137,16 @@
         <!-- 步骤4: 智能补全 -->
         <div v-show="currentStep === 3" class="step-panel">
           <h3>智能补全</h3>
+          <el-form label-width="120px">
+            <el-form-item label="功能状态">
+              <el-input model-value="暂未开发" disabled />
+            </el-form-item>
+          </el-form>
           <el-alert
-            title="当前演示使用公开开放 PDF 样本模拟识别与预填流程，重点说明‘预填字段 + 原文依据 + 待确认项’的交互方式。"
-            type="info"
-            :closable="false"
-          />
-
-          <el-alert
-            v-if="selectedType?.code !== 'paper'"
-            title="当前公开样本更适配论文类成果，其他成果类型仍可演示流程，但字段命中会更偏标题、作者、摘要等通用项。"
+            title="智能补全迭代中，当前版本无法填写或使用。"
             type="warning"
             :closable="false"
-            class="step-alert"
           />
-
-          <el-card shadow="never" class="auto-fill-card">
-            <template #header>
-              <div class="card-head">
-                <div>
-                  <div class="card-title">公开样本选择</div>
-                  <div class="card-desc">用于模拟上传附件后的智能识别与字段预填。</div>
-                </div>
-                <el-button type="primary" :loading="autoFilling" @click="handleAutoFill">
-                  开始识别
-                </el-button>
-              </div>
-            </template>
-
-            <el-form label-width="120px">
-              <el-form-item label="演示样本">
-                <el-select v-model="autoFillSampleId" placeholder="请选择公开 PDF 样本" style="width: 100%">
-                  <el-option
-                    v-for="sample in autoFillSamples"
-                    :key="sample.id"
-                    :label="sample.sampleFileMeta.title"
-                    :value="sample.id"
-                  />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="已上传附件">
-                <div class="uploaded-files">
-                  <span v-if="fileList.length">{{ fileList.length }} 个演示附件</span>
-                  <span v-else>未上传演示附件，仍可继续查看公开样本识别效果。</span>
-                </div>
-              </el-form-item>
-            </el-form>
-
-            <div v-if="selectedAutoFillSample" class="sample-meta">
-              <div class="meta-grid">
-                <div class="meta-item">
-                  <span class="meta-label">样本文件</span>
-                  <span class="meta-value">{{ selectedAutoFillSample.sampleFileMeta.fileName }}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">来源</span>
-                  <span class="meta-value">{{ selectedAutoFillSample.sourceName }}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">发布日期</span>
-                  <span class="meta-value">{{ selectedAutoFillSample.publishDate }}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">采集日期</span>
-                  <span class="meta-value">{{ selectedAutoFillSample.capturedDate }}</span>
-                </div>
-              </div>
-              <p class="sample-note">{{ selectedAutoFillSample.curationNote }}</p>
-              <el-link :href="selectedAutoFillSample.sourceUrl" target="_blank" type="primary">
-                查看公开 PDF 样本
-              </el-link>
-            </div>
-          </el-card>
-
-          <div v-if="autoFillResult" class="auto-fill-result">
-            <el-row :gutter="16" class="summary-row">
-              <el-col :xs="24" :md="8">
-                <el-card shadow="never" class="mini-summary">
-                  <div class="summary-label">识别字段</div>
-                  <div class="summary-value">{{ autoFillResult.recognizedFields.length }}</div>
-                </el-card>
-              </el-col>
-              <el-col :xs="24" :md="8">
-                <el-card shadow="never" class="mini-summary">
-                  <div class="summary-label">待确认项</div>
-                  <div class="summary-value">{{ autoFillResult.pendingConfirmations.length }}</div>
-                </el-card>
-              </el-col>
-              <el-col :xs="24" :md="8">
-                <el-card shadow="never" class="mini-summary">
-                  <div class="summary-label">建议来源</div>
-                  <div class="summary-value">{{ autoFillResult.sourceName }}</div>
-                </el-card>
-              </el-col>
-            </el-row>
-
-            <el-card shadow="never" class="auto-fill-card">
-              <template #header>
-                <div class="card-head">
-                  <div>
-                    <div class="card-title">预填字段</div>
-                    <div class="card-desc">勾选要回填到当前表单的字段，提交仍由人工控制。</div>
-                  </div>
-                  <el-button type="primary" plain @click="applyAutoFillSelection">
-                    回填到表单
-                  </el-button>
-                </div>
-              </template>
-
-              <el-table :data="autoFillResult.recognizedFields" border>
-                <el-table-column width="56">
-                  <template #default="{ row }">
-                    <el-checkbox v-model="selectedAutoFillKeys" :label="row.key" />
-                  </template>
-                </el-table-column>
-                <el-table-column prop="label" label="字段" width="160" />
-                <el-table-column label="建议值" min-width="260">
-                  <template #default="{ row }">
-                    {{ renderRecognizedValue(row.value) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="置信度" width="120">
-                  <template #default="{ row }">
-                    {{ Math.round(row.confidence * 100) }}%
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-card>
-
-            <el-row :gutter="16">
-              <el-col :xs="24" :lg="12">
-                <el-card shadow="never" class="auto-fill-card">
-                  <template #header>
-                    <div class="card-title">原文依据</div>
-                  </template>
-                  <div class="evidence-list">
-                    <div v-for="item in autoFillResult.fieldEvidence" :key="`${item.fieldKey}-${item.evidenceText}`" class="evidence-item">
-                      <div class="evidence-key">{{ item.fieldKey }}</div>
-                      <div class="evidence-text">{{ item.evidenceText }}</div>
-                      <div class="evidence-hint">{{ item.sourceHint || '来源片段' }}</div>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-              <el-col :xs="24" :lg="12">
-                <el-card shadow="never" class="auto-fill-card">
-                  <template #header>
-                    <div class="card-title">待确认项</div>
-                  </template>
-                  <div class="pending-list">
-                    <div
-                      v-for="item in autoFillResult.pendingConfirmations"
-                      :key="`${item.fieldKey}-${item.label}`"
-                      class="pending-item"
-                    >
-                      <div class="pending-title">{{ item.label }}</div>
-                      <div class="pending-reason">{{ item.reason }}</div>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-            </el-row>
-          </div>
         </div>
 
         <!-- 步骤5: 确认提交 -->
@@ -360,10 +206,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { getResultTypes, getFieldDefsByType, createResult, createResultWithFiles, autoFillMetadata, getAutoFillSamples } from '@/api/result'
-import type { AutoFillDemoSample } from '@/types'
+import { getResultTypes, getFieldDefsByType, createResult, createResultWithFiles, autoFillMetadata } from '@/api/result'
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
 import { mapFieldType } from '@/config/dynamicFields'
@@ -400,22 +245,17 @@ const formRules = {
 }
 
 const fileList = ref([])
-const autoFillSamples = ref<AutoFillDemoSample[]>([])
-const autoFillSampleId = ref('')
+const autoFillType = ref('doi')
+const autoFillValue = ref('')
 const autoFilling = ref(false)
-const autoFillResult = ref<AutoFillDemoSample | null>(null)
-const selectedAutoFillKeys = ref<string[]>([])
+const journalRankItems = ref<string[]>([])
+const lastJournalRankAt = ref(0)
 const submitting = ref(false)
 const MAX_FILE_SIZE = 20 * 1024 * 1024
 
 onMounted(async () => {
-  await Promise.all([loadResultTypes(), loadAutoFillSamples()])
+  await loadResultTypes()
 })
-
-const selectedAutoFillSample = computed(() => {
-  return autoFillSamples.value.find((item) => item.id === autoFillSampleId.value) || null
-})
-
 const confirmExtraFields = computed(() => {
   const type = selectedType.value
   const fields = type?.fields || []
@@ -487,19 +327,6 @@ async function loadResultTypes() {
       .filter((t: any) => t.enabled === 1) //  只显示启用(1)的类型
   } catch (error) {
     ElMessage.error('加载成果类型失败')
-  }
-}
-
-async function loadAutoFillSamples() {
-  try {
-    const res = await getAutoFillSamples()
-    autoFillSamples.value = res?.data || []
-    if (!autoFillSampleId.value && autoFillSamples.value.length > 0) {
-      autoFillSampleId.value = autoFillSamples.value[0].id
-    }
-  } catch (error) {
-    console.error('加载演示样本失败:', error)
-    ElMessage.error('加载公开样本失败')
   }
 }
 
@@ -597,29 +424,50 @@ function prevStep() {
 }
 
 async function handleAutoFill() {
-  if (!autoFillSampleId.value) {
-    ElMessage.warning('请先选择公开 PDF 样本')
+  if (!autoFillValue.value) {
+    ElMessage.warning('请输入要补全的标识符')
+    return
+  }
+
+  if (autoFillType.value === 'journalRank' && !canRequestJournalRank()) {
     return
   }
 
   autoFilling.value = true
   try {
-    if (!fileList.value.length) {
-      ElMessage.info('未上传演示附件，当前将直接使用公开样本展示识别效果')
+    if (autoFillType.value !== 'journalRank') {
+      journalRankItems.value = []
+    }
+    const res = await autoFillMetadata({
+      type: autoFillType.value,
+      value: autoFillValue.value
+    })
+
+    if (autoFillType.value === 'journalRank') {
+      journalRankItems.value = formatJournalRank(res?.data)
+      if (journalRankItems.value.length === 0) {
+        ElMessage.warning('未查询到期刊等级')
+        return
+      }
+      formData.metadata.journalRank = journalRankItems.value.join('；')
+      ElMessage.success('期刊等级查询完成')
+      return
     }
 
-    const res = await autoFillMetadata({
-      type: 'sample_pdf',
-      value: autoFillSampleId.value
+    // 显示差异对比并让用户选择
+    await ElMessageBox.confirm('找到匹配记录，是否覆盖当前表单内容？', '提示', {
+      confirmButtonText: '覆盖',
+      cancelButtonText: '取消'
     })
 
     if (res?.data) {
-      autoFillResult.value = res.data
-      selectedAutoFillKeys.value = (res.data.recognizedFields || []).map((item: any) => item.key)
-      ElMessage.success('识别完成，请确认后回填')
+      Object.assign(formData, res.data)
+      ElMessage.success('补全成功')
     }
   } catch (error) {
-    ElMessage.error('补全失败，请稍后重试')
+    if (error !== 'cancel') {
+      ElMessage.error('补全失败，请检查输入或稍后重试')
+    }
   } finally {
     autoFilling.value = false
   }
@@ -634,52 +482,73 @@ function handleFileChange(file, files) {
   fileList.value = files
 }
 
-function renderRecognizedValue(value: any) {
-  if (Array.isArray(value)) return value.join('，')
-  if (value && typeof value === 'object') return JSON.stringify(value)
-  return value ?? '—'
+function getAutoFillLabel() {
+  const map = {
+    doi: 'DOI',
+    arxiv: 'arXiv ID',
+    wanfang: '万方标题',
+    journalRank: '期刊名称'
+  }
+  return map[autoFillType.value]
 }
 
-function applyAutoFillSelection() {
-  if (!autoFillResult.value) {
-    ElMessage.warning('请先完成识别')
-    return
+function getAutoFillPlaceholder() {
+  const map = {
+    doi: '例如: 10.1000/xyz123',
+    arxiv: '例如: 2301.00001',
+    wanfang: '请输入论文标题',
+    journalRank: '请输入期刊名称'
+  }
+  return map[autoFillType.value]
+}
+
+function formatJournalRank(data: any) {
+  if (!data) return []
+  const lines: string[] = []
+
+  const official = data.officialRank?.select || data.officialRank?.all
+  if (official && typeof official === 'object') {
+    const entries = Object.entries(official)
+      .map(([key, value]) => `${key.toUpperCase()}: ${value}`)
+      .join('，')
+    if (entries) lines.push(`官方数据集：${entries}`)
   }
 
-  if (selectedAutoFillKeys.value.length === 0) {
-    ElMessage.warning('请至少选择一个字段进行回填')
-    return
+  const rankInfo = Array.isArray(data.customRank?.rankInfo) ? data.customRank.rankInfo : []
+  const rankList = Array.isArray(data.customRank?.rank) ? data.customRank.rank : []
+  const rankKeyMap: Record<string, string> = {
+    '1': 'oneRankText',
+    '2': 'twoRankText',
+    '3': 'threeRankText',
+    '4': 'fourRankText',
+    '5': 'fiveRankText'
   }
-
-  autoFillResult.value.recognizedFields.forEach((field) => {
-    if (!selectedAutoFillKeys.value.includes(field.key)) return
-
-    const value = field.value
-    switch (field.key) {
-      case 'title':
-        formData.title = String(value || '')
-        break
-      case 'authors':
-        formData.authors = Array.isArray(value) ? value : [String(value || '')]
-        break
-      case 'abstract':
-        formData.abstract = String(value || '')
-        break
-      case 'keywords':
-        formData.keywords = Array.isArray(value) ? value : [String(value || '')]
-        break
-      case 'year':
-        formData.year = String(value || '')
-        break
-      default:
-        if (field.key.startsWith('metadata.')) {
-          const metadataKey = field.key.replace('metadata.', '')
-          formData.metadata[metadataKey] = value
-        }
-    }
+  const customLabels: string[] = []
+  rankList.forEach((entry: string) => {
+    const [uuid, rank] = entry.split('&&&')
+    if (!uuid || !rank) return
+    const info = rankInfo.find((item: any) => item.uuid === uuid)
+    const key = rankKeyMap[rank]
+    const label = info?.[key] || rank
+    const name = info?.abbName || '自定义'
+    customLabels.push(`${name} ${label}`)
   })
+  if (customLabels.length) {
+    lines.push(`自定义数据集：${customLabels.join('，')}`)
+  }
 
-  ElMessage.success('已将选中字段回填到表单')
+  return lines
+}
+
+function canRequestJournalRank() {
+  const now = Date.now()
+  const minInterval = 500
+  if (now - lastJournalRankAt.value < minInterval) {
+    ElMessage.warning('请求过于频繁，请稍后重试')
+    return false
+  }
+  lastJournalRankAt.value = now
+  return true
 }
 
 const VISIBILITY_TEXT = {
@@ -788,126 +657,12 @@ function buildPayload() {
   margin-top: 20px;
 }
 
-.upload-hint {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.step-alert {
-  margin-top: 14px;
-}
-
-.auto-fill-card {
-  margin-top: 16px;
-  border: 1px solid #e5eef7;
-  border-radius: 18px;
-}
-
-.card-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.card-title {
-  font-weight: 700;
-  color: #111827;
-}
-
-.card-desc {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.uploaded-files,
-.sample-note {
-  color: #6b7280;
-  line-height: 1.7;
-}
-
-.sample-meta {
+.rank-alert {
   margin-top: 12px;
-  padding: 16px;
-  border-radius: 16px;
-  background: #f8fafc;
 }
 
-.meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.meta-label,
-.summary-label,
-.evidence-hint {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.meta-value {
-  font-weight: 600;
-  color: #111827;
-}
-
-.auto-fill-result {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.summary-row {
-  margin: 0;
-}
-
-.mini-summary {
-  border: 1px solid #e5eef7;
-  border-radius: 18px;
-}
-
-.summary-value {
-  margin-top: 12px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.evidence-list,
-.pending-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.evidence-item,
-.pending-item {
-  padding: 14px;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-}
-
-.evidence-key,
-.pending-title {
-  font-weight: 700;
-  color: #111827;
-}
-
-.evidence-text,
-.pending-reason {
-  margin-top: 8px;
-  color: #475569;
-  line-height: 1.7;
+.rank-result {
+  line-height: 1.6;
 }
 
 .step-actions {
@@ -1034,14 +789,5 @@ function buildPayload() {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
 }
 
-@media (max-width: 900px) {
-  .card-head {
-    flex-direction: column;
-  }
-
-  .meta-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 </style>
