@@ -100,6 +100,8 @@ public class KeycloakUserServiceImpl implements IKeycloakUserService {
         try {
             return getRealmResource().roles().get(role).getUserMembers().stream()
                     .map(this::convertToKeycloakUser)
+                    .map(user -> attachKnownRole(user, role))
+                    .filter(user -> user != null)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to get users by role: {}", role, e);
@@ -151,6 +153,20 @@ public class KeycloakUserServiceImpl implements IKeycloakUserService {
                 .roles(resolveRealmRoles(userRep))
                 .enabled(userRep.isEnabled())
                 .build();
+    }
+
+    private KeycloakUser attachKnownRole(KeycloakUser user, String role) {
+        if (user == null || role == null || role.isBlank() || user.hasRole(role)) {
+            return user;
+        }
+
+        List<String> roles = new ArrayList<>();
+        if (user.getRoles() != null) {
+            roles.addAll(user.getRoles());
+        }
+        roles.add(role);
+        user.setRoles(roles);
+        return user;
     }
 
     private List<String> resolveRealmRoles(UserRepresentation userRep) {
