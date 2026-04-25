@@ -280,9 +280,44 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         if (!user.isEnabled()) {
             throw new RuntimeException("审核人已被禁用，无法分配: reviewerId=" + reviewerId);
         }
-        if (!user.hasAnyRole(RoleConstants.RESEARCH_ADMIN, RoleConstants.RESEARCH_EXPERT)) {
+        if (!user.hasAnyRole(RoleConstants.RESEARCH_ADMIN, RoleConstants.RESEARCH_EXPERT)
+                && !isAssignableRoleMember(reviewerId, user)) {
             throw new RuntimeException("审核人必须是科研管理员或科研专家: reviewerId=" + reviewerId);
         }
+    }
+
+    private boolean isAssignableRoleMember(Integer reviewerId, KeycloakUser user) {
+        return isRoleMember(reviewerId, user, RoleConstants.RESEARCH_ADMIN)
+                || isRoleMember(reviewerId, user, RoleConstants.RESEARCH_EXPERT);
+    }
+
+    private boolean isRoleMember(Integer reviewerId, KeycloakUser user, String role) {
+        try {
+            List<KeycloakUser> roleUsers = keycloakUserService.getUsersByRole(role);
+            if (roleUsers == null || roleUsers.isEmpty()) {
+                return false;
+            }
+            boolean matched = roleUsers.stream().anyMatch(candidate -> isSameReviewer(reviewerId, user, candidate));
+            if (matched) {
+                log.info("通过角色成员列表确认审核人可分配: reviewerId={}, role={}", reviewerId, role);
+            }
+            return matched;
+        } catch (Exception e) {
+            log.warn("按角色成员列表确认审核人失败: reviewerId={}, role={}", reviewerId, role, e);
+            return false;
+        }
+    }
+
+    private boolean isSameReviewer(Integer reviewerId, KeycloakUser user, KeycloakUser candidate) {
+        if (candidate == null) {
+            return false;
+        }
+        if (reviewerId != null && reviewerId.equals(candidate.getId())) {
+            return true;
+        }
+        return user != null
+                && user.getUuid() != null
+                && user.getUuid().equals(candidate.getUuid());
     }
 
     private String resolveReviewerName(AssignReviewerDTO dto, KeycloakUser user, int index) {
