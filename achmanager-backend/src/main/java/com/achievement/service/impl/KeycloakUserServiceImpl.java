@@ -2,12 +2,15 @@ package com.achievement.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
 
@@ -145,9 +148,42 @@ public class KeycloakUserServiceImpl implements IKeycloakUserService {
                 .username(userRep.getUsername())
                 .email(userRep.getEmail())
                 .name(getUserRealName(userRep))
-                .roles(userRep.getRealmRoles())
+                .roles(resolveRealmRoles(userRep))
                 .enabled(userRep.isEnabled())
                 .build();
+    }
+
+    private List<String> resolveRealmRoles(UserRepresentation userRep) {
+        if (userRep == null || userRep.getId() == null) {
+            return Collections.emptyList();
+        }
+
+        Set<String> roles = new LinkedHashSet<>();
+        if (userRep.getRealmRoles() != null) {
+            roles.addAll(userRep.getRealmRoles());
+        }
+
+        try {
+            List<RoleRepresentation> effectiveRoles = getRealmResource()
+                    .users()
+                    .get(userRep.getId())
+                    .roles()
+                    .realmLevel()
+                    .listEffective();
+            for (RoleRepresentation role : effectiveRoles) {
+                if (role != null && role.getName() != null) {
+                    roles.add(role.getName());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to resolve realm roles for userId: {}", userRep.getId(), e);
+        }
+
+        return roles.stream()
+                .filter(role -> role != null && !role.isBlank())
+                .map(String::trim)
+                .filter(role -> !keycloakConfig.isDefaultRole(role))
+                .collect(Collectors.toList());
     }
 
     private String getUserRealName(UserRepresentation userRep) {
