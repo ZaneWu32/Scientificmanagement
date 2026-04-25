@@ -121,10 +121,10 @@
             style="width: 100%"
           >
             <el-option
-              v-for="expert in expertOptions"
-              :key="expert.id"
-              :label="expert.label"
-              :value="expert.id"
+              v-for="reviewer in reviewerOptions"
+              :key="reviewer.id"
+              :label="reviewer.label"
+              :value="reviewer.id"
             />
           </el-select>
         </el-form-item>
@@ -144,9 +144,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { getResults, deleteResult, assignReviewers, markFormatChecked, markFormatRejected } from '@/api/result'
 import { formatDateTime } from '@/utils/date'
-import { getExpertUsers, type KeycloakUser } from '@/api/user'
+import { getAdminUsers, getExpertUsers } from '@/api/user'
 import { ResultStatus } from '@/types'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
+import { buildReviewerOptions, type ReviewerOption } from '@/utils/reviewer'
 
 const router = useRouter()
 const loading = ref(false)
@@ -155,8 +156,7 @@ const assignDialogVisible = ref(false)
 const assigning = ref(false)
 const formatChecking = ref(false)
 const currentAssignId = ref('')
-const expertList = ref<KeycloakUser[]>([])
-const expertOptions = ref<Array<{ id: number; label: string }>>([])
+const reviewerOptions = ref<ReviewerOption[]>([])
 const assignForm = reactive({
   reviewerId: null as number | null
 })
@@ -175,41 +175,20 @@ const pagination = reactive({
 
 onMounted(() => {
   handleSearch()
-  loadExpertList()
+  loadReviewerList()
 })
 
-async function loadExpertList() {
+async function loadReviewerList() {
   try {
-    const res = await getExpertUsers()
-    expertList.value = Array.isArray(res?.data) ? res.data : []
-    const seen = new Set<number>()
-    expertOptions.value = expertList.value
-      .map((expert) => {
-        const id = Number(expert?.id)
-        if (!Number.isFinite(id) || seen.has(id)) return null
-        seen.add(id)
-        return {
-          id,
-          label: getExpertLabel(expert)
-        }
-      })
-      .filter((item): item is { id: number; label: string } => item !== null)
+    const [adminRes, expertRes] = await Promise.all([getAdminUsers(), getExpertUsers()])
+    const admins = Array.isArray(adminRes?.data) ? adminRes.data : []
+    const experts = Array.isArray(expertRes?.data) ? expertRes.data : []
+
+    reviewerOptions.value = buildReviewerOptions(admins, experts)
   } catch (e) {
-    console.error('加载专家列表失败', e)
+    console.error('加载审核人列表失败', e)
+    ElMessage.error('加载审核人列表失败')
   }
-}
-
-function getExpertLabel(expert: Partial<KeycloakUser>) {
-  const name = expert?.name?.trim()
-  if (name) return name
-
-  const username = expert?.username?.trim()
-  if (username) return username
-
-  const email = expert?.email?.trim()
-  if (email) return email
-
-  return `专家${expert?.id ?? ''}`
 }
 
 async function handleSearch() {
@@ -267,15 +246,15 @@ async function handleAssign() {
   }
   assigning.value = true
   try {
-    const selectedExpert = expertOptions.value.find((expert) => expert.id === assignForm.reviewerId)
-    if (!selectedExpert) {
-      ElMessage.warning('专家信息异常，请刷新后重试')
+    const selectedReviewer = reviewerOptions.value.find((reviewer) => reviewer.id === assignForm.reviewerId)
+    if (!selectedReviewer) {
+      ElMessage.warning('审核人信息异常，请刷新后重试')
       return
     }
 
     await assignReviewers(currentAssignId.value, {
-      reviewerIds: [selectedExpert.id],
-      reviewerNames: [selectedExpert.label]
+      reviewerIds: [selectedReviewer.id],
+      reviewerNames: [selectedReviewer.reviewerName]
     })
     ElMessage.success('已分配审核人')
     assignDialogVisible.value = false

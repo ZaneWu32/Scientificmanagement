@@ -1,7 +1,6 @@
+import request from '@/utils/request'
 import type { ApiResponse } from './types'
 import type { InterimResult, InterimResultStats } from '@/types'
-import { getAdminResult, getResults } from './result'
-import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 
 type InterimResultListPayload = {
   list: InterimResult[]
@@ -10,73 +9,77 @@ type InterimResultListPayload = {
   pageSize: number
 }
 
-function mapListItemToInterim(item: any): InterimResult {
-  const projectCode = item.projectCode || ''
-  const projectName = item.projectName || '未归属项目'
-  const attachments = Array.isArray(item.attachments)
-    ? item.attachments.map((file: any) => ({
-        id: file.id,
-        name: file.name,
-        url: file.url,
-        size: file.size,
-        ext: file.ext
-      }))
-    : []
+function normalizeAttachment(file: any) {
+  if (!file || typeof file !== 'object') {
+    return null
+  }
+
+  const id = file.id || file.fileId || file.documentId || ''
+  const name = file.name || file.fileName || ''
+  const url = file.url || file.fileUrl || ''
+
+  if (!id && !name && !url) {
+    return null
+  }
+
   return {
-    id: item.id || item.documentId,
-    projectId: projectCode || projectName,
-    projectName,
-    projectCode,
-    projectPhase: item.projectPhase || '-',
-    name: item.title || '未命名成果',
-    type: (item.typeCode || item.type || 'other') as any,
-    typeLabel: item.type || item.typeName || '其他',
-    description: item.summary || '',
-    attachments,
-    submitter: item.createdBy || item.submitter || '',
-    submitterDept: '',
-    submittedAt: item.createdAt || '',
-    syncedAt: item.updatedAt || item.createdAt || '',
-    source: item.source || 'process_system',
-    sourceRef: item.id || item.documentId || '',
-    sourceUrl: item.sourceUrl,
-    tags: Array.isArray(item.keywords) ? item.keywords : [],
-    status: item.status || ''
+    id,
+    name: name || '未命名附件',
+    url,
+    size: typeof file.size === 'number'
+      ? file.size
+      : typeof file.fileSize === 'number'
+        ? file.fileSize
+        : undefined,
+    ext: file.ext || file.fileType || ''
   }
 }
 
-function mapDetailToInterim(item: any): InterimResult {
-  const projectCode = item.projectCode || ''
-  const projectName = item.projectName || '未归属项目'
-  const attachments = Array.isArray(item.attachments)
-    ? item.attachments.map((file: any) => ({
-        id: file.id,
-        name: file.name,
-        url: file.url,
-        size: file.size,
-        ext: file.ext
-      }))
-    : []
+function normalizeAttachments(attachments: any): InterimResult['attachments'] {
+  if (Array.isArray(attachments)) {
+    return attachments
+      .map((file) => normalizeAttachment(file))
+      .filter((file): file is NonNullable<ReturnType<typeof normalizeAttachment>> => Boolean(file))
+  }
+
+  const nestedFiles = attachments?.data
+  if (Array.isArray(nestedFiles)) {
+    return nestedFiles.flatMap((record: any) => {
+      const rawFiles = record?.files?.data || record?.files || record?.attributes?.files?.data || []
+      if (!Array.isArray(rawFiles)) return []
+      return rawFiles
+        .map((file) => normalizeAttachment(file?.attributes || file))
+        .filter((file): file is NonNullable<ReturnType<typeof normalizeAttachment>> => Boolean(file))
+    })
+  }
+
+  return []
+}
+
+function mapInterimResult(item: any): InterimResult {
+  const projectId = item.projectId != null && item.projectId !== ''
+    ? String(item.projectId)
+    : item.projectCode || item.projectName || ''
 
   return {
-    id: item.id || item.documentId,
-    projectId: projectCode || projectName,
-    projectName,
-    projectCode,
+    id: String(item.id || item.documentId || ''),
+    projectId,
+    projectName: item.projectName || '未归属项目',
+    projectCode: item.projectCode || '',
     projectPhase: item.projectPhase || '-',
-    name: item.title || '未命名成果',
-    type: (item.typeCode || item.type || 'other') as any,
-    typeLabel: item.typeName || item.type || '其他',
-    description: item.abstract || item.summary || '',
-    attachments,
-    submitter: item.createdBy || item.submitter || '',
-    submitterDept: '',
-    submittedAt: item.createdAt || '',
-    syncedAt: item.updatedAt || item.createdAt || '',
+    name: item.name || item.title || '未命名成果',
+    type: (item.type || item.typeCode || 'other') as any,
+    typeLabel: item.typeLabel || item.typeName || item.type || '其他',
+    description: item.description || item.summary || item.abstract || '',
+    attachments: normalizeAttachments(item.attachments),
+    submitter: item.submitter || item.createdBy || item.creatorName || '',
+    submitterDept: item.submitterDept || '',
+    submittedAt: item.submittedAt || item.createdAt || '',
+    syncedAt: item.syncedAt || item.updatedAt || item.createdAt || '',
     source: item.source || 'process_system',
-    sourceRef: item.id || item.documentId || '',
+    sourceRef: String(item.sourceRef || item.id || item.documentId || ''),
     sourceUrl: item.sourceUrl,
-    tags: Array.isArray(item.keywords) ? item.keywords : [],
+    tags: Array.isArray(item.tags) ? item.tags : Array.isArray(item.keywords) ? item.keywords : [],
     status: item.status || ''
   }
 }
@@ -85,61 +88,10 @@ function mapDetailToInterim(item: any): InterimResult {
  * 获取中期成果物统计
  */
 export async function getInterimResultStats(): Promise<ApiResponse<InterimResultStats>> {
-  const pageSize = 200
-  let page = 1
-  let all: any[] = []
-  let total = 0
-
-  do {
-    const res = await getResults(
-      {
-        page,
-        pageSize,
-        typeCodes: [...PROCESS_RESULT_TYPE_CODES]
-      },
-      true
-    )
-    const pageData = res?.data || { list: [], total: 0 }
-    const list = Array.isArray(pageData.list) ? pageData.list : []
-    total = Number(pageData.total || 0)
-    all = all.concat(list)
-    if (!list.length) break
-    page += 1
-  } while (all.length < total)
-
-  const byType: Record<string, number> = {}
-  const byYear: Record<string, number> = {}
-  const projects = new Set<string>()
-  let recentSyncTime = ''
-
-  all.forEach((item) => {
-    const type = item.typeCode || item.type || 'other'
-    byType[type] = (byType[type] || 0) + 1
-
-    const time = item.createdAt || item.updatedAt || ''
-    const year = typeof time === 'string' ? time.substring(0, 4) : ''
-    if (year) byYear[year] = (byYear[year] || 0) + 1
-
-    const projectKey = item.projectCode || item.projectName
-    if (projectKey) projects.add(projectKey)
-
-    const currentTs = item.updatedAt || item.createdAt
-    if (currentTs && (!recentSyncTime || currentTs > recentSyncTime)) {
-      recentSyncTime = currentTs
-    }
+  return request({
+    url: '/interim-results/stats',
+    method: 'get'
   })
-
-  return {
-    code: 200,
-    msg: 'success',
-    data: {
-      totalProjects: projects.size,
-      totalResults: total || all.length,
-      byType,
-      byYear,
-      recentSyncTime
-    }
-  }
 }
 
 /**
@@ -153,28 +105,26 @@ export async function getInterimResults(params?: {
   page?: number
   pageSize?: number
 }): Promise<ApiResponse<InterimResultListPayload>> {
-  const res = await getResults(
-    {
-      page: params?.page ?? 1,
-      pageSize: params?.pageSize ?? 10,
-      keyword: params?.keyword,
-      type: params?.type,
+  const res = await request({
+    url: '/interim-results',
+    method: 'get',
+    params: {
       projectId: params?.projectId,
-      projectCode: params?.projectId,
-      yearRange: params?.year ? [params.year, params.year] : undefined,
-      typeCodes: [...PROCESS_RESULT_TYPE_CODES]
-    },
-    true
-  )
+      type: params?.type,
+      year: params?.year,
+      keyword: params?.keyword,
+      page: params?.page ?? 1,
+      pageSize: params?.pageSize ?? 10
+    }
+  })
 
   const pageData = res?.data || { list: [], total: 0, page: 1, pageSize: 10 }
-  const list = Array.isArray(pageData.list) ? pageData.list.map(mapListItemToInterim) : []
 
   return {
-    code: 200,
-    msg: 'success',
+    code: Number(res?.code || 200),
+    msg: res?.msg || 'success',
     data: {
-      list,
+      list: Array.isArray(pageData.list) ? pageData.list.map(mapInterimResult) : [],
       total: Number(pageData.total || 0),
       page: Number(pageData.page || params?.page || 1),
       pageSize: Number(pageData.pageSize || params?.pageSize || 10)
@@ -186,10 +136,14 @@ export async function getInterimResults(params?: {
  * 获取中期成果物详情
  */
 export async function getInterimResultDetail(id: string): Promise<ApiResponse<InterimResult>> {
-  const res = await getAdminResult(id)
+  const res = await request({
+    url: `/interim-results/${id}`,
+    method: 'get'
+  })
+
   return {
-    code: 200,
-    msg: 'success',
-    data: mapDetailToInterim(res?.data || {})
+    code: Number(res?.code || 200),
+    msg: res?.msg || 'success',
+    data: mapInterimResult(res?.data || {})
   }
 }

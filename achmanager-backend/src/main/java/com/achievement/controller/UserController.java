@@ -36,8 +36,16 @@ public class UserController {
     @Operation(description = "获取专家用户列表")
     @GetMapping("/experts")
     public Result<List<KeycloakUser>> getExpertUsers() {
-        List<KeycloakUser> experts = keycloakUserService.getUsersByRole(RoleConstants.RESEARCH_EXPERT);
-        return Result.success(experts.stream().filter(u -> u.isEnabled()).collect(Collectors.toList()));
+        return Result.success(getEnabledUsersByRole(RoleConstants.RESEARCH_EXPERT));
+    }
+
+    /**
+     * 获取管理员用户列表（用于审核人选择）
+     */
+    @Operation(description = "获取管理员用户列表")
+    @GetMapping("/admins")
+    public Result<List<KeycloakUser>> getAdminUsers() {
+        return Result.success(getEnabledUsersByRole(RoleConstants.RESEARCH_ADMIN));
     }
 
     /**
@@ -57,5 +65,10 @@ public class UserController {
             return u1.getName().compareTo(u2.getName());
         });
         return Result.success(users);
+    }
+
+    private List<KeycloakUser> getEnabledUsersByRole(String role) {
+        List<KeycloakUser> users = keycloakUserService.getUsersByRole(role);
+        return users.stream().filter(KeycloakUser::isEnabled).collect(Collectors.toList());
     }
 }

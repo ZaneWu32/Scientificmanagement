@@ -1,11 +1,12 @@
 package com.achievement.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import com.achievement.constant.RoleConstants;
 import com.achievement.domain.vo.ReviewAssignVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,9 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
     private final AchievementReviewMapper achievementReviewMapper;
     private final AchievementReviewerAssignmentMapper assignmentMapper;
     private final IKeycloakUserService keycloakUserService;
+
+    private record ResolvedReviewer(Integer reviewerId, String reviewerName) {
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -195,14 +199,12 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
             throw new RuntimeException("成果不存在");
         }
 
-        // 检查是否有审核人
-        if (assignReviewerDTO.getReviewerIds() == null || assignReviewerDTO.getReviewerIds().isEmpty()) {
-            throw new RuntimeException("审核人列表不能为空");
-        }
+        List<ResolvedReviewer> reviewers = resolveAssignableReviewers(assignReviewerDTO);
 
         // 取第一个审核人作为当前审核人
-        Integer firstReviewerId = assignReviewerDTO.getReviewerIds().get(0);
-        String firstReviewerName = resolveReviewerName(assignReviewerDTO, firstReviewerId, 0);
+        ResolvedReviewer firstReviewer = reviewers.get(0);
+        Integer firstReviewerId = firstReviewer.reviewerId();
+        String firstReviewerName = firstReviewer.reviewerName();
         String assignerName = assigner.getName();
         LocalDateTime now = LocalDateTime.now();
 
@@ -216,14 +218,12 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
 
         achievementMainsMapper.update(null, updateWrapper);
 
-        for (int i = 0; i < assignReviewerDTO.getReviewerIds().size(); i++) {
-            Integer reviewerId = assignReviewerDTO.getReviewerIds().get(i);
-            String reviewerName = resolveReviewerName(assignReviewerDTO, reviewerId, i);
+        for (ResolvedReviewer reviewer : reviewers) {
             AchievementReviewerAssignment assignment = new AchievementReviewerAssignment()
                     .setAchievementId(achievement.getId())
                     .setAchievementDocId(achievementDocId)
-                    .setReviewerId(reviewerId)
-                    .setReviewerName(reviewerName == null ? "" : reviewerName)
+                    .setReviewerId(reviewer.reviewerId())
+                    .setReviewerName(reviewer.reviewerName() == null ? "" : reviewer.reviewerName())
                     .setAssignedById(assigner.getId())
                     .setAssignedByName(assignerName)
                     .setStatus("pending")
@@ -258,16 +258,36 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         return achievementMainsMapper.selectOne(queryWrapper);
     }
 
-    private String resolveReviewerName(AssignReviewerDTO dto, Integer reviewerId, int index) {
+    private List<ResolvedReviewer> resolveAssignableReviewers(AssignReviewerDTO dto) {
+        if (dto == null || dto.getReviewerIds() == null || dto.getReviewerIds().isEmpty()) {
+            throw new RuntimeException("审核人列表不能为空");
+        }
+
+        List<ResolvedReviewer> reviewers = new ArrayList<>();
+        for (int i = 0; i < dto.getReviewerIds().size(); i++) {
+            Integer reviewerId = dto.getReviewerIds().get(i);
+            KeycloakUser user = keycloakUserService.getUserById(reviewerId);
+            validateAssignableReviewer(reviewerId, user);
+            reviewers.add(new ResolvedReviewer(reviewerId, resolveReviewerName(dto, user, i)));
+        }
+        return reviewers;
+    }
+
+    private void validateAssignableReviewer(Integer reviewerId, KeycloakUser user) {
+        if (user == null) {
+            throw new RuntimeException("审核人不存在或映射失效: reviewerId=" + reviewerId);
+        }
+        if (!user.hasAnyRole(RoleConstants.RESEARCH_ADMIN, RoleConstants.RESEARCH_EXPERT)) {
+            throw new RuntimeException("审核人必须是科研管理员或科研专家: reviewerId=" + reviewerId);
+        }
+    }
+
+    private String resolveReviewerName(AssignReviewerDTO dto, KeycloakUser user, int index) {
         if (dto != null && dto.getReviewerNames() != null && index < dto.getReviewerNames().size()) {
             String name = dto.getReviewerNames().get(index);
             if (name != null && !name.isBlank()) {
                 return name.trim();
             }
-        }
-        KeycloakUser user = keycloakUserService.getUserById(reviewerId);
-        if (user == null) {
-            throw new RuntimeException("审核人不存在或映射失效: reviewerId=" + reviewerId);
         }
         if (user.getName() != null && !user.getName().isBlank()) {
             return user.getName();
@@ -275,7 +295,7 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         if (user.getUsername() != null && !user.getUsername().isBlank()) {
             return user.getUsername();
         }
-        return "审核专家";
+        return "审核人";
     }
 
     @Override
