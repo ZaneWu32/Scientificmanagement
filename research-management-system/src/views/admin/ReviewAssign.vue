@@ -3,7 +3,7 @@
     <el-card class="card">
       <template #header>
         <div class="card-header">
-          <span class="title">分配审核专家</span>
+          <span class="title">分配审核人</span>
         </div>
       </template>
 
@@ -16,7 +16,7 @@
               :disabled="!selectedResultIds.length"
               @click="assignSelectedResults"
             >
-              批量分配专家（已选 {{ selectedResultIds.length }} 项）
+              批量分配审核人（已选 {{ selectedResultIds.length }} 项）
             </el-button>
           </div>
           <el-table
@@ -40,7 +40,7 @@
             </el-table-column>
             <el-table-column label="操作" width="140" align="center" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" size="small" @click="assignExpert(row)">
+                <el-button type="primary" size="small" @click="assignReviewer(row)">
                   单条分配
                 </el-button>
               </template>
@@ -86,25 +86,25 @@
     </el-card>
 
     <!-- 分配弹窗 -->
-    <el-dialog v-model="assignDialog" title="分配审核专家" width="560px" destroy-on-close>
+    <el-dialog v-model="assignDialog" title="分配审核人" width="560px" destroy-on-close>
       <el-form label-width="100px">
         <el-form-item label="已选成果">
           <span>{{ targetAchievementIds.length }} 条</span>
         </el-form-item>
-        <el-form-item label="选择专家">
+        <el-form-item label="选择审核人">
           <el-select
-            v-model="selectedExpertId"
-            placeholder="请选择专家"
+            v-model="selectedReviewerId"
+            placeholder="请选择审核人"
             filterable
             clearable
-            v-loading="expertsLoading"
+            v-loading="reviewersLoading"
             style="width: 100%"
           >
             <el-option
-              v-for="expert in expertOptions"
-              :key="expert.id"
-              :label="expert.label"
-              :value="expert.id"
+              v-for="reviewer in reviewerOptions"
+              :key="reviewer.id"
+              :label="reviewer.label"
+              :value="reviewer.id"
             />
           </el-select>
         </el-form-item>
@@ -122,14 +122,15 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getPendingAssignResults, assignReviewers, getAssignReviewersList } from '@/api/result'
-import { getExpertUsers, type KeycloakUser } from '@/api/user'
+import { getAdminUsers, getExpertUsers } from '@/api/user'
 import { formatDateTime } from '@/utils/date'
+import { buildReviewerOptions, type ReviewerOption } from '@/utils/reviewer'
 
 // 如果你项目已有 dayjs：
 // import dayjs from 'dayjs'
 
 const loading = ref(false)
-const expertsLoading = ref(false)
+const reviewersLoading = ref(false)
 const assignLoading = ref(false)
 
 const activeTab = ref<'pending' | 'assigned'>('pending')
@@ -147,11 +148,10 @@ const assignedPagination = ref({
 
 // 分配弹窗
 const assignDialog = ref(false)
-const selectedExpertId = ref<number | null>(null)
+const selectedReviewerId = ref<number | null>(null)
 const selectedResultIds = ref<string[]>([])
 const targetAchievementIds = ref<string[]>([])
-const experts = ref<KeycloakUser[]>([])
-const expertOptions = ref<Array<{ id: number; label: string }>>([])
+const reviewerOptions = ref<ReviewerOption[]>([])
 
 const headerStyle = computed(() => ({
   background: '#fafafa',
@@ -160,7 +160,7 @@ const headerStyle = computed(() => ({
 }))
 
 onMounted(() => {
-  loadExperts()
+  loadReviewers()
   // 首次进入根据 tab 加载
   if (activeTab.value === 'pending') loadPending()
   else loadAssigned()
@@ -198,28 +198,18 @@ async function loadAssigned() {
   }
 }
 
-async function loadExperts() {
-  expertsLoading.value = true
+async function loadReviewers() {
+  reviewersLoading.value = true
   try {
-    const res = await getExpertUsers()
-    experts.value = Array.isArray(res?.data) ? res.data : []
-    const seen = new Set<number>()
-    expertOptions.value = experts.value
-      .map((expert) => {
-        const id = Number(expert?.id)
-        if (!Number.isFinite(id) || seen.has(id)) return null
-        seen.add(id)
-        return {
-          id,
-          label: getExpertLabel(expert)
-        }
-      })
-      .filter((item): item is { id: number; label: string } => item !== null)
+    const [adminRes, expertRes] = await Promise.all([getAdminUsers(), getExpertUsers()])
+    const admins = Array.isArray(adminRes?.data) ? adminRes.data : []
+    const experts = Array.isArray(expertRes?.data) ? expertRes.data : []
+    reviewerOptions.value = buildReviewerOptions(admins, experts)
   } catch (error) {
-    console.error('加载专家列表失败:', error)
-    ElMessage.error('加载专家列表失败')
+    console.error('加载审核人列表失败:', error)
+    ElMessage.error('加载审核人列表失败')
   } finally {
-    expertsLoading.value = false
+    reviewersLoading.value = false
   }
 }
 
@@ -245,19 +235,6 @@ function handleAssignedCurrentChange(page: number) {
   loadAssigned()
 }
 
-function getExpertLabel(expert: Partial<KeycloakUser>) {
-  const name = expert?.name?.trim()
-  if (name) return name
-
-  const username = expert?.username?.trim()
-  if (username) return username
-
-  const email = expert?.email?.trim()
-  if (email) return email
-
-  return `专家${expert?.id ?? ''}`
-}
-
 function toAchievementId(id: any) {
   if (id === undefined || id === null) return ''
   return String(id)
@@ -275,11 +252,11 @@ function openAssignDialog(ids: string[]) {
     return
   }
   targetAchievementIds.value = ids
-  selectedExpertId.value = null
+  selectedReviewerId.value = null
   assignDialog.value = true
 }
 
-function assignExpert(row: any) {
+function assignReviewer(row: any) {
   const id = toAchievementId(row?.id)
   openAssignDialog(id ? [id] : [])
 }
@@ -293,21 +270,21 @@ async function confirmAssign() {
     ElMessage.warning('未选择成果')
     return
   }
-  if (selectedExpertId.value === null) {
-    ElMessage.warning('请选择专家')
+  if (selectedReviewerId.value === null) {
+    ElMessage.warning('请选择审核人')
     return
   }
-  const selectedExpert = expertOptions.value.find((expert) => expert.id === selectedExpertId.value)
-  if (!selectedExpert) {
-    ElMessage.warning('专家信息异常，请刷新后重试')
+  const selectedReviewer = reviewerOptions.value.find((reviewer) => reviewer.id === selectedReviewerId.value)
+  if (!selectedReviewer) {
+    ElMessage.warning('审核人信息异常，请刷新后重试')
     return
   }
 
   assignLoading.value = true
   try {
     const payload = {
-      reviewerIds: [selectedExpert.id],
-      reviewerNames: [selectedExpert.label]
+      reviewerIds: [selectedReviewer.id],
+      reviewerNames: [selectedReviewer.reviewerName]
     }
     const assignResults = await Promise.allSettled(
       targetAchievementIds.value.map((id) => assignReviewers(id, payload))

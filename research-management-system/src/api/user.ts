@@ -32,6 +32,16 @@ export function getExpertUsers(): Promise<ApiResponse<KeycloakUser[]>> {
 }
 
 /**
+ * 获取管理员用户列表（用于审核人选择）
+ */
+export function getAdminUsers(): Promise<ApiResponse<KeycloakUser[]>> {
+  return request({
+    url: '/users/admins',
+    method: 'get',
+  });
+}
+
+/**
  * 获取所有业务用户列表
  */
 export function getAllUsers(params?: any): Promise<ApiResponse<KeycloakUser[]>> {
