@@ -530,10 +530,19 @@ function getVisibilityText(visibility) {
   return VISIBILITY_TEXT_MAP[visibility] || visibility
 }
 
-function formatFileSize(bytes) {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+function formatFileSize(kb) {
+  if (kb === undefined || kb === null) return '未知大小'
+
+  let sizeInKB = Number(kb)
+  if (isNaN(sizeInKB)) return '未知大小'
+
+  if (sizeInKB < 1024) {
+    // 小于 1MB，显示 KB（取整）
+    return Math.round(sizeInKB) + ' KB'
+  } else {
+    // 大于等于 1MB，转换为 MB 显示（保留一位小数）
+    return (sizeInKB / 1024).toFixed(1) + ' MB'
+  }
 }
 
 function downloadFile(file) {
