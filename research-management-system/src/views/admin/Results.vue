@@ -25,7 +25,18 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" v-loading="loading">
+      <div class="toolbar" style="margin-bottom: 12px">
+        <el-button
+          type="primary"
+          :disabled="!selectedRows.length"
+          @click="exportDialogVisible = true"
+        >
+          智能导出报告 ({{ selectedRows.length }})
+        </el-button>
+      </div>
+
+      <el-table :data="tableData" v-loading="loading" @selection-change="handleSelectionChange" row-key="id">
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="title" label="成果名称" min-width="240">
           <template #default="{ row }">
             <div class="title-cell">
@@ -134,11 +145,13 @@
         <el-button type="primary" :loading="assigning" @click="handleAssign">确定</el-button>
       </template>
     </el-dialog>
+
+    <IntelligentExportDialog v-model="exportDialogVisible" :achievements="selectedAchievements"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -148,18 +161,34 @@ import { getAdminUsers, getExpertUsers } from '@/api/user'
 import { ResultStatus } from '@/types'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 import { buildReviewerOptions, type ReviewerOption } from '@/utils/reviewer'
+import IntelligentExportDialog from '@/components/IntelligentExportDialog.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 const assignDialogVisible = ref(false)
 const assigning = ref(false)
+const exportDialogVisible = ref(false)
 const formatChecking = ref(false)
 const currentAssignId = ref('')
 const reviewerOptions = ref<ReviewerOption[]>([])
 const assignForm = reactive({
   reviewerId: null as number | null
 })
+
+const selectedRows = ref<any[]>([])
+const selectedAchievements = computed(() =>
+  selectedRows.value.map(row => ({
+    documentId: row.id,
+    title: row.title,
+    typeName: row.type,
+    year: row.year
+  }))
+)
+
+function handleSelectionChange(rows: any[]) {
+  selectedRows.value = rows
+}
 
 const searchForm = reactive({
   keyword: '',

@@ -83,8 +83,6 @@
             支持输入多个关键词，以空格分隔可提高命中率
           </div>
           <div class="action-buttons">
-            <el-button round plain :icon="RefreshIcon" @click="handleReset">重置</el-button>
-            <el-button round type="primary" :icon="SearchIcon" @click="handleSearch">查询</el-button>
             <el-button
               v-if="canExport"
               round
@@ -98,6 +96,8 @@
             >
               导出
             </el-button>
+            <el-button round plain :icon="RefreshIcon" @click="handleReset">重置</el-button>
+            <el-button round type="primary" :icon="SearchIcon" @click="handleSearch">查询</el-button>
           </div>
         </div>
       </el-form>

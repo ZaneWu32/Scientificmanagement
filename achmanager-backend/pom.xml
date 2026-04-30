@@ -169,6 +169,20 @@
             <version>2.11.0</version>
         </dependency>
 
+        <!-- PDF generation: Flying Saucer (HTML to PDF via OpenPDF) -->
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-pdf</artifactId>
+            <version>9.7.2</version>
+        </dependency>
+
+        <!-- HTML parsing for Word conversion -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
         <!-- Keycloak Admin Client -->
         <dependency>
             <groupId>org.keycloak</groupId>
