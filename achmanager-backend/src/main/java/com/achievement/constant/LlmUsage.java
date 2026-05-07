@@ -7,7 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum LlmUsage {
 
-    DEFAULT("default");
+    DEFAULT("default"),
+    REPORT("report");
 
     private final String value;
 }

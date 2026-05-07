@@ -81,7 +81,7 @@ public class ReportServiceImpl implements IReportService {
 
             task.setProgress(60);
 
-            String responseJson = llmClient.chatCompletion(LlmUsage.DEFAULT, List.of(
+            String responseJson = llmClient.chatCompletion(LlmUsage.REPORT, List.of(
                     ChatMessage.system(systemPrompt),
                     ChatMessage.user(userPrompt)));
             String htmlContent = objectMapper.readTree(responseJson).at("/choices/0/message/content").asText();
