@@ -29,7 +29,7 @@
         <el-button
           type="primary"
           :disabled="!selectedRows.length"
-          @click="exportDialogVisible = true"
+          @click="handleExportReport"
         >
           智能导出报告 ({{ selectedRows.length }})
         </el-button>
@@ -146,12 +146,11 @@
       </template>
     </el-dialog>
 
-    <IntelligentExportDialog v-model="exportDialogVisible" :achievements="selectedAchievements"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
@@ -161,14 +160,12 @@ import { getAdminUsers, getExpertUsers } from '@/api/user'
 import { ResultStatus } from '@/types'
 import { PROCESS_RESULT_TYPE_CODES } from '@/config/resultTypeScope'
 import { buildReviewerOptions, type ReviewerOption } from '@/utils/reviewer'
-import IntelligentExportDialog from '@/components/IntelligentExportDialog.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 const assignDialogVisible = ref(false)
 const assigning = ref(false)
-const exportDialogVisible = ref(false)
 const formatChecking = ref(false)
 const currentAssignId = ref('')
 const reviewerOptions = ref<ReviewerOption[]>([])
@@ -177,17 +174,19 @@ const assignForm = reactive({
 })
 
 const selectedRows = ref<any[]>([])
-const selectedAchievements = computed(() =>
-  selectedRows.value.map(row => ({
+
+function handleSelectionChange(rows: any[]) {
+  selectedRows.value = rows
+}
+
+function handleExportReport() {
+  const data = selectedRows.value.map(row => ({
     documentId: row.id,
     title: row.title,
     typeName: row.type,
     year: row.year
   }))
-)
-
-function handleSelectionChange(rows: any[]) {
-  selectedRows.value = rows
+  router.push({ path: '/admin/report/create', query: { data: encodeURIComponent(JSON.stringify(data)) } })
 }
 
 const searchForm = reactive({
@@ -364,7 +363,7 @@ async function removeResult(row) {
 }
 
 function statusType(status: string) {
-  const map: Record<string, string> = {
+  const map: Record<string, "primary" | "success" | "warning" | "info" | "danger"> = {
     [ResultStatus.DRAFT]: 'info',
     [ResultStatus.PENDING]: 'warning',
     [ResultStatus.REVIEWING]: 'primary',

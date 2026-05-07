@@ -16,7 +16,6 @@
     "strict": false,
     "allowJs": true,
     "types": ["vite/client"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
