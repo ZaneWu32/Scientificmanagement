@@ -79,8 +79,8 @@ logging:
     com.achievement.filter.ProcessSystemApiKeyFilter: DEBUG
     com.achievement.config: INFO
 strapi:
-  base-url: http://localhost:1337
-  api-token: 54754f00e296831dc33a4cba3b7f9c382368d59c272f4f1080875268b2ed08b7d780d68b68049295515726d6781259c2cfc4cce3b07d94500eefa463ce5006b0c801209dd898c7623eeb0f9772297826d08c1a1daa9f677b96e30677eb6e9ff67ec887cf7f3ad4bd443ac7a8286491547c283629f31836dd6ee76e6e1223cac8
+  base-url: ${STRAPI_BASE_URL:http://127.0.0.1:1337}
+  api-token: 997924e7a5d12404490c8dd13f275630c10846e18ecbf334ac8fa09c5f187baf87ba93e47c9e144693c1a9e58f40f76285f827ce08034411d4c1810f1d4c1d41ba97bb19e64e85481519990be52600aa19d94b64e460b7167c6b928dade4c02dea3bb313d65dd6a2df2354058ef92ec8422c611bb486f5fb9d9eef50bb4aac20
 
 easyscholar:
   base-url: https://www.easyscholar.cc/open/getPublicationRank
