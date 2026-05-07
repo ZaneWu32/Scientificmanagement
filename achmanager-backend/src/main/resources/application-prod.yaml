@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:/config/application-llm.yaml
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/strapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
     username: ${SPRING_DATASOURCE_USERNAME:root}
@@ -34,3 +36,15 @@ keycloak:
   client-secret: ${KEYCLOAK_CLIENT_SECRET:}
   realm-default-roles: default-roles-research-management|uma_authorization|offline_access
   portal-client-id: ${KEYCLOAK_PORTAL_CLIENT_ID:research-management-portal}
+
+# LLM配置 — 生产环境通过挂载 /config/application-llm.yaml 覆盖，见 spring.config.import
+llm:
+  models:
+    default:
+      base-url: ${LLM_DEFAULT_BASE_URL:}
+      api-key: ${LLM_DEFAULT_API_KEY:}
+      model-name: ${LLM_DEFAULT_MODEL_NAME:}
+      max-tokens: ${LLM_DEFAULT_MAX_TOKENS:4096}
+      temperature: ${LLM_DEFAULT_TEMPERATURE:0.7}
+  usage:
+    default: default
