@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +16,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 
+import com.achievement.annotation.CurrentUser;
+import com.achievement.constant.RoleConstants;
+import com.achievement.domain.dto.KeycloakUser;
 import com.achievement.domain.dto.ReportGenerateRequest;
 import com.achievement.domain.vo.ReportTaskVO;
 import com.achievement.result.Result;
@@ -34,16 +39,25 @@ public class ReportController {
 
     private final IReportService reportService;
 
+    private void checkAdminRole(KeycloakUser currentUser) {
+        if (!currentUser.hasRole(RoleConstants.RESEARCH_ADMIN)) {
+            throw new HttpClientErrorException(HttpStatusCode.valueOf(403), "无权限：仅管理员可访问");
+        }
+    }
+
     @Operation(summary = "开始生成报告")
     @PostMapping("/generate")
-    public Result<Map<String, String>> generate(@Valid @RequestBody ReportGenerateRequest request) {
+    public Result<Map<String, String>> generate(@Valid @RequestBody ReportGenerateRequest request,
+            @CurrentUser KeycloakUser currentUser) {
+        checkAdminRole(currentUser);
         String taskId = reportService.startGeneration(request.getAchievementDocIds());
         return Result.success(Map.of("taskId", taskId));
     }
 
     @Operation(summary = "查询任务状态")
     @GetMapping("/task/{taskId}")
-    public Result<ReportTaskVO> getTaskStatus(@PathVariable String taskId) {
+    public Result<ReportTaskVO> getTaskStatus(@PathVariable String taskId, @CurrentUser KeycloakUser currentUser) {
+        checkAdminRole(currentUser);
         ReportTaskVO vo = reportService.getTaskStatus(taskId);
         if (vo == null) {
             return Result.error("任务不存在");
@@ -53,7 +67,8 @@ public class ReportController {
 
     @Operation(summary = "获取报告HTML内容")
     @GetMapping("/task/{taskId}/content")
-    public Result<Map<String, String>> getContent(@PathVariable String taskId) {
+    public Result<Map<String, String>> getContent(@PathVariable String taskId, @CurrentUser KeycloakUser currentUser) {
+        checkAdminRole(currentUser);
         String html = reportService.getTaskContent(taskId);
         if (html == null) {
             return Result.error("报告内容未就绪");
@@ -65,7 +80,8 @@ public class ReportController {
     @PostMapping("/task/{taskId}/export")
     public ResponseEntity<byte[]> export(
             @PathVariable String taskId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body, @CurrentUser KeycloakUser currentUser) {
+        checkAdminRole(currentUser);
 
         String format = body.getOrDefault("format", "pdf");
         String editedHtml = body.get("html");
