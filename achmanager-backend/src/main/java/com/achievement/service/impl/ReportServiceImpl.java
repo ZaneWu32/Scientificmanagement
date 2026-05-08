@@ -2,7 +2,10 @@ package com.achievement.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -18,6 +21,7 @@ import com.achievement.domain.vo.AchFieldVO;
 import com.achievement.domain.vo.ReportTaskVO;
 import com.achievement.service.IAchievementMainsService;
 import com.achievement.service.IReportService;
+import com.achievement.utils.AttachmentContentExtractor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Data;
@@ -32,6 +36,7 @@ public class ReportServiceImpl implements IReportService {
     private final IAchievementMainsService achievementMainsService;
     private final LlmClient llmClient;
     private final ReportRenderService reportRenderService;
+    private final AttachmentContentExtractor attachmentContentExtractor;
     private final ObjectMapper objectMapper;
     @Qualifier("reportTaskExecutor")
     private final Executor reportTaskExecutor;
@@ -82,7 +87,22 @@ public class ReportServiceImpl implements IReportService {
             task.setProgress(50);
             log.info("成果物数据查询完成: taskId={}, 有效数量={}", task.getId(), details.size());
 
-            String userPrompt = buildUserPrompt(details);
+            // 提取附件内容
+            Map<String, Map<String, String>> allAttachmentContents = new LinkedHashMap<>();
+            for (AchDetailVO d : details) {
+                try {
+                    Map<String, String> contents = attachmentContentExtractor.extractContents(d.getAttachments());
+                    if (!contents.isEmpty()) {
+                        allAttachmentContents.put(d.getDocumentId(), contents);
+                    }
+                } catch (Exception e) {
+                    log.warn("附件内容提取失败，成果物将仅使用元数据: docId={}, 错误={}", d.getDocumentId(), e.getMessage());
+                }
+            }
+            log.info("附件内容提取汇总: 有附件内容的成果物数量={}", allAttachmentContents.size());
+            task.setProgress(55);
+
+            String userPrompt = buildUserPrompt(details, allAttachmentContents);
             String systemPrompt = buildSystemPrompt();
 
             task.setProgress(60);
@@ -178,7 +198,7 @@ public class ReportServiceImpl implements IReportService {
                 """;
     }
 
-    private String buildUserPrompt(List<AchDetailVO> details) {
+    private String buildUserPrompt(List<AchDetailVO> details, Map<String, Map<String, String>> allAttachmentContents) {
         StringBuilder sb = new StringBuilder();
         sb.append("以下是需要分析的科研成果物信息：\n\n");
 
@@ -209,11 +229,63 @@ public class ReportServiceImpl implements IReportService {
                     }
                 }
             }
+
+            // 附件内容
+            Map<String, String> attContents = allAttachmentContents.getOrDefault(
+                    d.getDocumentId(), Collections.emptyMap());
+            appendAttachmentInfo(sb, d.getAttachments(), attContents);
+
             sb.append("\n");
         }
 
         sb.append("请基于以上").append(details.size()).append("个成果物的信息，生成一份完整的综合研究报告。");
         return sb.toString();
+    }
+
+    private void appendAttachmentInfo(StringBuilder sb, com.fasterxml.jackson.databind.JsonNode attachments,
+            Map<String, String> extractedContents) {
+        if (attachments == null || attachments.path("data").isMissingNode()) {
+            return;
+        }
+        com.fasterxml.jackson.databind.JsonNode data = attachments.path("data");
+        if (!data.isArray() || data.isEmpty()) {
+            return;
+        }
+        boolean hasFiles = false;
+        StringBuilder fileSection = new StringBuilder();
+        for (com.fasterxml.jackson.databind.JsonNode entry : data) {
+            com.fasterxml.jackson.databind.JsonNode filesNode = entry.path("files");
+            if (filesNode.isArray()) {
+                for (com.fasterxml.jackson.databind.JsonNode file : filesNode) {
+                    appendFileInfo(fileSection, file, extractedContents);
+                    hasFiles = true;
+                }
+            } else if (filesNode.isObject()) {
+                appendFileInfo(fileSection, filesNode, extractedContents);
+                hasFiles = true;
+            }
+        }
+        if (hasFiles) {
+            sb.append("- 附件内容:\n");
+            sb.append(fileSection);
+        }
+    }
+
+    private void appendFileInfo(StringBuilder sb, com.fasterxml.jackson.databind.JsonNode file,
+            Map<String, String> extractedContents) {
+        String name = file.path("name").asText("");
+        if (name.isBlank()) {
+            return;
+        }
+        String extracted = extractedContents.get(name);
+        if (extracted != null && !extracted.isBlank()) {
+            sb.append("  - [文件名: ").append(name).append("]\n");
+            sb.append("    ").append(extracted.replace("\n", "\n    ")).append("\n");
+        } else {
+            String mime = file.path("mime").asText("未知");
+            sb.append("  - [文件名: ").append(name).append(", 类型: ").append(mime)
+                    .append(" - 无法提取文本内容]\n");
+        }
     }
 
     private String stripCodeBlockMarkers(String content) {
