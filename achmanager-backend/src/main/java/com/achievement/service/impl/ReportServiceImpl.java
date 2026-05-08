@@ -133,13 +133,10 @@ public class ReportServiceImpl implements IReportService {
         if (html == null || html.isBlank())
             throw new RuntimeException("报告内容为空");
 
-        if ("pdf".equalsIgnoreCase(format)) {
-            return reportRenderService.renderPdf(html);
-        } else if ("word".equalsIgnoreCase(format)) {
-            return reportRenderService.renderWord(html);
-        } else {
+        if (!"word".equalsIgnoreCase(format)) {
             throw new RuntimeException("不支持的导出格式: " + format);
         }
+        return reportRenderService.renderWord(html);
     }
 
     private String buildSystemPrompt() {

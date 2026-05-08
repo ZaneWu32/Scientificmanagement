@@ -51,10 +51,7 @@
           <editor-content :editor="editor" class="editor-content" />
 
           <div class="export-bar">
-            <el-radio-group v-model="exportFormat" size="large">
-              <el-radio-button value="pdf">PDF 文档</el-radio-button>
-              <el-radio-button value="word">Word 文档</el-radio-button>
-            </el-radio-group>
+            <el-text type="info">将导出为 Word 文档格式</el-text>
           </div>
         </div>
       </div>
@@ -97,7 +94,6 @@ const taskId = ref('')
 const taskStatus = ref('')
 const taskProgress = ref(0)
 const taskErrorMsg = ref('')
-const exportFormat = ref<'pdf' | 'word'>('pdf')
 const exporting = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -214,11 +210,13 @@ async function handleExport() {
   exporting.value = true
   try {
     const html = editor.value?.getHTML() || ''
-    const blob = await exportReport(taskId.value, exportFormat.value, html)
+    const blob = await exportReport(taskId.value, 'word', html)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `research_report.${exportFormat.value === 'pdf' ? 'pdf' : 'docx'}`
+    const now = new Date()
+    const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    a.download = `科研成果报告_${ts}.docx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

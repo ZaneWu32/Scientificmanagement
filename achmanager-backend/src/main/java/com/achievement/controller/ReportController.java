@@ -83,18 +83,15 @@ public class ReportController {
             @RequestBody Map<String, String> body, @CurrentUser KeycloakUser currentUser) {
         checkAdminRole(currentUser);
 
-        String format = body.getOrDefault("format", "pdf");
+        String format = body.getOrDefault("format", "word");
         String editedHtml = body.get("html");
 
         byte[] data = reportService.exportReport(taskId, format, editedHtml);
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String ext = "pdf".equalsIgnoreCase(format) ? ".pdf" : ".docx";
-        String filename = "research_report_" + timestamp + ext;
+        String filename = "科研成果报告_" + timestamp + ".docx";
 
-        MediaType mediaType = "pdf".equalsIgnoreCase(format)
-                ? MediaType.APPLICATION_PDF
-                : MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        MediaType mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
         String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
 
