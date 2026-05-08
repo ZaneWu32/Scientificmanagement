@@ -50,12 +50,14 @@ public class ReportServiceImpl implements IReportService {
         taskMap.put(taskId, task);
         reportTaskExecutor.execute(() -> doGenerate(task));
         cleanExpiredTasks();
+        log.info("报告生成任务已创建: taskId={}, 成果物数量={}", taskId, achievementDocIds.size());
         return taskId;
     }
 
     public void doGenerate(ReportTask task) {
         task.setStatus("GENERATING");
         task.setProgress(10);
+        log.info("报告生成开始: taskId={}, 成果物docId列表={}", task.getId(), task.getAchievementDocIds());
 
         try {
             List<AchDetailVO> details = new ArrayList<>();
@@ -64,6 +66,8 @@ public class ReportServiceImpl implements IReportService {
                 AchDetailVO detail = achievementMainsService.selectDetailForProjectSystem(docIds.get(i));
                 if (detail != null) {
                     details.add(detail);
+                } else {
+                    log.warn("成果物查询为空: taskId={}, docId={}", task.getId(), docIds.get(i));
                 }
                 task.setProgress(10 + (int) ((double) (i + 1) / docIds.size() * 40));
             }
@@ -71,15 +75,18 @@ public class ReportServiceImpl implements IReportService {
             if (details.isEmpty()) {
                 task.setStatus("FAILED");
                 task.setErrorMsg("未找到有效的成果物数据");
+                log.error("报告生成失败: taskId={}, 原因=所有成果物均未查到数据", task.getId());
                 return;
             }
 
             task.setProgress(50);
+            log.info("成果物数据查询完成: taskId={}, 有效数量={}", task.getId(), details.size());
 
             String userPrompt = buildUserPrompt(details);
             String systemPrompt = buildSystemPrompt();
 
             task.setProgress(60);
+            log.info("调用LLM生成报告: taskId={}, prompt长度={}", task.getId(), userPrompt.length());
 
             String responseJson = llmClient.chatCompletion(LlmUsage.REPORT, List.of(
                     ChatMessage.system(systemPrompt),
@@ -93,9 +100,10 @@ public class ReportServiceImpl implements IReportService {
             task.setStatus("COMPLETED");
             task.setProgress(100);
             task.setCompletedAt(LocalDateTime.now());
+            log.info("报告生成完成: taskId={}, HTML长度={}", task.getId(), htmlContent.length());
 
         } catch (Exception e) {
-            log.error("Report generation failed for task {}", task.getId(), e);
+            log.error("报告生成失败: taskId={}", task.getId(), e);
             task.setStatus("FAILED");
             task.setErrorMsg(e.getMessage());
         }
@@ -133,10 +141,15 @@ public class ReportServiceImpl implements IReportService {
         if (html == null || html.isBlank())
             throw new RuntimeException("报告内容为空");
 
+        boolean usedEdited = editedHtml != null && !editedHtml.isBlank();
+        log.info("导出报告: taskId={}, format={}, 使用编辑后内容={}", taskId, format, usedEdited);
+
         if (!"word".equalsIgnoreCase(format)) {
             throw new RuntimeException("不支持的导出格式: " + format);
         }
-        return reportRenderService.renderWord(html);
+        byte[] data = reportRenderService.renderWord(html);
+        log.info("报告导出完成: taskId={}, 文件大小={}bytes", taskId, data.length);
+        return data;
     }
 
     private String buildSystemPrompt() {

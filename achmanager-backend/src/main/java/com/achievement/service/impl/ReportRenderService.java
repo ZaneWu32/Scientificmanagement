@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ReportRenderService {
 
     public byte[] renderWord(String html) {
+        log.info("开始渲染Word文档, HTML长度={}", html.length());
         try {
             Document doc = Jsoup.parse(html);
             XWPFDocument document = new XWPFDocument();
@@ -35,9 +36,10 @@ public class ReportRenderService {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.write(out);
             document.close();
+            log.info("Word文档渲染完成, 文件大小={}bytes", out.size());
             return out.toByteArray();
         } catch (Exception e) {
-            log.error("Word rendering failed", e);
+            log.error("Word文档渲染失败", e);
             throw new RuntimeException("Word 生成失败: " + e.getMessage(), e);
         }
     }
