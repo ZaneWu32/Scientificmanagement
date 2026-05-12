@@ -104,3 +104,4 @@ llm:
       temperature: ${LLM_DEFAULT_TEMPERATURE:0.7}
   usage:
     default: default
+    report: default

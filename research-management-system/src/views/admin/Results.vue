@@ -25,7 +25,18 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" v-loading="loading">
+      <div class="toolbar" style="margin-bottom: 12px">
+        <el-button
+          type="primary"
+          :disabled="!selectedRows.length"
+          @click="handleExportReport"
+        >
+          智能导出报告 ({{ selectedRows.length }})
+        </el-button>
+      </div>
+
+      <el-table :data="tableData" v-loading="loading" @selection-change="handleSelectionChange" row-key="id">
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="title" label="成果名称" min-width="240">
           <template #default="{ row }">
             <div class="title-cell">
@@ -134,6 +145,7 @@
         <el-button type="primary" :loading="assigning" @click="handleAssign">确定</el-button>
       </template>
     </el-dialog>
+
   </div>
 </template>
 
@@ -160,6 +172,22 @@ const reviewerOptions = ref<ReviewerOption[]>([])
 const assignForm = reactive({
   reviewerId: null as number | null
 })
+
+const selectedRows = ref<any[]>([])
+
+function handleSelectionChange(rows: any[]) {
+  selectedRows.value = rows
+}
+
+function handleExportReport() {
+  const data = selectedRows.value.map(row => ({
+    documentId: row.id,
+    title: row.title,
+    typeName: row.type,
+    year: row.year
+  }))
+  router.push({ path: '/admin/report/create', query: { data: encodeURIComponent(JSON.stringify(data)) } })
+}
 
 const searchForm = reactive({
   keyword: '',
@@ -335,7 +363,7 @@ async function removeResult(row) {
 }
 
 function statusType(status: string) {
-  const map: Record<string, string> = {
+  const map: Record<string, "primary" | "success" | "warning" | "info" | "danger"> = {
     [ResultStatus.DRAFT]: 'info',
     [ResultStatus.PENDING]: 'warning',
     [ResultStatus.REVIEWING]: 'primary',

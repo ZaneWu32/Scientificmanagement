@@ -154,6 +154,12 @@ const router = createRouter({
           component: () => import("@/views/admin/InterimResults.vue"),
           meta: { title: "过程成果", roles: [UserRole.ADMIN] },
         },
+        {
+          path: "/admin/report/create",
+          name: "ReportCreate",
+          component: () => import("@/views/admin/ReportCreate.vue"),
+          meta: { title: "智能报告导出", roles: [UserRole.ADMIN] },
+        },
       ],
     },
     {
