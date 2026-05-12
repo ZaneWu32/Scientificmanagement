@@ -438,8 +438,3 @@ SELECT
     NULL as project_field
 FROM project_submission_deliverable dr
 WHERE dr.del_flag = '0';
-
--- 添加索引优化查询性能
-CREATE INDEX idx_interim_results_project_id ON process_submissions(del_flag, application_id);
-CREATE INDEX idx_interim_results_type ON process_submissions(del_flag, submission_type);
-CREATE INDEX idx_interim_results_upload_time ON process_submissions(del_flag, upload_time);
