@@ -109,6 +109,7 @@ import {
   Checked,
   DataAnalysis,
   Document,
+  EditPen,
   House,
   List,
   Plus,
@@ -190,6 +191,14 @@ const menuItems = computed(() => {
         { path: '/insights/demands', title: '需求洞察' },
         { path: '/admin/research-insights', title: '研究洞察' }
       ]
+    })
+
+    // 4. 智能报告
+    items.push({
+      path: '/admin/report/create',
+      title: '智能报告',
+      icon: EditPen,
+      roles: [UserRole.ADMIN]
     })
 
     // 5. 系统配置（低频维护）

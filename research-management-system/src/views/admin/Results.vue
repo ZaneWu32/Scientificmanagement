@@ -25,18 +25,7 @@
         </el-form-item>
       </el-form>
 
-      <div class="toolbar" style="margin-bottom: 12px">
-        <el-button
-          type="primary"
-          :disabled="!selectedRows.length"
-          @click="handleExportReport"
-        >
-          智能导出报告 ({{ selectedRows.length }})
-        </el-button>
-      </div>
-
-      <el-table :data="tableData" v-loading="loading" @selection-change="handleSelectionChange" row-key="id">
-        <el-table-column type="selection" width="55" align="center" />
+      <el-table :data="tableData" v-loading="loading" row-key="id">
         <el-table-column prop="title" label="成果名称" min-width="240">
           <template #default="{ row }">
             <div class="title-cell">
@@ -172,22 +161,6 @@ const reviewerOptions = ref<ReviewerOption[]>([])
 const assignForm = reactive({
   reviewerId: null as number | null
 })
-
-const selectedRows = ref<any[]>([])
-
-function handleSelectionChange(rows: any[]) {
-  selectedRows.value = rows
-}
-
-function handleExportReport() {
-  const data = selectedRows.value.map(row => ({
-    documentId: row.id,
-    title: row.title,
-    typeName: row.type,
-    year: row.year
-  }))
-  router.push({ path: '/admin/report/create', query: { data: encodeURIComponent(JSON.stringify(data)) } })
-}
 
 const searchForm = reactive({
   keyword: '',
