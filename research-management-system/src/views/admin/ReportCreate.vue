@@ -13,7 +13,8 @@
         <div v-if="currentStep === 0" class="step-panel">
           <el-form :inline="true" :model="searchForm" class="filter-form">
             <el-form-item label="关键词">
-              <el-input v-model="searchForm.keyword" placeholder="搜索成果物名称/关键词" clearable @keyup.enter="handleNewSearch" />
+              <el-input v-model="searchForm.keyword" placeholder="搜索成果物名称/关键词" clearable
+                @keyup.enter="handleNewSearch" />
             </el-form-item>
             <el-form-item label="类型">
               <el-select v-model="searchForm.typeCode" placeholder="全部类型" clearable style="width: 200px">
@@ -139,7 +140,14 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { ElMessage } from 'element-plus'
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
+
+interface SearchResultItem {
+  id: string
+  title: string
+  type: string
+  year: string
+}
 
 interface AchievementItem {
   documentId: string
@@ -159,12 +167,12 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 
 // Step 0 筛选选择
 const searchForm = reactive({ keyword: '', typeCode: '' })
-const tableData = ref<any[]>([])
+const tableData = ref<SearchResultItem[]>([])
 const loading = ref(false)
-const typeOptions = ref<any[]>([])
-const selectedItems = ref<any[]>([])
+const typeOptions = ref<{ type_code: string; type_name: string; }[]>([])
+const selectedItems = ref<SearchResultItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
-const tableRef = ref<any>(null)
+const tableRef = useTemplateRef('tableRef')
 const selectionPanel = ref<string[]>([])
 
 watch(() => selectedItems.value.length, (len) => {
@@ -228,30 +236,30 @@ function handleSizeChange() {
 }
 
 // 用户勾选单行 checkbox（仅用户点击触发，toggleRowSelection 不触发）
-function handleSelect(selection: any[], row: any) {
-  const isSelected = selection.some((r: any) => r.id === row.id)
+function handleSelect(selection: SearchResultItem[], row: SearchResultItem) {
+  const isSelected = selection.some((r) => r.id === row.id)
   if (isSelected) {
-    if (!selectedItems.value.some((item: any) => item.id === row.id)) {
+    if (!selectedItems.value.some((item) => item.id === row.id)) {
       selectedItems.value.push(row)
     }
   } else {
-    selectedItems.value = selectedItems.value.filter((item: any) => item.id !== row.id)
+    selectedItems.value = selectedItems.value.filter((item) => item.id !== row.id)
   }
 }
 
 // 用户点击全选 checkbox（仅用户点击触发）
-function handleSelectAll(selection: any[]) {
-  const currentPageIds = new Set(tableData.value.map((r: any) => r.id))
+function handleSelectAll(selection: SearchResultItem[]) {
+  const currentPageIds = new Set(tableData.value.map((r) => r.id))
   if (selection.length > 0) {
     // 全选：将当前页未选中的加入
     for (const row of tableData.value) {
-      if (!selectedItems.value.some((item: any) => item.id === row.id)) {
+      if (!selectedItems.value.some((item) => item.id === row.id)) {
         selectedItems.value.push(row)
       }
     }
   } else {
     // 取消全选：移除当前页的
-    selectedItems.value = selectedItems.value.filter((item: any) => !currentPageIds.has(item.id))
+    selectedItems.value = selectedItems.value.filter((item) => !currentPageIds.has(item.id))
   }
 }
 
@@ -259,16 +267,16 @@ function handleSelectAll(selection: any[]) {
 async function restoreSelection() {
   await nextTick()
   if (!tableRef.value) return
-  const selectedIds = new Set(selectedItems.value.map((item: any) => item.id))
+  const selectedIds = new Set(selectedItems.value.map((item) => item.id))
   for (const row of tableData.value) {
     tableRef.value.toggleRowSelection(row, selectedIds.has(row.id))
   }
 }
 
-function removeSelectedItem(row: any) {
-  selectedItems.value = selectedItems.value.filter((item: any) => item.id !== row.id)
+function removeSelectedItem(row: SearchResultItem) {
+  selectedItems.value = selectedItems.value.filter((item) => item.id !== row.id)
   // 同步取消主表格中对应行的勾选
-  const current = tableData.value.find((r: any) => r.id === row.id)
+  const current = tableData.value.find((r) => r.id === row.id)
   if (current && tableRef.value) {
     tableRef.value.toggleRowSelection(current, false)
   }
@@ -277,12 +285,12 @@ function removeSelectedItem(row: any) {
 function clearSelection() {
   selectedItems.value = []
   if (tableRef.value) {
-    tableData.value.forEach((row: any) => tableRef.value.toggleRowSelection(row, false))
+    tableData.value.forEach((row) => tableRef.value.toggleRowSelection(row, false))
   }
 }
 
 function goToConfirm() {
-  achievements.value = selectedItems.value.map((row: any) => ({
+  achievements.value = selectedItems.value.map((row) => ({
     documentId: row.id,
     title: row.title,
     typeName: row.type,
