@@ -13,33 +13,54 @@
         <div v-if="currentStep === 0" class="step-panel">
           <el-form :inline="true" :model="searchForm" class="filter-form">
             <el-form-item label="关键词">
-              <el-input v-model="searchForm.keyword" placeholder="搜索成果物名称/关键词" clearable @keyup.enter="handleSearch" />
+              <el-input v-model="searchForm.keyword" placeholder="搜索成果物名称/关键词" clearable @keyup.enter="handleNewSearch" />
             </el-form-item>
             <el-form-item label="类型">
-              <el-select v-model="searchForm.typeCode" placeholder="全部类型" clearable>
+              <el-select v-model="searchForm.typeCode" placeholder="全部类型" clearable style="width: 200px">
                 <el-option v-for="t in typeOptions" :key="t.type_code" :label="t.type_name" :value="t.type_code" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSearch">查询</el-button>
+              <el-button type="primary" @click="handleNewSearch">查询</el-button>
             </el-form-item>
           </el-form>
 
           <el-table ref="tableRef" :data="tableData" v-loading="loading" border size="small" max-height="400"
-            @selection-change="handleSelectionChange" row-key="id">
+            @select="handleSelect" @select-all="handleSelectAll" row-key="id">
             <el-table-column type="selection" width="55" align="center" />
             <el-table-column prop="title" label="标题" min-width="240" />
             <el-table-column prop="type" label="类型" width="140" />
             <el-table-column prop="year" label="年份" width="100" />
           </el-table>
 
-          <div class="selection-info">已选择 {{ selectedItems.length }} 个成果物</div>
-
           <div class="pagination">
             <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.pageSize"
               :total="pagination.total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next"
               @current-change="handleSearch" @size-change="handleSizeChange" />
           </div>
+
+          <el-collapse v-model="selectionPanel" class="selection-panel">
+            <el-collapse-item name="selection">
+              <template #title>
+                <div class="selection-header">
+                  <span class="selection-title">已选择 {{ selectedItems.length }} 个成果物</span>
+                  <el-button v-if="selectedItems.length" type="danger" text size="small" @click.stop="clearSelection">
+                    清空
+                  </el-button>
+                </div>
+              </template>
+              <el-table :data="selectedItems" size="small" border max-height="240">
+                <el-table-column prop="title" label="标题" min-width="240" show-overflow-tooltip />
+                <el-table-column prop="type" label="类型" width="140" />
+                <el-table-column prop="year" label="年份" width="100" />
+                <el-table-column label="操作" width="70" align="center">
+                  <template #default="{ row }">
+                    <el-button type="danger" text size="small" @click="removeSelectedItem(row)">移除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-collapse-item>
+          </el-collapse>
         </div>
 
         <!-- Step 1: 确认成果物 -->
@@ -118,7 +139,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { ElMessage } from 'element-plus'
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 interface AchievementItem {
   documentId: string
@@ -144,6 +165,11 @@ const typeOptions = ref<any[]>([])
 const selectedItems = ref<any[]>([])
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
 const tableRef = ref<any>(null)
+const selectionPanel = ref<string[]>([])
+
+watch(() => selectedItems.value.length, (len) => {
+  selectionPanel.value = len > 0 ? ['selection'] : []
+})
 
 const editor = useEditor({
   extensions: [
@@ -170,6 +196,11 @@ async function loadTypeOptions() {
   }
 }
 
+function handleNewSearch() {
+  pagination.page = 1
+  handleSearch()
+}
+
 async function handleSearch() {
   loading.value = true
   try {
@@ -183,7 +214,7 @@ async function handleSearch() {
     const { data } = res || {}
     tableData.value = data?.list || []
     pagination.total = data?.total || 0
-    restoreSelection()
+    await restoreSelection()
   } catch {
     ElMessage.error('查询失败')
   } finally {
@@ -196,34 +227,58 @@ function handleSizeChange() {
   handleSearch()
 }
 
-function handleSelectionChange(rows: any[]) {
-  const currentPageIds = new Set(tableData.value.map((r: any) => r.id))
-  const selectedIds = new Set(rows.map((r: any) => r.id))
-
-  // 移除当前页中被取消选中的
-  selectedItems.value = selectedItems.value.filter((item: any) => {
-    if (currentPageIds.has(item.id)) {
-      return selectedIds.has(item.id)
-    }
-    return true
-  })
-
-  // 添加当前页新选中的
-  for (const row of rows) {
+// 用户勾选单行 checkbox（仅用户点击触发，toggleRowSelection 不触发）
+function handleSelect(selection: any[], row: any) {
+  const isSelected = selection.some((r: any) => r.id === row.id)
+  if (isSelected) {
     if (!selectedItems.value.some((item: any) => item.id === row.id)) {
       selectedItems.value.push(row)
     }
+  } else {
+    selectedItems.value = selectedItems.value.filter((item: any) => item.id !== row.id)
   }
 }
 
-function restoreSelection() {
-  nextTick(() => {
-    if (!tableRef.value) return
-    const selectedIds = new Set(selectedItems.value.map((item: any) => item.id))
+// 用户点击全选 checkbox（仅用户点击触发）
+function handleSelectAll(selection: any[]) {
+  const currentPageIds = new Set(tableData.value.map((r: any) => r.id))
+  if (selection.length > 0) {
+    // 全选：将当前页未选中的加入
     for (const row of tableData.value) {
-      tableRef.value.toggleRowSelection(row, selectedIds.has(row.id))
+      if (!selectedItems.value.some((item: any) => item.id === row.id)) {
+        selectedItems.value.push(row)
+      }
     }
-  })
+  } else {
+    // 取消全选：移除当前页的
+    selectedItems.value = selectedItems.value.filter((item: any) => !currentPageIds.has(item.id))
+  }
+}
+
+// 翻页/搜索后，将 selectedItems 同步回表格视觉状态
+async function restoreSelection() {
+  await nextTick()
+  if (!tableRef.value) return
+  const selectedIds = new Set(selectedItems.value.map((item: any) => item.id))
+  for (const row of tableData.value) {
+    tableRef.value.toggleRowSelection(row, selectedIds.has(row.id))
+  }
+}
+
+function removeSelectedItem(row: any) {
+  selectedItems.value = selectedItems.value.filter((item: any) => item.id !== row.id)
+  // 同步取消主表格中对应行的勾选
+  const current = tableData.value.find((r: any) => r.id === row.id)
+  if (current && tableRef.value) {
+    tableRef.value.toggleRowSelection(current, false)
+  }
+}
+
+function clearSelection() {
+  selectedItems.value = []
+  if (tableRef.value) {
+    tableData.value.forEach((row: any) => tableRef.value.toggleRowSelection(row, false))
+  }
 }
 
 function goToConfirm() {
@@ -376,6 +431,30 @@ onBeforeUnmount(() => {
   margin: 12px 0;
   font-size: 14px;
   color: #606266;
+}
+
+.selection-panel {
+  margin-top: 16px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+
+.selection-panel :deep(.el-collapse-item__header) {
+  padding: 0 12px;
+  font-size: 14px;
+  background: var(--el-fill-color-lighter);
+}
+
+.selection-title {
+  font-weight: 600;
+  color: #303133;
+}
+
+.selection-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .pagination {
