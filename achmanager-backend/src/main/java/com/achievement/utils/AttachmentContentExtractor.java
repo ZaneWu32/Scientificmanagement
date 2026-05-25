@@ -37,7 +37,7 @@ public class AttachmentContentExtractor {
     private final WebClient strapiWebClient;
 
     private static final long MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-    private static final int MAX_TEXT_LENGTH = 5000;
+    private static final int MAX_TEXT_LENGTH = 10000;
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofSeconds(30);
 
     private record FileEntry(String name, String mime, String url, long sizeBytes) {}
