@@ -105,3 +105,11 @@ llm:
   usage:
     default: default
     report: default
+
+tika:
+  max-file-size-bytes: 52428800
+  max-text-length: 100000
+  ocr:
+    enabled: false
+    language: eng
+    timeout-seconds: 120
