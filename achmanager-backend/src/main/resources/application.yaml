@@ -105,6 +105,23 @@ llm:
   usage:
     default: default
     report: default
+    rag: default
+
+rag:
+  llm:
+    enabled: ${RAG_LLM_ENABLED:true}
+    rerank-max-candidates: ${RAG_LLM_RERANK_MAX_CANDIDATES:8}
+    temperature: ${RAG_LLM_TEMPERATURE:0.1}
+    max-tokens: ${RAG_LLM_MAX_TOKENS:2048}
+  elasticsearch:
+    enabled: ${RAG_ES_ENABLED:true}
+    base-url: ${RAG_ES_BASE_URL:http://127.0.0.1:9200}
+    username: ${RAG_ES_USERNAME:}
+    password: ${RAG_ES_PASSWORD:}
+    achievement-index: ${RAG_ES_ACHIEVEMENT_INDEX:science_achievement_docs}
+    search-top-k: ${RAG_ES_SEARCH_TOP_K:10}
+    connect-timeout-ms: ${RAG_ES_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${RAG_ES_READ_TIMEOUT_MS:10000}
 
 tika:
   max-file-size-bytes: 52428800

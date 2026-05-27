@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum LlmUsage {
 
     DEFAULT("default"),
-    REPORT("report");
+    REPORT("report"),
+    RAG("rag");
 
     private final String value;
 }

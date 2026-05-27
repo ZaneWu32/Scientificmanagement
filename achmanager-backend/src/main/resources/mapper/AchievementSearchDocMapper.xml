@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.AchievementSearchDocMapper">
+
+    <select id="selectApprovedAchievementDocIds" resultType="java.lang.String">
+        SELECT m.document_id
+        FROM achievement_mains m
+        WHERE m.is_delete = 0
+          AND m.document_id IS NOT NULL
+          AND m.published_at IS NOT NULL
+          AND m.achievement_status = 'APPROVED'
+        ORDER BY m.updated_at DESC, m.id DESC
+    </select>
+
+    <select id="selectPendingEsDocs" resultType="com.achievement.domain.po.AchievementSearchDoc">
+        SELECT *
+        FROM achievement_search_docs
+        WHERE is_delete = 0
+          AND search_text IS NOT NULL
+          AND search_text != ''
+          AND (es_indexed_at IS NULL OR indexed_at IS NULL OR indexed_at &gt; es_indexed_at)
+        ORDER BY indexed_at ASC, id ASC
+        LIMIT #{limit}
+    </select>
+
+    <update id="markEsIndexed">
+        UPDATE achievement_search_docs
+        SET es_doc_id = #{esDocId},
+            es_indexed_at = #{esIndexedAt},
+            updated_at = #{esIndexedAt}
+        WHERE id = #{id}
+    </update>
+</mapper>

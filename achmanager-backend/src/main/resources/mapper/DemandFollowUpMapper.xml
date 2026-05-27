@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.DemandFollowUpMapper">
+
+    <select id="selectActiveByDemandId" resultType="com.achievement.domain.po.DemandFollowUp">
+        SELECT *
+        FROM demand_follow_ups
+        WHERE is_delete = 0
+          AND demand_id = #{demandId}
+        ORDER BY due_at ASC, created_at ASC, id ASC
+    </select>
+</mapper>

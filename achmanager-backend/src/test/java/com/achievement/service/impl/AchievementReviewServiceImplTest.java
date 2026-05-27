@@ -3,13 +3,16 @@ package com.achievement.service.impl;
 import com.achievement.constant.RoleConstants;
 import com.achievement.domain.dto.AssignReviewerDTO;
 import com.achievement.domain.dto.KeycloakUser;
+import com.achievement.domain.dto.ReviewRequestDTO;
 import com.achievement.domain.po.AchievementMains;
 import com.achievement.domain.po.AchievementReviewerAssignment;
+import com.achievement.domain.vo.RagIndexResultVO;
 import com.achievement.domain.vo.ReviewResultVO;
 import com.achievement.mapper.AchievementMainsMapper;
 import com.achievement.mapper.AchievementReviewMapper;
 import com.achievement.mapper.AchievementReviewerAssignmentMapper;
 import com.achievement.service.IKeycloakUserService;
+import com.achievement.service.IRagAchievementIndexService;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -48,6 +51,9 @@ class AchievementReviewServiceImplTest {
 
     @Mock
     private IKeycloakUserService keycloakUserService;
+
+    @Mock
+    private IRagAchievementIndexService ragAchievementIndexService;
 
     @InjectMocks
     private AchievementReviewServiceImpl achievementReviewService;
@@ -181,5 +187,71 @@ class AchievementReviewServiceImplTest {
         assertTrue(exception.getMessage().contains("审核人已被禁用"));
         verify(achievementMainsMapper, never()).update(eq(null), any());
         verify(assignmentMapper, never()).insert(any());
+    }
+
+    @Test
+    void reviewAchievementShouldAutoIndexWhenApproved() {
+        AchievementMains achievement = new AchievementMains()
+                .setId(20)
+                .setDocumentId("ach-doc-approved")
+                .setAchievementStatus("UNDER_REVIEW")
+                .setPublishedAt(LocalDateTime.now())
+                .setIsDelete(0);
+        KeycloakUser reviewer = KeycloakUser.builder()
+                .id(200)
+                .uuid("reviewer-uuid")
+                .name("审核管理员")
+                .roles(List.of(RoleConstants.RESEARCH_ADMIN))
+                .enabled(true)
+                .build();
+        ReviewRequestDTO dto = new ReviewRequestDTO();
+        dto.setAction("approve");
+        dto.setComment("审核通过");
+
+        RagIndexResultVO indexResult = new RagIndexResultVO();
+        indexResult.setTotal(1);
+        indexResult.setSuccess(1);
+
+        when(achievementMainsMapper.selectOne(any())).thenReturn(achievement);
+        when(ragAchievementIndexService.rebuildAndIndexAchievementDoc("ach-doc-approved")).thenReturn(indexResult);
+
+        ReviewResultVO result = achievementReviewService.reviewAchievement("ach-doc-approved", dto, reviewer);
+
+        assertNotNull(result);
+        assertTrue(Boolean.TRUE.equals(result.getSuccess()));
+        assertEquals("APPROVED", result.getStatus());
+        verify(achievementMainsMapper).update(eq(null), any());
+        verify(achievementReviewMapper).insert(any());
+        verify(assignmentMapper).update(eq(null), any());
+        verify(ragAchievementIndexService).rebuildAndIndexAchievementDoc("ach-doc-approved");
+    }
+
+    @Test
+    void reviewAchievementShouldNotIndexWhenRejected() {
+        AchievementMains achievement = new AchievementMains()
+                .setId(21)
+                .setDocumentId("ach-doc-rejected")
+                .setAchievementStatus("UNDER_REVIEW")
+                .setPublishedAt(LocalDateTime.now())
+                .setIsDelete(0);
+        KeycloakUser reviewer = KeycloakUser.builder()
+                .id(200)
+                .uuid("reviewer-uuid")
+                .name("审核管理员")
+                .roles(List.of(RoleConstants.RESEARCH_ADMIN))
+                .enabled(true)
+                .build();
+        ReviewRequestDTO dto = new ReviewRequestDTO();
+        dto.setAction("reject");
+        dto.setComment("审核驳回");
+
+        when(achievementMainsMapper.selectOne(any())).thenReturn(achievement);
+
+        ReviewResultVO result = achievementReviewService.reviewAchievement("ach-doc-rejected", dto, reviewer);
+
+        assertNotNull(result);
+        assertTrue(Boolean.TRUE.equals(result.getSuccess()));
+        assertEquals("REJECTED", result.getStatus());
+        verify(ragAchievementIndexService, never()).rebuildAndIndexAchievementDoc(any());
     }
 }
