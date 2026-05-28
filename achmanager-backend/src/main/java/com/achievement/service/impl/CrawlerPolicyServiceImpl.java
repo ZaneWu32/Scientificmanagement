@@ -49,6 +49,10 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     @Override
     public void syncAllCrawlers() {
         List<String> crawlerIds = crawlerClient.listCrawlers();
+        if (crawlerIds.isEmpty()) {
+            log.warn("未获取到可用爬虫列表，跳过同步");
+            return;
+        }
         log.info("开始同步爬虫数据，共 {} 个爬虫", crawlerIds.size());
         int totalNew = 0;
         for (String crawlerId : crawlerIds) {
@@ -63,12 +67,20 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
 
     @Override
     public void syncCrawler(String crawlerId) {
-        int newCount = syncCrawlerInternal(crawlerId);
-        log.info("爬虫 {} 同步完成，新增 {} 条", crawlerId, newCount);
+        try {
+            int newCount = syncCrawlerInternal(crawlerId);
+            log.info("爬虫 {} 同步完成，新增 {} 条", crawlerId, newCount);
+        } catch (Exception e) {
+            log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
+            throw new RuntimeException("同步爬虫 " + crawlerId + " 失败: " + e.getMessage(), e);
+        }
     }
 
     private int syncCrawlerInternal(String crawlerId) {
-        crawlerClient.startCrawl(crawlerId);
+        if (!crawlerClient.startCrawl(crawlerId)) {
+            log.warn("爬虫 {} 不可用，跳过", crawlerId);
+            return 0;
+        }
 
         int attempts = 0;
         int maxAttempts = crawlerProperties.getMaxPollAttempts();
@@ -80,6 +92,9 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
                 break;
             } else if ("failed".equals(status)) {
                 log.warn("爬虫 {} 执行失败", crawlerId);
+                return 0;
+            } else if ("unavailable".equals(status)) {
+                log.warn("爬虫 {} 服务不可用，跳过", crawlerId);
                 return 0;
             }
             try {
