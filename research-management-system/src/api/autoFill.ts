@@ -17,22 +17,23 @@ export interface AutoFillResult {
   pendingConfirmations: string[] // 文字性待确认提示
 }
 
-export interface AutoFillParams {
-  fileId: string
-  resultTypeCode: string
-}
-
-// ── 真实接口（接口联调后替换 mock） ──────────────────────────
-
 /**
- * 上传附件后触发 AI 识别
+ * 上传附件并触发 AI 识别（multipart）
  * POST /auto-fill/from-attachment
  */
-export function autoFillFromAttachment(params: AutoFillParams): Promise<{ data: AutoFillResult }> {
+export function autoFillFromAttachment(
+  file: File,
+  resultTypeCode: string
+): Promise<{ data: AutoFillResult }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('resultTypeCode', resultTypeCode)
   return request({
     url: '/auto-fill/from-attachment',
     method: 'post',
-    data: params
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60 * 1000,
   })
 }
 

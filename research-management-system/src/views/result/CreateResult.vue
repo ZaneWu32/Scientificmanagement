@@ -300,7 +300,8 @@ import { getResultTypes, getFieldDefsByType, createResult, createResultWithFiles
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
 import { mapFieldType } from '@/config/dynamicFields'
-import { mockAutoFillFromAttachment, getConfidenceLevel } from '@/mocks/autoFillMock'
+import { getConfidenceLevel } from '@/mocks/autoFillMock'
+import { autoFillFromAttachment } from '@/api/autoFill'
 import type { AutoFillResult } from '@/api/autoFill'
 
 const router = useRouter()
@@ -361,8 +362,8 @@ async function startAutoFill() {
   afResult.value = null
   afSelectedKeys.value = []
   try {
-    const result = await mockAutoFillFromAttachment(
-      afSelectedFile.value.name,
+    const { data: result } = await autoFillFromAttachment(
+      afSelectedFile.value.raw,
       selectedType.value?.code
     )
     afResult.value = result
