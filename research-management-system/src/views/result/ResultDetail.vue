@@ -225,6 +225,26 @@
             <div v-else class="text-muted">无关联项目</div>
           </div>
 
+          <!-- 相关政策 -->
+          <div class="side-card" v-if="relatedPolicies.length">
+            <h4 class="side-title">相关政策</h4>
+            <div class="policy-list">
+              <div v-for="policy in relatedPolicies" :key="policy.id" class="policy-item">
+                <div class="policy-title" :title="policy.title">{{ policy.title }}</div>
+                <div class="policy-meta">
+                  <span v-if="policy.publishDate">{{ policy.publishDate }}</span>
+                  <el-tag v-if="policy.matchScore" type="success" size="small" effect="plain">
+                    {{ (policy.matchScore * 100).toFixed(0) }}%
+                  </el-tag>
+                </div>
+                <div class="policy-snippet" v-if="policy.contentPreview">{{ policy.contentPreview }}</div>
+                <el-button type="primary" link size="small" @click="openPolicy(policy)">
+                  查看原文 <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
+            </div>
+          </div>
+
           <!-- 关键词 -->
           <div class="side-card" v-if="result.keywords?.length">
             <h4 class="side-title">关键词</h4>
@@ -292,6 +312,7 @@ import {
   View, Lock, Unlock, Download, ArrowRight
 } from '@element-plus/icons-vue'
 import { getResult, requestResultAccess, getFieldDefsByType } from '@/api/result'
+import { getRelatedPolicies, type PolicyItem } from '@/api/policy'
 import { mapFieldType, FrontendFieldType } from '@/config/dynamicFields'
 import { formatDateTime } from '@/utils/date'
 import {
@@ -325,6 +346,7 @@ const result = ref<ResultDetail | null>(null)
 const applyDialogVisible = ref(false)
 const applyReason = ref('')
 const dynamicFields = ref<any[]>([])
+const relatedPolicies = ref<PolicyItem[]>([])
 
 const STATUS_TYPE_MAP = {
   [ResultStatus.DRAFT]: 'info',
@@ -464,6 +486,10 @@ async function loadDetail() {
     if (result.value?.typeId) {
       await loadDynamicFields(result.value.typeId)
     }
+
+    if (result.value?.id) {
+      loadRelatedPolicies(result.value.id.toString())
+    }
   } catch (error) {
     ElMessage.error('加载详情失败')
   } finally {
@@ -477,6 +503,21 @@ async function loadDynamicFields(typeId: string) {
     dynamicFields.value = res?.data || []
   } catch (error) {
     console.error('加载动态字段定义失败', error)
+  }
+}
+
+async function loadRelatedPolicies(achievementDocId: string) {
+  try {
+    const res = await getRelatedPolicies(achievementDocId)
+    relatedPolicies.value = res?.data || []
+  } catch (error) {
+    console.error('加载相关政策失败', error)
+  }
+}
+
+function openPolicy(policy: PolicyItem) {
+  if (policy.sourceUrl) {
+    window.open(policy.sourceUrl, '_blank')
   }
 }
 
@@ -1057,6 +1098,52 @@ function handleBack() {
   border: none;
   background: #f1f5f9;
   color: #475569;
+}
+
+.policy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.policy-item {
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.policy-title {
+  font-weight: 600;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.policy-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.policy-snippet {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .dialog-instruction {
