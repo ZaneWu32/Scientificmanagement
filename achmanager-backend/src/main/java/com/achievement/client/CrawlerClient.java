@@ -35,7 +35,14 @@ public class CrawlerClient {
             Map<String, String> result = new LinkedHashMap<>();
             if (body != null && body.has("crawlers")) {
                 JsonNode crawlers = body.get("crawlers");
-                crawlers.fieldNames().forEachRemaining(id -> result.put(id, crawlers.get(id).asText(id)));
+                if (crawlers.isArray()) {
+                    for (JsonNode node : crawlers) {
+                        String id = node.asText();
+                        result.put(id, id);
+                    }
+                } else {
+                    crawlers.fieldNames().forEachRemaining(id -> result.put(id, crawlers.get(id).asText(id)));
+                }
             }
             return result;
         } catch (Exception e) {
