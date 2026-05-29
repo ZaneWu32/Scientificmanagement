@@ -129,13 +129,13 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         Map<String, String> taskStatuses = crawlerClient.getAllStatuses();
 
         // 查询每个爬虫的政策数量
-        LambdaQueryWrapper<CrawlerPolicy> countQuery = new LambdaQueryWrapper<>();
-        countQuery.eq(CrawlerPolicy::getDelFlag, "0")
-                  .select(CrawlerPolicy::getCrawlerId)
-                  .groupBy(CrawlerPolicy::getCrawlerId);
         Map<String, Long> countMap = new HashMap<>();
-        for (CrawlerPolicy p : crawlerPolicyMapper.selectList(countQuery)) {
-            countMap.merge(p.getCrawlerId(), 1L, Long::sum);
+        for (Map<String, Object> row : crawlerPolicyMapper.countGroupByCrawlerId()) {
+            String cid = (String) row.get("crawler_id");
+            Number cnt = (Number) row.get("cnt");
+            if (cid != null && cnt != null) {
+                countMap.put(cid, cnt.longValue());
+            }
         }
 
         List<CrawlerStatusVO> result = new ArrayList<>();

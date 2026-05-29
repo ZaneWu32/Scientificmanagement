@@ -37,4 +37,11 @@
         LIMIT #{limit}
     </select>
 
+    <select id="countGroupByCrawlerId" resultType="map">
+        SELECT crawler_id, COUNT(*) AS cnt
+        FROM crawler_policies
+        WHERE del_flag = '0'
+        GROUP BY crawler_id
+    </select>
+
 </mapper>
