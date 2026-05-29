@@ -52,13 +52,6 @@ export function triggerSyncAll(): Promise<ApiResponse<string>> {
   })
 }
 
-export function triggerMatch(): Promise<ApiResponse<string>> {
-  return request({
-    url: '/policy/match',
-    method: 'post'
-  })
-}
-
 export interface PolicyQuery {
   page?: number
   pageSize?: number
