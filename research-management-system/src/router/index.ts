@@ -143,6 +143,12 @@ const router = createRouter({
           },
         },
         {
+          path: "/admin/policies",
+          name: "PolicyManagement",
+          component: () => import("@/views/admin/PolicyManagement.vue"),
+          meta: { title: "政策数据管理", roles: [UserRole.ADMIN] },
+        },
+        {
           path: "/admin/research-insights",
           name: "ResearchInsights",
           component: () => import("@/views/admin/ResearchInsights.vue"),

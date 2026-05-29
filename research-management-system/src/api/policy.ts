@@ -13,6 +13,13 @@ export interface PolicyItem {
   matchReason?: string
 }
 
+export interface CrawlerStatus {
+  id: string
+  name: string
+  syncStatus: string
+  crawlerStatus: string
+}
+
 export function getRelatedPolicies(
   achievementDocId: string,
   limit = 5
@@ -21,5 +28,44 @@ export function getRelatedPolicies(
     url: `/policy/achievement/${achievementDocId}/related`,
     method: 'get',
     params: { limit }
+  })
+}
+
+export function getCrawlerStatus(): Promise<ApiResponse<CrawlerStatus[]>> {
+  return request({
+    url: '/policy/crawlers',
+    method: 'get'
+  })
+}
+
+export function triggerCrawlerSync(crawlerId: string): Promise<ApiResponse<string>> {
+  return request({
+    url: `/policy/crawler/${crawlerId}/sync`,
+    method: 'post'
+  })
+}
+
+export function triggerSyncAll(): Promise<ApiResponse<string>> {
+  return request({
+    url: '/policy/sync',
+    method: 'post'
+  })
+}
+
+export function triggerMatch(): Promise<ApiResponse<string>> {
+  return request({
+    url: '/policy/match',
+    method: 'post'
+  })
+}
+
+export function getPolicyList(
+  page = 1,
+  pageSize = 20
+): Promise<ApiResponse<{ records: PolicyItem[]; total: number; current: number; size: number }>> {
+  return request({
+    url: '/policy/list',
+    method: 'get',
+    params: { page, pageSize }
   })
 }

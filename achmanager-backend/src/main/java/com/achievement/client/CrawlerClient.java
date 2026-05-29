@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -18,7 +20,7 @@ public class CrawlerClient {
 
     private final WebClient crawlerWebClient;
 
-    public List<String> listCrawlers() {
+    public Map<String, String> listCrawlers() {
         try {
             JsonNode body = crawlerWebClient.get()
                     .uri("/api/crawlers")
@@ -30,14 +32,15 @@ public class CrawlerClient {
                     .bodyToMono(JsonNode.class)
                     .block();
 
-            List<String> result = new ArrayList<>();
+            Map<String, String> result = new LinkedHashMap<>();
             if (body != null && body.has("crawlers")) {
-                body.get("crawlers").fieldNames().forEachRemaining(result::add);
+                JsonNode crawlers = body.get("crawlers");
+                crawlers.fieldNames().forEachRemaining(id -> result.put(id, crawlers.get(id).asText(id)));
             }
             return result;
         } catch (Exception e) {
             log.error("无法连接爬虫服务: {}", e.getMessage());
-            return List.of();
+            return Map.of();
         }
     }
 

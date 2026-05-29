@@ -5,6 +5,7 @@ import com.achievement.config.CrawlerProperties;
 import com.achievement.domain.dto.CrawlerResultDTO;
 import com.achievement.domain.po.CrawlerPolicy;
 import com.achievement.domain.po.CrawlerPolicyAchievementMatch;
+import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
 import com.achievement.mapper.CrawlerPolicyMapper;
 import com.achievement.mapper.CrawlerPolicyMatchMapper;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,20 +47,26 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     private final SqlSessionFactory sqlSessionFactory;
 
     private static final double MATCH_THRESHOLD = 0.1;
+    private final ConcurrentHashMap<String, String> syncStatus = new ConcurrentHashMap<>();
 
     @Override
     public void syncAllCrawlers() {
-        List<String> crawlerIds = crawlerClient.listCrawlers();
-        if (crawlerIds.isEmpty()) {
+        Map<String, String> crawlerNames = crawlerClient.listCrawlers();
+        if (crawlerNames.isEmpty()) {
             log.warn("未获取到可用爬虫列表，跳过同步");
             return;
         }
-        log.info("开始同步爬虫数据，共 {} 个爬虫", crawlerIds.size());
+        log.info("开始同步爬虫数据，共 {} 个爬虫", crawlerNames.size());
+        for (String crawlerId : crawlerNames.keySet()) {
+            syncStatus.put(crawlerId, "syncing");
+        }
         int totalNew = 0;
-        for (String crawlerId : crawlerIds) {
+        for (String crawlerId : crawlerNames.keySet()) {
             try {
                 totalNew += syncCrawlerInternal(crawlerId);
+                syncStatus.put(crawlerId, "completed");
             } catch (Exception e) {
+                syncStatus.put(crawlerId, "failed");
                 log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
             }
         }
@@ -67,13 +75,37 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
 
     @Override
     public void syncCrawler(String crawlerId) {
+        syncStatus.put(crawlerId, "syncing");
         try {
             int newCount = syncCrawlerInternal(crawlerId);
+            syncStatus.put(crawlerId, "completed");
             log.info("爬虫 {} 同步完成，新增 {} 条", crawlerId, newCount);
         } catch (Exception e) {
+            syncStatus.put(crawlerId, "failed");
             log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
             throw new RuntimeException("同步爬虫 " + crawlerId + " 失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public Map<String, String> getCrawlerNames() {
+        return crawlerClient.listCrawlers();
+    }
+
+    @Override
+    public List<CrawlerStatusVO> getCrawlerStatusList() {
+        Map<String, String> names = crawlerClient.listCrawlers();
+        List<CrawlerStatusVO> result = new ArrayList<>();
+        for (Map.Entry<String, String> entry : names.entrySet()) {
+            String id = entry.getKey();
+            CrawlerStatusVO vo = new CrawlerStatusVO();
+            vo.setId(id);
+            vo.setName(entry.getValue());
+            vo.setSyncStatus(syncStatus.getOrDefault(id, "idle"));
+            vo.setCrawlerStatus(crawlerClient.getStatus(id));
+            result.add(vo);
+        }
+        return result;
     }
 
     private int syncCrawlerInternal(String crawlerId) {

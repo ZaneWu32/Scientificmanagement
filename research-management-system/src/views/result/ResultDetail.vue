@@ -232,6 +232,7 @@
               <div v-for="policy in relatedPolicies" :key="policy.id" class="policy-item">
                 <div class="policy-title" :title="policy.title">{{ policy.title }}</div>
                 <div class="policy-meta">
+                  <span v-if="crawlerNames[policy.crawlerId]" class="policy-source">{{ crawlerNames[policy.crawlerId] }}</span>
                   <span v-if="policy.publishDate">{{ policy.publishDate }}</span>
                   <el-tag v-if="policy.matchScore" type="success" size="small" effect="plain">
                     {{ (policy.matchScore * 100).toFixed(0) }}%
@@ -312,7 +313,7 @@ import {
   View, Lock, Unlock, Download, ArrowRight
 } from '@element-plus/icons-vue'
 import { getResult, requestResultAccess, getFieldDefsByType } from '@/api/result'
-import { getRelatedPolicies, type PolicyItem } from '@/api/policy'
+import { getRelatedPolicies, getCrawlerStatus, type PolicyItem } from '@/api/policy'
 import { mapFieldType, FrontendFieldType } from '@/config/dynamicFields'
 import { formatDateTime } from '@/utils/date'
 import {
@@ -347,6 +348,7 @@ const applyDialogVisible = ref(false)
 const applyReason = ref('')
 const dynamicFields = ref<any[]>([])
 const relatedPolicies = ref<PolicyItem[]>([])
+const crawlerNames = ref<Record<string, string>>({})
 
 const STATUS_TYPE_MAP = {
   [ResultStatus.DRAFT]: 'info',
@@ -508,8 +510,18 @@ async function loadDynamicFields(typeId: string) {
 
 async function loadRelatedPolicies(achievementDocId: string) {
   try {
-    const res = await getRelatedPolicies(achievementDocId)
-    relatedPolicies.value = res?.data || []
+    const [policyRes, crawlerRes] = await Promise.all([
+      getRelatedPolicies(achievementDocId),
+      getCrawlerStatus().catch(() => null)
+    ])
+    relatedPolicies.value = policyRes?.data || []
+    if (crawlerRes?.data) {
+      const map: Record<string, string> = {}
+      for (const c of crawlerRes.data) {
+        map[c.id] = c.name
+      }
+      crawlerNames.value = map
+    }
   } catch (error) {
     console.error('加载相关政策失败', error)
   }
@@ -1132,6 +1144,11 @@ function handleBack() {
   font-size: 12px;
   color: #94a3b8;
   margin-bottom: 4px;
+}
+
+.policy-source {
+  color: #6366f1;
+  font-weight: 500;
 }
 
 .policy-snippet {
