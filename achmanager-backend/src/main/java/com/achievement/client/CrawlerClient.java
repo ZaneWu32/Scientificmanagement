@@ -35,14 +35,7 @@ public class CrawlerClient {
             Map<String, String> result = new LinkedHashMap<>();
             if (body != null && body.has("crawlers")) {
                 JsonNode crawlers = body.get("crawlers");
-                if (crawlers.isArray()) {
-                    for (JsonNode node : crawlers) {
-                        String id = node.asText();
-                        result.put(id, id);
-                    }
-                } else {
-                    crawlers.fieldNames().forEachRemaining(id -> result.put(id, crawlers.get(id).asText(id)));
-                }
+                crawlers.fieldNames().forEachRemaining(id -> result.put(id, crawlers.get(id).asText(id)));
             }
             return result;
         } catch (Exception e) {
@@ -85,6 +78,31 @@ public class CrawlerClient {
         } catch (Exception e) {
             log.error("获取爬虫 {} 状态失败: {}", crawlerId, e.getMessage());
             return "unavailable";
+        }
+    }
+
+    public Map<String, String> getAllStatuses() {
+        try {
+            JsonNode body = crawlerWebClient.get()
+                    .uri("/api/crawlers/status")
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, resp ->
+                            resp.bodyToMono(String.class)
+                                    .doOnNext(b -> log.error("Crawler getAllStatuses error: {}", b))
+                                    .then(resp.createException()))
+                    .bodyToMono(JsonNode.class)
+                    .block();
+
+            Map<String, String> result = new LinkedHashMap<>();
+            if (body != null && body.has("tasks")) {
+                JsonNode tasks = body.get("tasks");
+                tasks.fieldNames().forEachRemaining(id ->
+                        result.put(id, tasks.get(id).path("status").asText("unknown")));
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("获取爬虫状态列表失败: {}", e.getMessage());
+            return Map.of();
         }
     }
 

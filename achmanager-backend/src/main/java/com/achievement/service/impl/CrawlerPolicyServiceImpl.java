@@ -126,6 +126,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     @Override
     public List<CrawlerStatusVO> getCrawlerStatusList() {
         Map<String, String> names = crawlerClient.listCrawlers();
+        Map<String, String> taskStatuses = crawlerClient.getAllStatuses();
         List<CrawlerStatusVO> result = new ArrayList<>();
         for (Map.Entry<String, String> entry : names.entrySet()) {
             String id = entry.getKey();
@@ -133,7 +134,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             vo.setId(id);
             vo.setName(entry.getValue());
             vo.setSyncStatus(syncStatus.getOrDefault(id, "idle"));
-            vo.setCrawlerStatus(crawlerClient.getStatus(id));
+            vo.setCrawlerStatus(taskStatuses.getOrDefault(id, "idle"));
             result.add(vo);
         }
         return result;
