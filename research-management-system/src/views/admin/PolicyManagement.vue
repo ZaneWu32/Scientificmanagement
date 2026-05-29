@@ -11,6 +11,9 @@
             <el-button :loading="matchLoading" @click="handleMatch">
               重新匹配
             </el-button>
+            <el-button circle :disabled="crawlersLoading" @click="loadCrawlers()">
+              <el-icon><Refresh /></el-icon>
+            </el-button>
           </div>
         </div>
       </template>
@@ -88,6 +91,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import {
   getCrawlerStatus,
   triggerCrawlerSync,
