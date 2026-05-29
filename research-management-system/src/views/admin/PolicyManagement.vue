@@ -6,7 +6,7 @@
           <span>爬虫数据源</span>
           <div class="header-actions">
             <el-button type="primary" :loading="syncAllLoading" @click="handleSyncAll">
-              全部同步
+              全部爬取
             </el-button>
             <el-button :loading="matchLoading" @click="handleMatch">
               重新匹配
@@ -23,11 +23,11 @@
             <span class="crawler-name" :title="crawler.name">{{ crawler.name }}</span>
             <el-button
               size="small"
-              :loading="crawler.syncStatus === 'syncing'"
-              :disabled="crawler.syncStatus === 'syncing'"
+              :loading="crawler.status === 'running'"
+              :disabled="crawler.status === 'running'"
               @click="handleSyncOne(crawler.id)"
             >
-              同步
+              爬取
             </el-button>
           </div>
           <div class="crawler-card-info">
@@ -35,19 +35,11 @@
             <span class="crawler-sep">&middot;</span>
             <span class="crawler-count">{{ crawler.policyCount }} 条数据</span>
             <el-tag
-              :type="statusTagType(crawler.syncStatus)"
+              :type="statusTagType(crawler.status)"
               size="small"
               effect="plain"
             >
-              {{ syncStatusText(crawler.syncStatus) }}
-            </el-tag>
-            <el-tag
-              v-if="crawler.crawlerStatus !== 'idle'"
-              :type="crawler.crawlerStatus === 'unavailable' ? 'danger' : 'info'"
-              size="small"
-              effect="plain"
-            >
-              {{ crawler.crawlerStatus === 'unavailable' ? '不可用' : crawler.crawlerStatus }}
+              {{ statusText(crawler.status) }}
             </el-tag>
           </div>
         </div>
@@ -191,8 +183,7 @@ function mergeCrawlers(incoming: CrawlerStatus[]) {
   for (const item of incoming) {
     const existing = existingMap.get(item.id)
     if (existing) {
-      existing.syncStatus = item.syncStatus
-      existing.crawlerStatus = item.crawlerStatus
+      existing.status = item.status
       existing.policyCount = item.policyCount
     } else {
       crawlers.value.push(item)
@@ -244,10 +235,10 @@ async function handleSyncAll() {
   syncAllLoading.value = true
   try {
     await triggerSyncAll()
-    ElMessage.success('已触发全部同步')
+    ElMessage.success('已触发全部爬取')
     startPolling()
   } catch {
-    ElMessage.error('触发同步失败')
+    ElMessage.error('触发爬取失败')
   } finally {
     syncAllLoading.value = false
   }
@@ -255,14 +246,14 @@ async function handleSyncAll() {
 
 async function handleSyncOne(crawlerId: string) {
   const crawler = crawlers.value.find(c => c.id === crawlerId)
-  if (crawler) crawler.syncStatus = 'syncing'
+  if (crawler) crawler.status = 'running'
   try {
     await triggerCrawlerSync(crawlerId)
-    ElMessage.success(`已触发 ${crawlerId} 同步`)
+    ElMessage.success(`已触发 ${crawlerId} 爬取`)
     startPolling()
   } catch {
-    ElMessage.error(`触发 ${crawlerId} 同步失败`)
-    if (crawler) crawler.syncStatus = 'failed'
+    ElMessage.error(`触发 ${crawlerId} 爬取失败`)
+    if (crawler) crawler.status = 'failed'
   }
 }
 
@@ -285,8 +276,8 @@ function startPolling() {
     if (res?.data) {
       mergeCrawlers(res.data)
     }
-    const hasSyncing = crawlers.value.some(c => c.syncStatus === 'syncing')
-    if (!hasSyncing) {
+    const hasRunning = crawlers.value.some(c => c.status === 'running')
+    if (!hasRunning) {
       stopPolling()
       await loadPolicies()
     }
@@ -307,17 +298,17 @@ function openSource(url: string) {
 function statusTagType(status: string) {
   const map: Record<string, string> = {
     idle: 'info',
-    syncing: '',
+    running: '',
     completed: 'success',
     failed: 'danger'
   }
   return (map[status] || 'info') as any
 }
 
-function syncStatusText(status: string) {
+function statusText(status: string) {
   const map: Record<string, string> = {
     idle: '空闲',
-    syncing: '同步中',
+    running: '爬取中',
     completed: '已完成',
     failed: '失败'
   }

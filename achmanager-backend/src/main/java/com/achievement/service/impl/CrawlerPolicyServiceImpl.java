@@ -51,7 +51,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     private final SqlSessionFactory sqlSessionFactory;
 
     private static final double MATCH_THRESHOLD = 0.1;
-    private final ConcurrentHashMap<String, String> syncStatus = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> crawlerState = new ConcurrentHashMap<>();
     private final ExecutorService syncExecutor = Executors.newCachedThreadPool();
 
     @Override
@@ -63,15 +63,15 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         }
         log.info("开始同步爬虫数据，共 {} 个爬虫", crawlerNames.size());
         for (String crawlerId : crawlerNames.keySet()) {
-            syncStatus.put(crawlerId, "syncing");
+            crawlerState.put(crawlerId, "running");
         }
         int totalNew = 0;
         for (String crawlerId : crawlerNames.keySet()) {
             try {
                 totalNew += syncCrawlerInternal(crawlerId);
-                syncStatus.put(crawlerId, "completed");
+                crawlerState.put(crawlerId, "completed");
             } catch (Exception e) {
-                syncStatus.put(crawlerId, "failed");
+                crawlerState.put(crawlerId, "failed");
                 log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
             }
         }
@@ -80,13 +80,13 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
 
     @Override
     public void syncCrawler(String crawlerId) {
-        syncStatus.put(crawlerId, "syncing");
+        crawlerState.put(crawlerId, "running");
         try {
             int newCount = syncCrawlerInternal(crawlerId);
-            syncStatus.put(crawlerId, "completed");
+            crawlerState.put(crawlerId, "completed");
             log.info("爬虫 {} 同步完成，新增 {} 条", crawlerId, newCount);
         } catch (Exception e) {
-            syncStatus.put(crawlerId, "failed");
+            crawlerState.put(crawlerId, "failed");
             log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
             throw new RuntimeException("同步爬虫 " + crawlerId + " 失败: " + e.getMessage(), e);
         }
@@ -94,7 +94,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
 
     @Override
     public void triggerCrawlerSync(String crawlerId) {
-        syncStatus.put(crawlerId, "syncing");
+        crawlerState.put(crawlerId, "running");
         CompletableFuture.runAsync(() -> {
             try {
                 syncCrawler(crawlerId);
@@ -108,7 +108,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     public void triggerSyncAll() {
         Map<String, String> names = crawlerClient.listCrawlers();
         for (String id : names.keySet()) {
-            syncStatus.put(id, "syncing");
+            crawlerState.put(id, "running");
         }
         CompletableFuture.runAsync(() -> {
             try {
@@ -127,9 +127,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     @Override
     public List<CrawlerStatusVO> getCrawlerStatusList() {
         Map<String, String> names = crawlerClient.listCrawlers();
-        Map<String, String> taskStatuses = crawlerClient.getAllStatuses();
 
-        // 查询每个爬虫的政策数量
         Map<String, Long> countMap = new HashMap<>();
         for (Map<String, Object> row : crawlerPolicyMapper.countGroupByCrawlerId()) {
             String cid = (String) row.get("crawler_id");
@@ -145,8 +143,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             CrawlerStatusVO vo = new CrawlerStatusVO();
             vo.setId(id);
             vo.setName(entry.getValue());
-            vo.setSyncStatus(syncStatus.getOrDefault(id, "idle"));
-            vo.setCrawlerStatus(taskStatuses.getOrDefault(id, "idle"));
+            vo.setStatus(crawlerState.getOrDefault(id, "idle"));
             vo.setPolicyCount(countMap.getOrDefault(id, 0L));
             result.add(vo);
         }

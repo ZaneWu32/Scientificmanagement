@@ -6,7 +6,6 @@ import lombok.Data;
 public class CrawlerStatusVO {
     private String id;
     private String name;
-    private String syncStatus;
-    private String crawlerStatus;
+    private String status;
     private long policyCount;
 }

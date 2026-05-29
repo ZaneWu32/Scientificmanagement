@@ -16,8 +16,7 @@ export interface PolicyItem {
 export interface CrawlerStatus {
   id: string
   name: string
-  syncStatus: string
-  crawlerStatus: string
+  status: string
   policyCount: number
 }
 
