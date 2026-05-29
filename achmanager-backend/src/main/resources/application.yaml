@@ -106,6 +106,12 @@ llm:
     default: default
     report: default
 
+crawler:
+  base-url: ${CRAWLER_BASE_URL:http://localhost:8020}
+  poll-interval-ms: 3000
+  max-poll-attempts: 100
+  sync-cron: ${CRAWLER_SYNC_CRON:0 0 2 * * ?}
+
 tika:
   max-file-size-bytes: 52428800
   max-text-length: 100000

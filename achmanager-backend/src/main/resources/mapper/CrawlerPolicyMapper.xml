@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.CrawlerPolicyMapper">
+
+    <resultMap id="PolicyVOMap" type="com.achievement.domain.vo.PolicyVO">
+        <result column="id" property="id"/>
+        <result column="crawler_id" property="crawlerId"/>
+        <result column="title" property="title"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="source_url" property="sourceUrl"/>
+        <result column="content_preview" property="contentPreview"/>
+        <result column="hrefs" property="hrefs"
+                typeHandler="com.achievement.utils.JsonStringListTypeHandler"/>
+        <result column="match_score" property="matchScore"/>
+        <result column="match_reason" property="matchReason"/>
+    </resultMap>
+
+    <select id="selectRelatedPolicies" resultMap="PolicyVOMap">
+        SELECT
+            cp.id,
+            cp.crawler_id,
+            cp.title,
+            cp.publish_date,
+            cp.source_url,
+            LEFT(cp.content, 300) AS content_preview,
+            cp.hrefs,
+            m.match_score,
+            m.match_reason
+        FROM crawler_policies cp
+        LEFT JOIN crawler_policy_achievement_match m
+            ON cp.id = m.policy_id
+            AND m.achievement_document_id = #{achievementDocId}
+            AND m.is_active = 1
+        WHERE cp.del_flag = '0'
+          AND m.id IS NOT NULL
+        ORDER BY m.match_score DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countGroupByCrawlerId" resultType="map">
+        SELECT crawler_id, COUNT(*) AS cnt
+        FROM crawler_policies
+        WHERE del_flag = '0'
+        GROUP BY crawler_id
+    </select>
+
+    <select id="selectLightweightPolicies" resultType="map">
+        SELECT id, crawler_id, title, keywords_extracted
+        FROM crawler_policies
+        WHERE del_flag = '0'
+    </select>
+
+    <select id="selectPolicyDetailByIds" resultMap="PolicyVOMap">
+        SELECT
+            cp.id,
+            cp.crawler_id,
+            cp.title,
+            cp.publish_date,
+            cp.source_url,
+            LEFT(cp.content, 300) AS content_preview,
+            cp.hrefs
+        FROM crawler_policies cp
+        WHERE cp.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

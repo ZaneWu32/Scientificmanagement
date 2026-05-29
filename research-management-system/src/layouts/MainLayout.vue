@@ -201,6 +201,7 @@ const menuItems = computed(() => {
     // 只有管理员可以访问成果类型配置
     if (userStore.isAdmin) {
       systemConfigChildren.push({ path: '/admin/result-types', title: '成果类型配置' })
+      systemConfigChildren.push({ path: '/admin/policies', title: '政策数据管理' })
     }
 
     items.push({
