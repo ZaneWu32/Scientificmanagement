@@ -43,13 +43,8 @@ public class CrawlerPolicyController {
             return Result.error("无权限：仅管理员可访问");
         }
         log.info("手动触发全部爬虫同步");
-        try {
-            crawlerPolicyService.syncAllCrawlers();
-            return Result.success("同步完成");
-        } catch (Exception e) {
-            log.error("爬虫同步失败", e);
-            return Result.error("同步失败: " + e.getMessage());
-        }
+        crawlerPolicyService.triggerSyncAll();
+        return Result.success("已触发同步，请等待完成");
     }
 
     @PostMapping("/crawler/{crawlerId}/sync")
@@ -58,13 +53,8 @@ public class CrawlerPolicyController {
             return Result.error("无权限：仅管理员可访问");
         }
         log.info("手动触发爬虫 {} 同步", crawlerId);
-        try {
-            crawlerPolicyService.syncCrawler(crawlerId);
-            return Result.success("同步完成");
-        } catch (Exception e) {
-            log.error("爬虫 {} 同步失败", crawlerId, e);
-            return Result.error("同步失败: " + e.getMessage());
-        }
+        crawlerPolicyService.triggerCrawlerSync(crawlerId);
+        return Result.success("已触发同步，请等待完成");
     }
 
     @PostMapping("/match")

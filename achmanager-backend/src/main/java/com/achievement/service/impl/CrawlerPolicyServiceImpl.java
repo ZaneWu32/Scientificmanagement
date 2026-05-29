@@ -31,7 +31,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -48,6 +51,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
 
     private static final double MATCH_THRESHOLD = 0.1;
     private final ConcurrentHashMap<String, String> syncStatus = new ConcurrentHashMap<>();
+    private final ExecutorService syncExecutor = Executors.newCachedThreadPool();
 
     @Override
     public void syncAllCrawlers() {
@@ -85,6 +89,33 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             log.error("同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
             throw new RuntimeException("同步爬虫 " + crawlerId + " 失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void triggerCrawlerSync(String crawlerId) {
+        syncStatus.put(crawlerId, "syncing");
+        CompletableFuture.runAsync(() -> {
+            try {
+                syncCrawler(crawlerId);
+            } catch (Exception e) {
+                log.error("异步同步爬虫 {} 失败: {}", crawlerId, e.getMessage(), e);
+            }
+        }, syncExecutor);
+    }
+
+    @Override
+    public void triggerSyncAll() {
+        Map<String, String> names = crawlerClient.listCrawlers();
+        for (String id : names.keySet()) {
+            syncStatus.put(id, "syncing");
+        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                syncAllCrawlers();
+            } catch (Exception e) {
+                log.error("异步全量同步失败: {}", e.getMessage(), e);
+            }
+        }, syncExecutor);
     }
 
     @Override

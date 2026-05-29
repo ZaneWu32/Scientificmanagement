@@ -13,6 +13,10 @@ public interface ICrawlerPolicyService {
 
     void syncCrawler(String crawlerId);
 
+    void triggerCrawlerSync(String crawlerId);
+
+    void triggerSyncAll();
+
     void matchPoliciesWithAchievements();
 
     List<PolicyVO> getRelatedPolicies(String achievementDocId, int limit);
