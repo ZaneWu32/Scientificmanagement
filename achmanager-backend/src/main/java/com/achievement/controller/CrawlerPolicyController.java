@@ -27,7 +27,14 @@ public class CrawlerPolicyController {
     public Result<List<PolicyVO>> getRelatedPolicies(
             @PathVariable String achievementDocId,
             @RequestParam(defaultValue = "5") int limit) {
-        return Result.success(crawlerPolicyService.getRelatedPolicies(achievementDocId, limit));
+        return Result.success(crawlerPolicyService.matchForAchievement(achievementDocId, limit));
+    }
+
+    @PostMapping("/achievements/related")
+    public Result<Map<String, List<PolicyVO>>> getRelatedPoliciesBatch(
+            @RequestBody List<String> achievementDocIds,
+            @RequestParam(defaultValue = "5") int limit) {
+        return Result.success(crawlerPolicyService.matchForAchievements(achievementDocIds, limit));
     }
 
     @GetMapping("/crawlers")
@@ -43,9 +50,9 @@ public class CrawlerPolicyController {
         if (!currentUser.hasRole("research_admin")) {
             return Result.error("无权限：仅管理员可访问");
         }
-        log.info("手动触发全部爬虫同步");
+        log.info("手动触发全部爬虫爬取");
         crawlerPolicyService.triggerSyncAll();
-        return Result.success("已触发同步，请等待完成");
+        return Result.success("已触发爬取，请等待完成");
     }
 
     @PostMapping("/crawler/{crawlerId}/sync")
@@ -53,24 +60,9 @@ public class CrawlerPolicyController {
         if (!currentUser.hasRole("research_admin")) {
             return Result.error("无权限：仅管理员可访问");
         }
-        log.info("手动触发爬虫 {} 同步", crawlerId);
+        log.info("手动触发爬虫 {} 爬取", crawlerId);
         crawlerPolicyService.triggerCrawlerSync(crawlerId);
-        return Result.success("已触发同步，请等待完成");
-    }
-
-    @PostMapping("/match")
-    public Result<String> triggerMatch(@CurrentUser KeycloakUser currentUser) {
-        if (!currentUser.hasRole("research_admin")) {
-            return Result.error("无权限：仅管理员可访问");
-        }
-        log.info("手动触发政策-成果物匹配");
-        try {
-            crawlerPolicyService.matchPoliciesWithAchievements();
-            return Result.success("匹配完成");
-        } catch (Exception e) {
-            log.error("政策匹配失败", e);
-            return Result.error("匹配失败: " + e.getMessage());
-        }
+        return Result.success("已触发爬取，请等待完成");
     }
 
     @GetMapping("/list")

@@ -18,9 +18,9 @@ public interface ICrawlerPolicyService {
 
     void triggerSyncAll();
 
-    void matchPoliciesWithAchievements();
+    List<PolicyVO> matchForAchievement(String achievementDocId, int limit);
 
-    List<PolicyVO> getRelatedPolicies(String achievementDocId, int limit);
+    Map<String, List<PolicyVO>> matchForAchievements(List<String> achievementDocIds, int limit);
 
     IPage<PolicyVO> getAllPolicies(int page, int pageSize);
 

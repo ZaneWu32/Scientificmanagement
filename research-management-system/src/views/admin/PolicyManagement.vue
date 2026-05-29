@@ -8,9 +8,6 @@
             <el-button type="primary" :loading="syncAllLoading" @click="handleSyncAll">
               全部爬取
             </el-button>
-            <el-button :loading="matchLoading" @click="handleMatch">
-              重新匹配
-            </el-button>
             <el-button circle :disabled="crawlersLoading" @click="loadCrawlers()">
               <el-icon><Refresh /></el-icon>
             </el-button>
@@ -129,7 +126,6 @@ import {
   getCrawlerStatus,
   triggerCrawlerSync,
   triggerSyncAll,
-  triggerMatch,
   getPolicyList,
   type CrawlerStatus,
   type PolicyItem
@@ -138,7 +134,6 @@ import {
 const crawlersLoading = ref(false)
 const policiesLoading = ref(false)
 const syncAllLoading = ref(false)
-const matchLoading = ref(false)
 const crawlers = ref<CrawlerStatus[]>([])
 const policies = ref<PolicyItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
@@ -254,18 +249,6 @@ async function handleSyncOne(crawlerId: string) {
   } catch {
     ElMessage.error(`触发 ${crawlerId} 爬取失败`)
     if (crawler) crawler.status = 'failed'
-  }
-}
-
-async function handleMatch() {
-  matchLoading.value = true
-  try {
-    await triggerMatch()
-    ElMessage.success('匹配完成')
-  } catch {
-    ElMessage.error('匹配失败')
-  } finally {
-    matchLoading.value = false
   }
 }
 

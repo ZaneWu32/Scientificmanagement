@@ -1,42 +1,49 @@
 package com.achievement.service.impl;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import com.achievement.client.CrawlerClient;
 import com.achievement.config.CrawlerProperties;
 import com.achievement.domain.dto.CrawlerResultDTO;
 import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.po.CrawlerPolicy;
-import com.achievement.domain.po.CrawlerPolicyAchievementMatch;
 import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
 import com.achievement.mapper.CrawlerPolicyMapper;
-import com.achievement.mapper.CrawlerPolicyMatchMapper;
 import com.achievement.service.ICrawlerPolicyService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -46,7 +53,6 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     private final CrawlerClient crawlerClient;
     private final CrawlerProperties crawlerProperties;
     private final CrawlerPolicyMapper crawlerPolicyMapper;
-    private final CrawlerPolicyMatchMapper crawlerPolicyMatchMapper;
     private final ObjectMapper objectMapper;
     private final SqlSessionFactory sqlSessionFactory;
 
@@ -210,7 +216,12 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             } catch (JsonProcessingException e) {
                 policy.setHrefs("[]");
             }
-            policy.setKeywordsExtracted("[]");
+            try {
+                policy.setKeywordsExtracted(objectMapper.writeValueAsString(
+                        extractKeywords(dto.getTitle() + " " + dto.getContent())));
+            } catch (JsonProcessingException e) {
+                policy.setKeywordsExtracted("[]");
+            }
             policy.setDelFlag("0");
             crawlerPolicyMapper.insert(policy);
             newCount++;
@@ -220,74 +231,88 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     }
 
     @Override
-    public void matchPoliciesWithAchievements() {
-        log.info("开始政策-成果物匹配");
+    public List<PolicyVO> matchForAchievement(String achievementDocId, int limit) {
+        // 1. 获取成果物关键词
+        Set<String> achTokens = getAchievementKeywords(achievementDocId);
+        if (achTokens.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        Page<CrawlerPolicy> page = new Page<>(1, 100);
-        LambdaQueryWrapper<CrawlerPolicy> query = new LambdaQueryWrapper<>();
-        query.eq(CrawlerPolicy::getDelFlag, "0");
-        IPage<CrawlerPolicy> policyPage = crawlerPolicyMapper.selectPage(page, query);
-
-        int matchCount = 0;
-        for (CrawlerPolicy policy : policyPage.getRecords()) {
-            List<String> policyKeywords = extractKeywords(policy.getTitle() + " " + policy.getContent());
+        // 2. 加载所有政策的轻量数据，在内存中匹配
+        List<Map<String, Object>> policies = crawlerPolicyMapper.selectLightweightPolicies();
+        List<ScoredPolicy> candidates = new ArrayList<>();
+        for (Map<String, Object> row : policies) {
+            String keywordsJson = (String) row.get("keywords_extracted");
+            List<String> policyKeywords = parseKeywords(keywordsJson);
             if (policyKeywords.isEmpty()) {
                 continue;
             }
-
-            try (SqlSession session = sqlSessionFactory.openSession()) {
-                var conn = session.getConnection();
-                var stmt = conn.prepareStatement(
-                        "SELECT document_id, title, keywords FROM achievement_mains WHERE is_delete = 0");
-                var rs = stmt.executeQuery();
-
-                while (rs.next()) {
-                    String docId = rs.getString("document_id");
-                    String achTitle = rs.getString("title");
-                    String achKeywordsJson = rs.getString("keywords");
-
-                    List<String> achKeywords = parseKeywords(achKeywordsJson);
-                    Set<String> achTokens = new HashSet<>(achKeywords);
-                    achTokens.addAll(extractKeywords(achTitle));
-
-                    double score = jaccardSimilarity(new HashSet<>(policyKeywords), achTokens);
-                    if (score < MATCH_THRESHOLD) {
-                        continue;
-                    }
-
-                    LambdaQueryWrapper<CrawlerPolicyAchievementMatch> existsQuery = new LambdaQueryWrapper<>();
-                    existsQuery.eq(CrawlerPolicyAchievementMatch::getPolicyId, policy.getId())
-                            .eq(CrawlerPolicyAchievementMatch::getAchievementDocumentId, docId)
-                            .eq(CrawlerPolicyAchievementMatch::getMatchMethod, "keyword");
-                    if (crawlerPolicyMatchMapper.selectCount(existsQuery) > 0) {
-                        continue;
-                    }
-
-                    CrawlerPolicyAchievementMatch match = new CrawlerPolicyAchievementMatch();
-                    match.setPolicyId(policy.getId());
-                    match.setAchievementDocumentId(docId);
-                    match.setMatchScore(BigDecimal.valueOf(score).setScale(4, BigDecimal.ROUND_HALF_UP));
-                    match.setMatchMethod("keyword");
-                    match.setMatchReason("关键词重叠度: " + String.format("%.1f%%", score * 100));
-                    match.setIsActive(1);
-                    crawlerPolicyMatchMapper.insert(match);
-                    matchCount++;
-                }
-
-                rs.close();
-                stmt.close();
-            } catch (Exception e) {
-                log.error("匹配政策 {} 时出错: {}", policy.getId(), e.getMessage(), e);
+            double score = jaccardSimilarity(new HashSet<>(policyKeywords), achTokens);
+            if (score >= MATCH_THRESHOLD) {
+                candidates.add(new ScoredPolicy(((Number) row.get("id")).longValue(), score));
             }
         }
 
-        log.info("政策-成果物匹配完成，新增 {} 条匹配", matchCount);
+        // 3. 取 top N，查详情
+        List<Long> topIds = candidates.stream()
+                .sorted((a, b) -> Double.compare(b.score, a.score))
+                .limit(limit)
+                .map(sp -> sp.id)
+                .collect(Collectors.toList());
+
+        if (topIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, PolicyVO> detailMap = crawlerPolicyMapper.selectPolicyDetailByIds(topIds).stream()
+                .collect(Collectors.toMap(PolicyVO::getId, p -> p));
+
+        return candidates.stream()
+                .filter(sp -> detailMap.containsKey(sp.id))
+                .sorted((a, b) -> Double.compare(b.score, a.score))
+                .limit(limit)
+                .map(sp -> {
+                    PolicyVO vo = detailMap.get(sp.id);
+                    vo.setMatchScore(BigDecimal.valueOf(sp.score).setScale(4, BigDecimal.ROUND_HALF_UP));
+                    vo.setMatchReason("关键词重叠度: " + String.format("%.1f%%", sp.score * 100));
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<PolicyVO> getRelatedPolicies(String achievementDocId, int limit) {
-        return crawlerPolicyMapper.selectRelatedPolicies(achievementDocId, limit);
+    public Map<String, List<PolicyVO>> matchForAchievements(List<String> achievementDocIds, int limit) {
+        Map<String, List<PolicyVO>> result = new LinkedHashMap<>();
+        for (String docId : achievementDocIds) {
+            result.put(docId, matchForAchievement(docId, limit));
+        }
+        return result;
     }
+
+    private Set<String> getAchievementKeywords(String achievementDocId) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            var conn = session.getConnection();
+            var stmt = conn.prepareStatement(
+                    "SELECT title, keywords FROM achievement_mains WHERE document_id = ? AND is_delete = 0");
+            stmt.setString(1, achievementDocId);
+            var rs = stmt.executeQuery();
+            Set<String> tokens = new HashSet<>();
+            if (rs.next()) {
+                String title = rs.getString("title");
+                String keywordsJson = rs.getString("keywords");
+                tokens.addAll(parseKeywords(keywordsJson));
+                tokens.addAll(extractKeywords(title));
+            }
+            rs.close();
+            stmt.close();
+            return tokens;
+        } catch (Exception e) {
+            log.error("获取成果物 {} 关键词失败: {}", achievementDocId, e.getMessage());
+            return Collections.emptySet();
+        }
+    }
+
+    private record ScoredPolicy(long id, double score) {}
 
     @Override
     public IPage<PolicyVO> getAllPolicies(int page, int pageSize) {
@@ -354,7 +379,6 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         log.info("定时任务: 开始爬虫数据同步");
         try {
             syncAllCrawlers();
-            matchPoliciesWithAchievements();
         } catch (Exception e) {
             log.error("定时同步任务失败: {}", e.getMessage(), e);
         }
@@ -412,14 +436,25 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
                 "with", "on", "at", "from", "by", "and", "or", "not", "this", "that"
         );
         String[] tokens = text.split("[\\s,，。、；：！？!?.()（）\\[\\]【】{}\"'·—\\-]+");
-        List<String> keywords = new ArrayList<>();
+        Set<String> keywords = new LinkedHashSet<>();
         for (String token : tokens) {
             String t = token.trim().toLowerCase();
-            if (t.length() >= 2 && !stopwords.contains(t)) {
-                keywords.add(t);
+            if (t.length() < 2 || stopwords.contains(t)) {
+                continue;
+            }
+            keywords.add(t);
+            // 中文 token 生成 bigram 提高召回率
+            if (t.length() > 2 && t.codePoints().allMatch(Character::isIdeographic)) {
+                int[] codePoints = t.codePoints().toArray();
+                for (int i = 0; i < codePoints.length - 1; i++) {
+                    String bigram = new String(codePoints, i, 2);
+                    if (!stopwords.contains(bigram)) {
+                        keywords.add(bigram);
+                    }
+                }
             }
         }
-        return keywords.stream().distinct().limit(50).collect(Collectors.toList());
+        return keywords.stream().limit(80).collect(Collectors.toList());
     }
 
     private List<String> parseKeywords(String keywordsJson) {
