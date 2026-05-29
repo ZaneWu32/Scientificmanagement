@@ -16,8 +16,8 @@
       </template>
       <div class="crawler-cards" v-loading="crawlersLoading">
         <div v-for="crawler in crawlers" :key="crawler.id" class="crawler-card">
-          <div class="crawler-card-header">
-            <span class="crawler-name">{{ crawler.name }}</span>
+          <div class="crawler-card-top">
+            <span class="crawler-name" :title="crawler.name">{{ crawler.name }}</span>
             <el-button
               size="small"
               :loading="crawler.syncStatus === 'syncing'"
@@ -27,26 +27,25 @@
               同步
             </el-button>
           </div>
-          <div class="crawler-card-body">
+          <div class="crawler-card-info">
             <span class="crawler-id">{{ crawler.id }}</span>
-            <div class="crawler-tags">
-              <el-tag
-                :type="statusTagType(crawler.syncStatus)"
-                size="small"
-                effect="plain"
-              >
-                {{ syncStatusText(crawler.syncStatus) }}
-              </el-tag>
-              <el-tag
-                v-if="crawler.crawlerStatus !== 'idle'"
-                :type="crawler.crawlerStatus === 'unavailable' ? 'danger' : 'info'"
-                size="small"
-                effect="plain"
-              >
-                {{ crawler.crawlerStatus === 'unavailable' ? '不可用' : crawler.crawlerStatus }}
-              </el-tag>
-            </div>
+            <span class="crawler-sep">&middot;</span>
             <span class="crawler-count">{{ crawler.policyCount }} 条数据</span>
+            <el-tag
+              :type="statusTagType(crawler.syncStatus)"
+              size="small"
+              effect="plain"
+            >
+              {{ syncStatusText(crawler.syncStatus) }}
+            </el-tag>
+            <el-tag
+              v-if="crawler.crawlerStatus !== 'idle'"
+              :type="crawler.crawlerStatus === 'unavailable' ? 'danger' : 'info'"
+              size="small"
+              effect="plain"
+            >
+              {{ crawler.crawlerStatus === 'unavailable' ? '不可用' : crawler.crawlerStatus }}
+            </el-tag>
           </div>
         </div>
         <el-empty v-if="!crawlersLoading && crawlers.length === 0" description="暂无可用爬虫" />
@@ -286,28 +285,34 @@ function syncStatusText(status: string) {
 .crawler-card {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.crawler-card-header {
+.crawler-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .crawler-name {
   font-weight: 600;
   font-size: 14px;
   color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.crawler-card-body {
+.crawler-card-info {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   font-size: 12px;
   color: #94a3b8;
 }
@@ -316,15 +321,12 @@ function syncStatusText(status: string) {
   font-family: monospace;
 }
 
-.crawler-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.crawler-sep {
+  color: #cbd5e1;
 }
 
 .crawler-count {
   color: #64748b;
-  font-size: 13px;
 }
 
 .pagination {
