@@ -78,6 +78,9 @@ public class KeycloakUserServiceImpl implements IKeycloakUserService {
                     .users().get(keycloakUserId).toRepresentation();
 
             return convertToKeycloakUser(userRep);
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            log.warn("Keycloak user not found: {}", keycloakUserId);
+            return null;
         } catch (Exception e) {
             log.error("Failed to get user by id: {}", keycloakUserId, e);
             return null;
