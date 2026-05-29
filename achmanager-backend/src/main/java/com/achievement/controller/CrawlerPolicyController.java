@@ -2,6 +2,7 @@ package com.achievement.controller;
 
 import com.achievement.annotation.CurrentUser;
 import com.achievement.domain.dto.KeycloakUser;
+import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
 import com.achievement.result.Result;
@@ -76,10 +77,21 @@ public class CrawlerPolicyController {
     public Result<IPage<PolicyVO>> listPolicies(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String crawlerId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             @CurrentUser KeycloakUser currentUser) {
         if (!currentUser.hasRole("research_admin")) {
             return Result.error("无权限：仅管理员可访问");
         }
-        return Result.success(crawlerPolicyService.getAllPolicies(page, pageSize));
+        PolicyQueryDTO dto = new PolicyQueryDTO();
+        dto.setPage(page);
+        dto.setPageSize(pageSize);
+        dto.setKeyword(keyword);
+        dto.setCrawlerId(crawlerId);
+        dto.setStartDate(startDate);
+        dto.setEndDate(endDate);
+        return Result.success(crawlerPolicyService.queryPolicies(dto));
     }
 }

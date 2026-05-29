@@ -57,8 +57,49 @@
 
     <el-card class="section-card">
       <template #header>
-        <span>政策数据</span>
+        <div class="card-header">
+          <span>政策数据</span>
+        </div>
       </template>
+      <div class="search-form">
+        <el-form :inline="true" :model="searchForm" class="search-fields">
+          <el-form-item label="标题">
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索标题"
+              clearable
+              style="width: 200px"
+              @keyup.enter="handleSearch"
+            />
+          </el-form-item>
+          <el-form-item label="来源">
+            <el-select v-model="searchForm.crawlerId" placeholder="全部来源" clearable style="width: 200px">
+              <el-option
+                v-for="c in crawlers"
+                :key="c.id"
+                :label="c.name"
+                :value="c.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="日期">
+            <el-date-picker
+              v-model="searchForm.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              style="width: 260px"
+            />
+          </el-form-item>
+        </el-form>
+        <div class="search-actions">
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </div>
+      </div>
+
       <el-table :data="policies" v-loading="policiesLoading" stripe>
         <el-table-column prop="title" label="标题" min-width="300" show-overflow-tooltip />
         <el-table-column label="来源" width="220">
@@ -109,6 +150,11 @@ const matchLoading = ref(false)
 const crawlers = ref<CrawlerStatus[]>([])
 const policies = ref<PolicyItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const searchForm = reactive({
+  keyword: '',
+  crawlerId: '',
+  dateRange: null as [string, string] | null
+})
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const crawlerNameMap = computed(() => {
@@ -152,7 +198,6 @@ function mergeCrawlers(incoming: CrawlerStatus[]) {
       crawlers.value.push(item)
     }
   }
-  // 移除不再存在的爬虫
   const incomingIds = new Set(incoming.map(c => c.id))
   crawlers.value = crawlers.value.filter(c => incomingIds.has(c.id))
 }
@@ -161,7 +206,17 @@ async function loadPolicies(page?: number) {
   if (page) pagination.page = page
   policiesLoading.value = true
   try {
-    const res = await getPolicyList(pagination.page, pagination.pageSize)
+    const params: Record<string, any> = {
+      page: pagination.page,
+      pageSize: pagination.pageSize
+    }
+    if (searchForm.keyword) params.keyword = searchForm.keyword
+    if (searchForm.crawlerId) params.crawlerId = searchForm.crawlerId
+    if (searchForm.dateRange) {
+      params.startDate = searchForm.dateRange[0]
+      params.endDate = searchForm.dateRange[1]
+    }
+    const res = await getPolicyList(params)
     const data = res?.data
     policies.value = data?.records || []
     pagination.total = data?.total || 0
@@ -170,6 +225,19 @@ async function loadPolicies(page?: number) {
   } finally {
     policiesLoading.value = false
   }
+}
+
+function handleSearch() {
+  pagination.page = 1
+  loadPolicies()
+}
+
+function handleReset() {
+  searchForm.keyword = ''
+  searchForm.crawlerId = ''
+  searchForm.dateRange = null
+  pagination.page = 1
+  loadPolicies()
 }
 
 async function handleSyncAll() {
@@ -331,6 +399,25 @@ function syncStatusText(status: string) {
 
 .crawler-count {
   color: #64748b;
+}
+
+.search-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-fields {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .pagination {

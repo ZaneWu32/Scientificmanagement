@@ -3,6 +3,7 @@ package com.achievement.service.impl;
 import com.achievement.client.CrawlerClient;
 import com.achievement.config.CrawlerProperties;
 import com.achievement.domain.dto.CrawlerResultDTO;
+import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.po.CrawlerPolicy;
 import com.achievement.domain.po.CrawlerPolicyAchievementMatch;
 import com.achievement.domain.vo.CrawlerStatusVO;
@@ -300,26 +301,55 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         IPage<CrawlerPolicy> result = crawlerPolicyMapper.selectPage(policyPage, query);
 
         Page<PolicyVO> voPage = new Page<>(page, pageSize, result.getTotal());
-        List<PolicyVO> voList = result.getRecords().stream().map(p -> {
-            PolicyVO vo = new PolicyVO();
-            vo.setId(p.getId());
-            vo.setCrawlerId(p.getCrawlerId());
-            vo.setTitle(p.getTitle());
-            vo.setPublishDate(p.getPublishDate());
-            vo.setSourceUrl(p.getSourceUrl());
-            String content = p.getContent();
-            vo.setContentPreview(content != null && content.length() > 300
-                    ? content.substring(0, 300) + "..." : content);
-            try {
-                vo.setHrefs(objectMapper.readValue(p.getHrefs(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)));
-            } catch (Exception e) {
-                vo.setHrefs(Collections.emptyList());
-            }
-            return vo;
-        }).collect(Collectors.toList());
-        voPage.setRecords(voList);
+        voPage.setRecords(result.getRecords().stream().map(this::toPolicyVO).collect(Collectors.toList()));
         return voPage;
+    }
+
+    @Override
+    public IPage<PolicyVO> queryPolicies(PolicyQueryDTO dto) {
+        Page<CrawlerPolicy> page = new Page<>(dto.getPage(), dto.getPageSize());
+        LambdaQueryWrapper<CrawlerPolicy> query = new LambdaQueryWrapper<>();
+        query.eq(CrawlerPolicy::getDelFlag, "0");
+
+        if (dto.getKeyword() != null && !dto.getKeyword().isBlank()) {
+            query.like(CrawlerPolicy::getTitle, dto.getKeyword().trim());
+        }
+        if (dto.getCrawlerId() != null && !dto.getCrawlerId().isBlank()) {
+            query.eq(CrawlerPolicy::getCrawlerId, dto.getCrawlerId());
+        }
+        if (dto.getStartDate() != null && !dto.getStartDate().isBlank()) {
+            query.ge(CrawlerPolicy::getPublishDateParsed, LocalDate.parse(dto.getStartDate()));
+        }
+        if (dto.getEndDate() != null && !dto.getEndDate().isBlank()) {
+            query.le(CrawlerPolicy::getPublishDateParsed, LocalDate.parse(dto.getEndDate()));
+        }
+
+        query.orderByDesc(CrawlerPolicy::getPublishDateParsed)
+             .orderByDesc(CrawlerPolicy::getCreateTime);
+
+        IPage<CrawlerPolicy> result = crawlerPolicyMapper.selectPage(page, query);
+        Page<PolicyVO> voPage = new Page<>(dto.getPage(), dto.getPageSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream().map(this::toPolicyVO).collect(Collectors.toList()));
+        return voPage;
+    }
+
+    private PolicyVO toPolicyVO(CrawlerPolicy p) {
+        PolicyVO vo = new PolicyVO();
+        vo.setId(p.getId());
+        vo.setCrawlerId(p.getCrawlerId());
+        vo.setTitle(p.getTitle());
+        vo.setPublishDate(p.getPublishDate());
+        vo.setSourceUrl(p.getSourceUrl());
+        String content = p.getContent();
+        vo.setContentPreview(content != null && content.length() > 300
+                ? content.substring(0, 300) + "..." : content);
+        try {
+            vo.setHrefs(objectMapper.readValue(p.getHrefs(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)));
+        } catch (Exception e) {
+            vo.setHrefs(Collections.emptyList());
+        }
+        return vo;
     }
 
     @Scheduled(cron = "${crawler.sync-cron}")

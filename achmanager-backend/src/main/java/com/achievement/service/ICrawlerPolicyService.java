@@ -1,5 +1,6 @@
 package com.achievement.service;
 
+import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -22,6 +23,8 @@ public interface ICrawlerPolicyService {
     List<PolicyVO> getRelatedPolicies(String achievementDocId, int limit);
 
     IPage<PolicyVO> getAllPolicies(int page, int pageSize);
+
+    IPage<PolicyVO> queryPolicies(PolicyQueryDTO dto);
 
     Map<String, String> getCrawlerNames();
 

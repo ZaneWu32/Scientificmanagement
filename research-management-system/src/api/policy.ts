@@ -60,13 +60,21 @@ export function triggerMatch(): Promise<ApiResponse<string>> {
   })
 }
 
+export interface PolicyQuery {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  crawlerId?: string
+  startDate?: string
+  endDate?: string
+}
+
 export function getPolicyList(
-  page = 1,
-  pageSize = 20
+  query: PolicyQuery = {}
 ): Promise<ApiResponse<{ records: PolicyItem[]; total: number; current: number; size: number }>> {
   return request({
     url: '/policy/list',
     method: 'get',
-    params: { page, pageSize }
+    params: { page: 1, pageSize: 20, ...query }
   })
 }
