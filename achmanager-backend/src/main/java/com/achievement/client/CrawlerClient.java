@@ -32,9 +32,7 @@ public class CrawlerClient {
 
             List<String> result = new ArrayList<>();
             if (body != null && body.has("crawlers")) {
-                for (JsonNode node : body.get("crawlers")) {
-                    result.add(node.asText());
-                }
+                body.get("crawlers").fieldNames().forEachRemaining(result::add);
             }
             return result;
         } catch (Exception e) {
