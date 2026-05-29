@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.DemandItemMapper">
+
+    <select id="pageList" resultType="com.achievement.domain.po.DemandItem">
+        SELECT *
+        FROM demand_items
+        WHERE is_delete = 0
+        <if test="keyword != null and keyword.trim() != ''">
+            AND (
+                title LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR summary LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR llm_summary LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR raw_content LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR industry LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR region LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR source_site LIKE CONCAT('%', TRIM(#{keyword}), '%')
+                OR keywords_json LIKE CONCAT('%', TRIM(#{keyword}), '%')
+            )
+        </if>
+        <if test="status != null and status.trim() != ''">
+            AND status = #{status}
+        </if>
+        <if test="industry != null and industry.trim() != ''">
+            AND industry = #{industry}
+        </if>
+        <if test="region != null and region.trim() != ''">
+            AND region = #{region}
+        </if>
+        ORDER BY captured_at DESC, created_at DESC, id DESC
+    </select>
+</mapper>

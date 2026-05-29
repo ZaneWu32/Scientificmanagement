@@ -135,18 +135,106 @@
         </div>
 
         <!-- 步骤4: 智能补全 -->
-        <div v-show="currentStep === 3" class="step-panel">
-          <h3>智能补全</h3>
-          <el-form label-width="120px">
-            <el-form-item label="功能状态">
-              <el-input model-value="暂未开发" disabled />
-            </el-form-item>
-          </el-form>
-          <el-alert
-            title="智能补全迭代中，当前版本无法填写或使用。"
-            type="warning"
-            :closable="false"
-          />
+        <div v-show="currentStep === 3" class="step-panel autofill-panel">
+          <div class="autofill-header">
+            <div>
+              <h3>附件识别 · 智能补全</h3>
+              <p class="autofill-desc">系统将辅助从附件中识别关键字段。识别结果供参考，请确认后再采用，最终提交由您控制。</p>
+            </div>
+            <el-tag type="warning" effect="plain" size="small">Mock 演示版</el-tag>
+          </div>
+
+          <!-- 无附件提示 -->
+          <el-empty
+            v-if="!fileList.length"
+            description="请先在上一步上传附件，再进行智能识别"
+            :image-size="80"
+          >
+            <el-button @click="currentStep = 2">返回上传附件</el-button>
+          </el-empty>
+
+          <!-- 有附件：文件选择 + 识别触发 -->
+          <template v-else>
+            <div class="af-file-selector">
+              <div class="af-label">选择要识别的文件</div>
+              <div class="af-file-list">
+                <div
+                  v-for="f in fileList"
+                  :key="f.uid"
+                  class="af-file-item"
+                  :class="{ 'is-selected': afSelectedFile?.uid === f.uid }"
+                  @click="selectAfFile(f)"
+                >
+                  <el-icon class="af-file-icon"><Document /></el-icon>
+                  <span class="af-file-name">{{ f.name }}</span>
+                  <el-icon v-if="afSelectedFile?.uid === f.uid" class="af-file-check"><CircleCheck /></el-icon>
+                </div>
+              </div>
+              <el-button
+                type="primary"
+                :loading="afLoading"
+                :disabled="!afSelectedFile"
+                class="af-trigger-btn"
+                @click="startAutoFill"
+              >
+                {{ afLoading ? '识别中，请稍候…' : '开始识别' }}
+              </el-button>
+            </div>
+
+            <!-- 识别结果 -->
+            <transition name="af-fade">
+              <div v-if="afResult" class="af-result">
+                <div class="af-result-header">
+                  <span class="af-result-title">识别完成 — {{ afResult.fileName }}</span>
+                  <span class="af-result-time">{{ formatAfTime(afResult.recognizedAt) }}</span>
+                </div>
+
+                <!-- 字段列表 -->
+                <div class="af-fields">
+                  <div
+                    v-for="field in afResult.fields"
+                    :key="field.key"
+                    class="af-field-row"
+                    :class="{ 'is-pending': field.needsConfirm }"
+                  >
+                    <el-checkbox v-model="afSelectedKeys" :value="field.key" class="af-checkbox" />
+                    <div class="af-field-body">
+                      <div class="af-field-top">
+                        <span class="af-field-label">{{ field.label }}</span>
+                        <span class="af-confidence" :class="getAfConfidenceClass(field.confidence)">
+                          {{ Math.round(field.confidence * 100) }}%
+                        </span>
+                        <el-tag v-if="field.needsConfirm" type="warning" size="small" effect="plain">待确认</el-tag>
+                      </div>
+                      <div class="af-field-value">{{ field.value }}</div>
+                      <div class="af-field-snippet">来源：{{ field.sourceSnippet }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 待确认提示 -->
+                <div v-if="afResult.pendingConfirmations.length" class="af-pending-box">
+                  <div class="af-pending-title">⚠️ 待人工确认</div>
+                  <ul class="af-pending-list">
+                    <li v-for="item in afResult.pendingConfirmations" :key="item">{{ item }}</li>
+                  </ul>
+                </div>
+
+                <!-- 采用按钮 -->
+                <div class="af-actions">
+                  <el-button
+                    type="success"
+                    :disabled="!afSelectedKeys.length"
+                    @click="adoptSelectedFields"
+                  >
+                    采用选中字段（{{ afSelectedKeys.length }} 项）
+                  </el-button>
+                  <el-button @click="afResult = null; afSelectedKeys = []">重新识别</el-button>
+                  <span class="af-skip-hint">或直接点击「下一步」跳过此步骤</span>
+                </div>
+              </div>
+            </transition>
+          </template>
         </div>
 
         <!-- 步骤5: 确认提交 -->
@@ -207,11 +295,14 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { UploadFilled } from '@element-plus/icons-vue'
+import { CircleCheck, Document, UploadFilled } from '@element-plus/icons-vue'
 import { getResultTypes, getFieldDefsByType, createResult, createResultWithFiles, autoFillMetadata } from '@/api/result'
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
 import { mapFieldType } from '@/config/dynamicFields'
+import { getConfidenceLevel } from '@/mocks/autoFillMock'
+import { autoFillFromAttachment } from '@/api/autoFill'
+import type { AutoFillResult } from '@/api/autoFill'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -252,6 +343,84 @@ const journalRankItems = ref<string[]>([])
 const lastJournalRankAt = ref(0)
 const submitting = ref(false)
 const MAX_FILE_SIZE = 20 * 1024 * 1024
+
+// ── 智能补全（步骤4）状态 ─────────────────────────────────────
+const afSelectedFile = ref<any>(null)
+const afLoading = ref(false)
+const afResult = ref<AutoFillResult | null>(null)
+const afSelectedKeys = ref<string[]>([])
+
+function selectAfFile(file: any) {
+  afSelectedFile.value = file
+  afResult.value = null
+  afSelectedKeys.value = []
+}
+
+async function startAutoFill() {
+  if (!afSelectedFile.value) return
+  afLoading.value = true
+  afResult.value = null
+  afSelectedKeys.value = []
+  try {
+    const { data: result } = await autoFillFromAttachment(
+      afSelectedFile.value.raw,
+      selectedType.value?.code
+    )
+    afResult.value = result
+    // 默认勾选所有高置信度且不需要确认的字段
+    afSelectedKeys.value = result.fields
+      .filter(f => !f.needsConfirm && f.confidence >= 0.90)
+      .map(f => f.key)
+    ElMessage.success('识别完成，请确认字段后采用')
+  } catch {
+    ElMessage.error('识别失败，请稍后重试')
+  } finally {
+    afLoading.value = false
+  }
+}
+
+function adoptSelectedFields() {
+  if (!afResult.value || !afSelectedKeys.value.length) return
+  const fields = afResult.value.fields.filter(f => afSelectedKeys.value.includes(f.key))
+  let adopted = 0
+  for (const field of fields) {
+    switch (field.key) {
+      case 'title':
+        formData.title = field.value; adopted++; break
+      case 'authors':
+        formData.authors = field.value.split(/[;；,，]/).map(s => s.trim()).filter(Boolean)
+        adopted++; break
+      case 'year': {
+        const y = field.value.match(/\d{4}/)?.[0]
+        if (y) { formData.year = y; adopted++ }
+        break
+      }
+      case 'abstract':
+        formData.abstract = field.value; adopted++; break
+      case 'keywords':
+        formData.keywords = field.value.split(/[;；,，]/).map(s => s.trim()).filter(Boolean)
+        adopted++; break
+      default:
+        // 动态字段写入 metadata
+        formData.metadata[field.key] = field.value; adopted++; break
+    }
+  }
+  ElMessage.success(`已采用 ${adopted} 个字段，请在下一步确认信息`)
+  afSelectedKeys.value = []
+}
+
+function getAfConfidenceClass(confidence: number) {
+  const level = getConfidenceLevel(confidence)
+  return `af-conf-${level}`
+}
+
+function formatAfTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  } catch {
+    return ''
+  }
+}
 
 onMounted(async () => {
   await loadResultTypes()
@@ -790,4 +959,269 @@ function buildPayload() {
 }
 
 
+</style>
+
+<!-- ═══════════════════════════ 以下为步骤4智能补全专属样式 ═══════════════════════════ -->
+<style scoped>
+
+/* ── 智能补全面板 ─────────────────────────────────────────── */
+.autofill-panel {
+  background: #fff;
+}
+
+.autofill-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.autofill-header h3 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.autofill-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* ── 文件选择区 ──────────────────────────────────────────── */
+.af-file-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.af-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.af-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.af-file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.af-file-item:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.af-file-item.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.af-file-icon {
+  color: #3b82f6;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.af-file-name {
+  flex: 1;
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.af-file-check {
+  color: #16a34a;
+  font-size: 18px;
+}
+
+.af-trigger-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ── 识别结果区 ──────────────────────────────────────────── */
+.af-result {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.af-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+}
+
+.af-result-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.af-result-time {
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+}
+
+/* ── 字段行 ──────────────────────────────────────────────── */
+.af-fields {
+  padding: 8px 0;
+}
+
+.af-field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.af-field-row:last-child {
+  border-bottom: none;
+}
+
+.af-field-row:hover {
+  background: #f8fafc;
+}
+
+.af-field-row.is-pending {
+  background: #fffbeb;
+}
+
+.af-field-row.is-pending:hover {
+  background: #fef9c3;
+}
+
+.af-checkbox {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.af-field-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.af-field-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.af-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.af-confidence {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.af-conf-high {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.af-conf-medium {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.af-conf-low {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.af-field-value {
+  font-size: 14px;
+  color: #111827;
+  line-height: 1.5;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.af-field-snippet {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+/* ── 待确认提示框 ─────────────────────────────────────────── */
+.af-pending-box {
+  margin: 0 16px 14px 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+}
+
+.af-pending-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+
+.af-pending-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* ── 采用操作区 ──────────────────────────────────────────── */
+.af-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+}
+
+.af-skip-hint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ── 过渡动画 ─────────────────────────────────────────────── */
+.af-fade-enter-active,
+.af-fade-leave-active {
+  transition: opacity 0.35s, transform 0.35s;
+}
+
+.af-fade-enter-from,
+.af-fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
 </style>

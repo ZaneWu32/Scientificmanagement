@@ -1,618 +1,513 @@
 <template>
   <div class="demand-insights">
-    <div class="page-header">
+    <!-- 顶部 -->
+    <header class="page-header">
       <div>
-        <h2>需求洞察与智能匹配</h2>
-        <p class="subtitle">汇总外部企业痛点，智能关联研究院成果，辅助科技成果转化</p>
+        <div class="eyebrow">智能洞察 · 需求转化</div>
+        <h2>需求洞察</h2>
+        <p class="subtitle">白名单来源持续采集 → 结构化摘要 → 候选成果匹配 → 人工确认跟进</p>
       </div>
-      <el-button :loading="listLoading" @click="handleSearch">
-        <el-icon><Refresh /></el-icon> 刷新
-      </el-button>
-    </div>
+      <div class="header-actions">
+        <el-button :icon="Refresh" :loading="loading" @click="loadDemands()">刷新</el-button>
+        <el-tag type="success" effect="plain">ES 实时匹配</el-tag>
+      </div>
+    </header>
 
-    <el-card class="filter-card glass">
-      <el-form :inline="true" :model="filters" class="filter-form">
-        <el-form-item label="关键词">
+    <!-- 指标卡 -->
+    <section class="metrics-row">
+      <div v-for="m in metrics" :key="m.label" class="metric-card">
+        <div class="metric-icon" :style="{ background: m.iconBg }">
+          <el-icon :size="20" :style="{ color: m.iconColor }"><component :is="m.icon" /></el-icon>
+        </div>
+        <div class="metric-body">
+          <div class="metric-value">{{ m.value }}</div>
+          <div class="metric-label">{{ m.label }}</div>
+        </div>
+        <div class="metric-badge" :class="m.badgeClass">{{ m.badge }}</div>
+      </div>
+    </section>
+
+    <!-- 主体：需求卡片列表 + 详情侧栏 -->
+    <section class="main-grid">
+      <!-- 左：筛选 + 卡片列表 -->
+      <div class="demand-list-col" v-loading="loading">
+        <div class="list-toolbar">
           <el-input
             v-model="filters.keyword"
-            placeholder="需求标题、摘要、行业"
+            placeholder="关键词、行业、来源…"
             clearable
-            @keyup.enter="handleSearch"
+            :prefix-icon="Search"
+            class="search-input"
           />
-        </el-form-item>
-        <el-form-item label="行业">
-          <el-select v-model="filters.industry" placeholder="全部" clearable>
-            <el-option v-for="opt in industryOptions" :key="opt" :label="opt" :value="opt" />
+          <el-select v-model="filters.status" placeholder="全部状态" clearable style="width:140px">
+            <el-option v-for="o in statusOptions" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="地域">
-          <el-select v-model="filters.region" placeholder="全部" clearable>
-            <el-option v-for="opt in regionOptions" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" placeholder="全部" clearable>
-            <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="来源类型">
-          <el-select v-model="filters.sourceCategory" placeholder="全部" clearable>
-            <el-option v-for="opt in sourceCategoryOptions" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="listLoading" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+        </div>
 
-    <el-card class="table-card glass">
-      <el-table
-        :data="demandList"
-        :loading="listLoading"
-        @row-click="handleRowClick"
-        height="560"
-        border
-        highlight-current-row
-      >
-        <el-table-column prop="title" label="需求标题" min-width="240">
-          <template #default="{ row }">
-            <div class="title-cell">
-              <div class="title-text">{{ row.title }}</div>
-              <div class="title-tags">
-                <el-tag v-for="tag in row.tags || []" :key="tag" size="small" effect="plain">{{ tag }}</el-tag>
+        <div class="demand-cards">
+          <div
+            v-for="item in filteredDemands"
+            :key="item.id"
+            class="demand-card"
+            :class="{ 'is-active': selectedDemand?.id === item.id }"
+            @click="selectDemand(item)"
+          >
+            <div class="card-top">
+              <span class="priority-dot" :class="`pri-${item.priority}`"></span>
+              <span class="card-industry">{{ item.industry }}</span>
+              <el-tag :type="statusType(item.status)" effect="plain" size="small" class="card-status">
+                {{ statusLabel(item.status) }}
+              </el-tag>
+            </div>
+            <div class="card-title">{{ item.title }}</div>
+            <div class="card-meta">
+              <span>{{ item.sourceSite }}</span>
+              <span>{{ item.region }}</span>
+              <span>{{ formatDate(item.capturedAt) }}</span>
+            </div>
+            <div class="card-footer">
+              <div class="match-score-bar">
+                <div class="bar-track">
+                  <div class="bar-fill" :style="{ width: toPercent(item.bestMatchScore) + '%', background: scoreColor(item.bestMatchScore) }"></div>
+                </div>
+                <span class="bar-label">最佳匹配 {{ toPercent(item.bestMatchScore) }}%</span>
               </div>
             </div>
-            <div class="meta-line">
-              <el-tag size="small" type="info" effect="plain">
-                {{ row.sourceCategory || '来源未知' }}
-              </el-tag>
-              <span class="muted">{{ row.sourceSite }}</span>
-              <span class="dot">·</span>
-              <span class="muted">{{ row.industry || '未知行业' }}</span>
-              <span class="dot">·</span>
-              <span class="muted">{{ row.region || '未知地域' }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="capturedAt" label="抓取时间" width="120" />
-        <el-table-column prop="confidence" label="可信度" width="120">
-          <template #default="{ row }">
-            <el-progress
-              :percentage="Math.round((row.confidence || 0) * 100)"
-              :stroke-width="10"
-              :color="progressColor(row.confidence || 0)"
-              :format="(p) => `${p}%`"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="匹配度" width="120">
-          <template #default="{ row }">
-            <div class="score-pill" :class="scoreClass(row.bestMatchScore)">
-              {{ formatScore(row.bestMatchScore) }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="120">
-          <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" effect="plain">
-              {{ statusLabel(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link @click.stop="handleRowClick(row)">查看匹配</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div class="table-footer">
-        <el-pagination
-          background
-          layout="prev, pager, next, jumper, total"
-          :total="pagination.total"
-          :page-size="pagination.pageSize"
-          :current-page="pagination.page"
-          @current-change="handlePageChange"
-        />
+          </div>
+          <el-empty v-if="!filteredDemands.length" description="暂无匹配需求" :image-size="60" />
+        </div>
       </div>
-    </el-card>
 
-    <el-drawer
-      v-model="drawerVisible"
-      title="需求详情与匹配"
-      size="640px"
-      destroy-on-close
-    >
-      <el-skeleton :loading="detailLoading" animated :rows="6">
-        <template #default>
-          <div class="drawer-header">
-            <div>
-              <div class="drawer-title">{{ selectedDemand?.title }}</div>
-              <div class="drawer-sub">
-                <el-tag size="small" type="info" effect="plain">
-                  {{ selectedDemand?.sourceCategory || '来源未知' }}
-                </el-tag>
-                <span>{{ selectedDemand?.sourceSite }} / {{ selectedDemand?.capturedAt }}</span>
-                <span class="dot">·</span>
-                <span>{{ selectedDemand?.industry || '未知行业' }} / {{ selectedDemand?.region || '未知地域' }}</span>
-              </div>
-            </div>
-            <div class="drawer-actions">
-              <el-tag :type="statusType(selectedDemand?.status)">{{ statusLabel(selectedDemand?.status) }}</el-tag>
-              <el-button size="small" :loading="rematching" @click="handleRematch">
-                <el-icon><Refresh /></el-icon>
-                重新匹配
-              </el-button>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">需求摘要</div>
-            <p class="section-body">{{ selectedDemand?.summary }}</p>
-            <p v-if="selectedDemand?.llmSummary" class="llm-summary">
-              智能摘要：{{ selectedDemand.llmSummary }}
-            </p>
-            <div class="keyword-line">
-              <el-tag
-                v-for="kw in selectedDemand?.keywords || []"
-                :key="kw"
-                size="small"
-                effect="plain"
-              >
-                {{ kw }}
+      <!-- 右：详情 -->
+      <aside class="detail-col" v-if="selectedDemand">
+        <div class="detail-panel">
+          <!-- 详情头 -->
+          <div class="detail-head">
+            <div class="detail-head-left">
+              <el-tag :type="statusType(selectedDemand.status)" effect="plain">{{ statusLabel(selectedDemand.status) }}</el-tag>
+              <el-tag effect="plain" size="small" class="priority-tag" :class="`pri-tag-${selectedDemand.priority}`">
+                {{ selectedDemand.priority }}优先级
               </el-tag>
             </div>
-            <el-link
-              v-if="selectedDemand?.sourceUrl"
-              :href="selectedDemand.sourceUrl"
-              target="_blank"
-              type="primary"
-            >
-              查看来源
-            </el-link>
+            <el-button size="small" :icon="Search" :loading="rematching" @click="handleRematch">重新匹配</el-button>
+          </div>
+          <h3 class="detail-title">{{ selectedDemand.title }}</h3>
+          <div class="detail-meta">
+            <span>📍 {{ selectedDemand.region }}</span>
+            <span>🏭 {{ selectedDemand.industry }}</span>
+            <span>🔗 {{ selectedDemand.sourceSite }}</span>
           </div>
 
-          <div class="section">
-            <div class="section-title">
-              智能匹配结果
-              <span class="muted">（按匹配度排序）</span>
+          <!-- AI摘要 -->
+          <div class="detail-section">
+            <div class="section-label">🤖 智能摘要</div>
+            <p class="detail-summary">{{ selectedDemand.llmSummary }}</p>
+            <div class="keyword-row">
+              <el-tag v-for="kw in selectedDemand.keywords" :key="kw" size="small" effect="plain" round>{{ kw }}</el-tag>
             </div>
-            <el-empty
-              v-if="matches.length === 0"
-              description="暂无匹配结果，尝试重新匹配或降低阈值"
-            />
-            <div v-else class="match-list">
-              <div v-for="item in matches" :key="item.resultId" class="match-card">
-                <div class="match-header">
-                  <div>
-                    <div class="match-title">{{ item.resultTitle }}</div>
-                    <div class="match-sub">
-                      <span>{{ item.resultType }}</span>
-                      <span class="dot">·</span>
-                      <span>{{ item.owner || '负责人待定' }}</span>
-                      <span class="dot">·</span>
-                      <span>{{ item.updatedAt ? formatDateTime(item.updatedAt) : '更新时间未知' }}</span>
-                    </div>
-                  </div>
-                  <div class="score-pill" :class="scoreClass(item.matchScore)">
-                    {{ formatScore(item.matchScore) }}
-                  </div>
-                </div>
-                <div class="reason-block">
-                  <div class="reason-title">匹配理由</div>
-                  <p class="reason-text">{{ item.reason || '模型未返回详细理由' }}</p>
-                  <div v-if="item.sourceSnippet" class="snippet">
-                    <span class="snippet-label">原文片段</span>
-                    <p class="snippet-text">{{ item.sourceSnippet }}</p>
-                  </div>
-                </div>
-                <div class="card-actions">
-                  <el-button type="primary" link @click="goResultDetail(item.resultId)">查看成果</el-button>
-                </div>
+          </div>
+
+          <!-- 候选成果 -->
+          <div class="detail-section">
+            <div class="section-label">🎯 候选成果匹配</div>
+            <el-empty v-if="!selectedDemand.matches.length" description="暂无高置信候选成果" :image-size="56" />
+            <div v-for="m in selectedDemand.matches" :key="m.resultId" class="match-card">
+              <div class="match-header">
+                <span class="match-title">{{ m.resultTitle }}</span>
+                <span class="match-type">{{ m.resultType }}</span>
+              </div>
+              <div class="match-score-row">
+                <span class="match-score-label">匹配度</span>
+                <el-progress :percentage="toPercent(m.matchScore)" :stroke-width="8"
+                  :color="scoreColor(m.matchScore)" style="flex:1" />
+                <span class="match-score-num" :style="{color: scoreColor(m.matchScore)}">{{ toPercent(m.matchScore) }}%</span>
+              </div>
+              <p class="match-reason">{{ m.reason }}</p>
+              <div class="match-snippet">{{ m.sourceSnippet }}</div>
+              <div class="fit-tags">
+                <el-tag v-for="t in m.fitTags" :key="t" size="small" type="success" effect="plain">{{ t }}</el-tag>
               </div>
             </div>
           </div>
-        </template>
-      </el-skeleton>
-    </el-drawer>
+
+          <!-- 跟进步骤 -->
+          <div class="detail-section" v-if="selectedDemand.followUp?.length">
+            <div class="section-label">📋 跟进步骤</div>
+            <el-timeline>
+              <el-timeline-item
+                v-for="step in selectedDemand.followUp"
+                :key="step.label"
+                :type="timelineType(step.status)"
+                :hollow="step.status === 'todo'"
+                size="large"
+              >
+                <div class="timeline-content">
+                  <span class="tl-label">{{ step.label }}</span>
+                  <span class="tl-meta">{{ step.owner }} · {{ formatDate(step.dueAt) }}</span>
+                </div>
+              </el-timeline-item>
+            </el-timeline>
+          </div>
+
+          <!-- 待确认 -->
+          <div class="detail-section" v-if="selectedDemand.pendingConfirmations?.length">
+            <div class="section-label">⚠️ 待人工确认</div>
+            <ul class="confirm-list">
+              <li v-for="item in selectedDemand.pendingConfirmations" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+      <div v-else class="detail-empty">
+        <el-empty description="点击左侧需求卡片查看详情" :image-size="80" />
+      </div>
+    </section>
+
+    <!-- 底部：数据源状态 -->
+    <section class="panel source-section">
+      <div class="section-header">
+        <h3>数据源健康状态</h3>
+        <p>白名单采集源，仅接入公开、稳定来源，不做全网泛化抓取</p>
+      </div>
+      <div class="source-grid">
+        <div v-for="src in demandSources" :key="src.id" class="source-card">
+          <div class="source-card-head">
+            <span class="source-name">{{ src.name }}</span>
+            <el-tag :type="sourceTagType(src.status)" effect="plain" size="small">{{ sourceLabel(src.status) }}</el-tag>
+          </div>
+          <div class="source-stats">
+            <span>{{ src.type }}</span>
+            <span>每 {{ src.frequencyHours }}h 采集</span>
+            <span>成功率 {{ src.successRate }}%</span>
+            <span>新增 {{ src.newCount }} 条</span>
+          </div>
+          <div v-if="src.failureReason && src.failureReason !== '-'" class="source-warn">{{ src.failureReason }}</div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Refresh } from '@element-plus/icons-vue'
-import { getDemands, getDemandDetail, rematchDemand } from '@/api/demand'
-import type { DemandItem, DemandMatch } from '@/types'
-import { useRequest, useAsyncAction } from '@/composables/useErrorHandler'
-import { AppError, ErrorType } from '@/utils/errorHandler'
-import { formatDateTime } from '@/utils/date'
+import { Search, TrendCharts, CircleCheck, Promotion, Refresh, Tickets } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { getDemands, getDemandSources, rematchDemand } from '@/api/demand'
 
-const router = useRouter()
+type DemandStatus = 'new' | 'reviewing' | 'matched' | 'in_follow_up' | 'invalid' | 'archived'
+type SourceHealth = 'healthy' | 'warning' | 'error' | 'idle'
 
-const filters = reactive({
-  keyword: '',
-  industry: '',
-  region: '',
-  sourceCategory: '',
-  status: ''
-})
+interface DemandMatchItem {
+  resultId: string
+  resultTitle: string
+  resultType: string
+  owner: string
+  department: string
+  matchScore: number
+  reason: string
+  sourceSnippet: string
+  updatedAt: string
+  fitTags: string[]
+}
 
-const industryOptions = ['医疗健康', '能源储能', '轨道交通', '制造业', '信息技术']
-const regionOptions = ['北京', '上海', '深圳', '杭州', '广州', '全国']
-const sourceCategoryOptions = [
-  '政府/园区平台',
-  '招投标网站',
-  '企业官网/年报',
-  '垂直行业论坛/新闻'
-]
+interface DemandFollowUpItem {
+  label: string
+  owner: string
+  status: string
+  dueAt: string
+}
+
+interface DemandItem {
+  id: string
+  title: string
+  sourceCategory: string
+  sourceSite: string
+  sourceUrl: string
+  capturedAt: string
+  industry: string
+  region: string
+  priority: '高' | '中' | '低'
+  confidence: number
+  bestMatchScore: number
+  status: DemandStatus
+  valueLevel: string
+  owner: string
+  dueAt: string
+  summary: string
+  llmSummary: string
+  keywords: string[]
+  tags: string[]
+  pendingConfirmations: string[]
+  riskNotes: string[]
+  matches: DemandMatchItem[]
+  followUp: DemandFollowUpItem[]
+}
+
+interface DemandSourceItem {
+  id: string
+  name: string
+  type: string
+  industry: string
+  region: string
+  frequencyHours: number
+  enabled: boolean
+  status: SourceHealth
+  lastRunAt: string
+  lastSuccessAt: string
+  failureReason: string
+  successRate: number
+  newCount: number
+  matchedCount: number
+}
+
+const demands = ref<DemandItem[]>([])
+const demandSources = ref<DemandSourceItem[]>([])
+const selectedDemand = ref<DemandItem | null>(null)
+const loading = ref(false)
+const rematching = ref(false)
+const filters = reactive({ keyword: '', status: '' })
+
 const statusOptions = [
-  { label: '未匹配', value: 'unmatched' },
+  { label: '新入池', value: 'new' },
+  { label: '研判中', value: 'reviewing' },
   { label: '已匹配', value: 'matched' },
   { label: '跟进中', value: 'in_follow_up' }
 ]
 
-const pagination = reactive({
-  page: 1,
-  pageSize: 10,
-  total: 0
+const filteredDemands = computed(() => {
+  const kw = filters.keyword.trim().toLowerCase()
+  return demands.value.filter(item => {
+    const kwHit = !kw || [item.title, item.summary, item.industry, item.region, ...(item.keywords || [])].join(' ').toLowerCase().includes(kw)
+    const sHit = !filters.status || item.status === filters.status
+    return kwHit && sHit
+  })
 })
 
-const demandList = ref<DemandItem[]>([])
-const drawerVisible = ref(false)
-const detailLoading = ref(false)
-const selectedDemand = ref<DemandItem | null>(null)
-const matches = ref<DemandMatch[]>([])
+const metrics = computed(() => {
+  const total = demands.value.length
+  const matched = demands.value.filter(d => d.matches.length > 0).length
+  const followUp = demands.value.filter(d => d.status === 'in_follow_up').length
+  const srcOk = demandSources.value.filter(s => s.status === 'healthy').length
+  return [
+    { label: '入池需求', value: total, badge: '去重后', badgeClass: 'badge-blue', icon: Tickets, iconBg: '#eff6ff', iconColor: '#2563eb' },
+    { label: '有候选成果', value: matched, badge: '待研判', badgeClass: 'badge-green', icon: CircleCheck, iconBg: '#f0fdf4', iconColor: '#16a34a' },
+    { label: '跟进中', value: followUp, badge: '人工确认后', badgeClass: 'badge-amber', icon: Promotion, iconBg: '#fffbeb', iconColor: '#d97706' },
+    { label: '正常数据源', value: `${srcOk}/${demandSources.value.length}`, badge: '白名单', badgeClass: 'badge-purple', icon: TrendCharts, iconBg: '#f5f3ff', iconColor: '#7c3aed' }
+  ]
+})
 
-const { loading: listLoading, execute: loadDemands } = useRequest(
-  async () => {
-    const res = await getDemands({
-      ...filters,
-      page: pagination.page,
-      pageSize: pagination.pageSize
-    })
-    pagination.total = res?.data?.total || 0
-    return res?.data?.list || []
-  },
-  {
-    immediate: false,
-    onSuccess: (list) => {
-      demandList.value = list || []
-    }
-  }
-)
+function selectDemand(row: DemandItem) { selectedDemand.value = row }
+function toPercent(v: number) { return Math.round(v * 100) }
 
-function handleSearch() {
-  pagination.page = 1
-  loadDemands()
-}
-
-function handleReset() {
-  filters.keyword = ''
-  filters.industry = ''
-  filters.region = ''
-  filters.sourceCategory = ''
-  filters.status = ''
-  handleSearch()
-}
-
-function handlePageChange(page: number) {
-  pagination.page = page
-  loadDemands()
-}
-
-function progressColor(value: number) {
-  if (value >= 0.8) return '#22c55e'
-  if (value >= 0.6) return '#a855f7'
-  return '#3b82f6'
-}
-
-function scoreClass(score?: number) {
-  if (!score && score !== 0) return 'score-neutral'
-  if (score >= 0.8) return 'score-high'
-  if (score >= 0.6) return 'score-mid'
-  return 'score-low'
-}
-
-function formatScore(score?: number) {
-  if (score === undefined || score === null) return '--'
-  return `${Math.round(score * 100)}%`
-}
-
-function statusType(status?: string) {
-  if (status === 'matched') return 'success'
-  if (status === 'in_follow_up') return 'warning'
-  return 'info'
-}
-
-function statusLabel(status?: string) {
-  if (status === 'matched') return '已匹配'
-  if (status === 'in_follow_up') return '跟进中'
-  if (status === 'unmatched') return '未匹配'
-  return status || '未知'
-}
-
-async function handleRowClick(row: DemandItem) {
-  await loadDetail(row.id)
-}
-
-async function loadDetail(id: string) {
-  detailLoading.value = true
+async function loadDemands(keepId?: string) {
+  loading.value = true
   try {
-    const res = await getDemandDetail(id)
-    selectedDemand.value = res?.data || null
-    matches.value = res?.data?.matches || []
-    drawerVisible.value = true
-  } catch (error) {
-    console.error(error)
+    const [demandRes, sourceRes] = await Promise.all([
+      getDemands({ pageNum: 1, pageSize: 100 }),
+      getDemandSources()
+    ])
+    demands.value = normalizeDemands(demandRes?.data?.records || demandRes?.data || [])
+    demandSources.value = normalizeSources(sourceRes?.data || [])
+    selectedDemand.value = demands.value.find(item => String(item.id) === keepId) || demands.value[0] || null
   } finally {
-    detailLoading.value = false
+    loading.value = false
   }
 }
-
-const { executing: rematching, execute: runRematch } = useAsyncAction(
-  async () => {
-    const id = selectedDemand.value?.id
-    if (!id) {
-      throw new AppError('缺少需求 ID', ErrorType.VALIDATION, 'MISSING_DEMAND_ID')
-    }
-    await rematchDemand(id)
-    await loadDetail(id)
-  },
-  { successMessage: '已重新匹配，结果更新中' }
-)
 
 async function handleRematch() {
-  await runRematch()
+  if (!selectedDemand.value) return
+  rematching.value = true
+  const demandId = String(selectedDemand.value.id)
+  try {
+    await rematchDemand(demandId)
+    await loadDemands(demandId)
+    ElMessage.success('已重新计算候选成果匹配')
+  } finally {
+    rematching.value = false
+  }
 }
 
-function goResultDetail(resultId: string) {
-  router.push(`/results/${resultId}`)
+function normalizeDemands(rows: any[]): DemandItem[] {
+  return rows.map(row => ({
+    ...row,
+    id: String(row.id),
+    priority: row.priority || '中',
+    confidence: Number(row.confidence || 0),
+    bestMatchScore: Number(row.bestMatchScore || 0),
+    keywords: row.keywords || [],
+    tags: row.tags || [],
+    pendingConfirmations: row.pendingConfirmations || [],
+    riskNotes: row.riskNotes || [],
+    matches: (row.matches || []).map((m: any) => ({
+      ...m,
+      matchScore: Number(m.matchScore || 0),
+      fitTags: m.fitTags || [],
+      updatedAt: m.updatedAt || ''
+    })),
+    followUp: row.followUp || []
+  }))
 }
 
-onMounted(() => {
-  loadDemands()
-})
+function normalizeSources(rows: any[]): DemandSourceItem[] {
+  return rows.map(row => ({
+    ...row,
+    id: String(row.id),
+    successRate: Number(row.successRate || 0),
+    newCount: Number(row.newCount || 0),
+    matchedCount: Number(row.matchedCount || 0)
+  }))
+}
+
+function formatDate(value?: string) {
+  if (!value) return '-'
+  return value.slice(0, 10)
+}
+
+function scoreColor(score: number) {
+  if (score >= 0.8) return '#16a34a'
+  if (score >= 0.65) return '#d97706'
+  return '#dc2626'
+}
+
+function statusType(status: DemandStatus) {
+  const m: Record<DemandStatus, any> = { new: 'info', reviewing: 'primary', matched: 'success', in_follow_up: 'warning', invalid: 'danger', archived: 'info' }
+  return m[status]
+}
+function statusLabel(status: DemandStatus) {
+  const m: Record<DemandStatus, string> = { new: '新入池', reviewing: '研判中', matched: '已匹配', in_follow_up: '跟进中', invalid: '无效', archived: '已归档' }
+  return m[status]
+}
+function sourceTagType(s: SourceHealth) {
+  if (s === 'healthy') return 'success'; if (s === 'warning') return 'warning'; if (s === 'error') return 'danger'; return 'info'
+}
+function sourceLabel(s: SourceHealth) {
+  const m: Record<SourceHealth, string> = { healthy: '正常', warning: '预警', error: '异常', idle: '停用' }
+  return m[s]
+}
+function timelineType(status: string) {
+  if (status === 'done') return 'success'; if (status === 'doing') return 'primary'; return 'info'
+}
+
+onMounted(() => loadDemands())
 </script>
 
 <style scoped>
-.demand-insights {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.demand-insights { display: flex; flex-direction: column; gap: 16px; }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.eyebrow { font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+h2 { margin: 0; font-size: 24px; font-weight: 800; color: #0f172a; }
+.subtitle { margin: 4px 0 0; font-size: 13px; color: #64748b; }
 
-.page-header h2 {
-  margin: 0 0 6px;
+/* 指标卡 */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.metric-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 16px; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 4px 14px rgba(15,23,42,.05); position: relative; overflow: hidden;
 }
+.metric-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.metric-body { flex: 1; }
+.metric-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+.metric-label { font-size: 12px; color: #64748b; margin-top: 3px; }
+.metric-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; align-self: flex-start; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-amber { background: #fef9c3; color: #a16207; }
+.badge-purple { background: #ede9fe; color: #6d28d9; }
 
-.subtitle {
-  margin: 0;
-  color: #6b7280;
+/* 主体双栏 */
+.main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; min-height: 600px; }
+
+/* 左栏 */
+.demand-list-col { display: flex; flex-direction: column; gap: 12px; }
+.list-toolbar { display: flex; gap: 8px; }
+.search-input { flex: 1; }
+.demand-cards { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 560px; padding-right: 4px; }
+
+/* 需求卡片 */
+.demand-card {
+  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(15,23,42,.04);
 }
+.demand-card:hover { border-color: #93c5fd; box-shadow: 0 4px 16px rgba(37,99,235,.1); }
+.demand-card.is-active { border-color: #2563eb; background: #eff6ff; box-shadow: 0 4px 16px rgba(37,99,235,.15); }
 
-.filter-card {
-  border: 1px solid #eef2f7;
-}
+.card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pri-高 { background: #ef4444; }
+.pri-中 { background: #f59e0b; }
+.pri-低 { background: #6b7280; }
+.card-industry { font-size: 12px; color: #6b7280; flex: 1; }
+.card-status { flex-shrink: 0; }
 
-.filter-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+.card-title { font-size: 14px; font-weight: 700; color: #111827; line-height: 1.45; margin-bottom: 8px; }
+.card-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: #9ca3af; margin-bottom: 10px; }
+.card-meta span::after { content: '·'; margin-left: 8px; }
+.card-meta span:last-child::after { content: ''; }
 
-.table-card {
-  border: 1px solid #eef2f7;
-}
+.match-score-bar { display: flex; align-items: center; gap: 8px; }
+.bar-track { flex: 1; height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+.bar-label { font-size: 12px; color: #64748b; white-space: nowrap; }
 
-.table-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 12px 0 0;
-}
+/* 右栏详情 */
+.detail-col { overflow-y: auto; max-height: 640px; }
+.detail-empty { display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 12px; border: 1.5px dashed #e5e7eb; }
+.detail-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px rgba(15,23,42,.06); }
 
-.title-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.detail-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.detail-head-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.detail-title { margin: 0 0 10px; font-size: 17px; font-weight: 800; color: #0f172a; line-height: 1.4; }
+.detail-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #6b7280; margin-bottom: 14px; }
 
-.title-text {
-  font-weight: 700;
-  color: #111827;
-}
+.priority-tag { border-radius: 999px; }
+.pri-tag-高 { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+.pri-tag-中 { background: #fef9c3; color: #a16207; border-color: #fde68a; }
+.pri-tag-低 { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
 
-.title-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.detail-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+.section-label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+.detail-summary { font-size: 14px; color: #374151; line-height: 1.7; margin: 0 0 10px; }
+.keyword-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.meta-line {
-  color: #9ca3af;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+/* 候选成果卡 */
+.match-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #f9fafb; }
+.match-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.match-title { font-size: 14px; font-weight: 700; color: #111827; flex: 1; }
+.match-type { font-size: 12px; color: #9ca3af; white-space: nowrap; }
+.match-score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.match-score-label { font-size: 12px; color: #6b7280; white-space: nowrap; }
+.match-score-num { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.match-reason { font-size: 13px; color: #374151; line-height: 1.6; margin: 0 0 6px; }
+.match-snippet { font-size: 12px; color: #9ca3af; font-style: italic; margin-bottom: 8px; line-height: 1.5; }
+.fit-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.muted {
-  color: #9ca3af;
-}
+/* 跟进 Timeline */
+.timeline-content { display: flex; flex-direction: column; gap: 2px; }
+.tl-label { font-size: 14px; color: #111827; font-weight: 600; }
+.tl-meta { font-size: 12px; color: #9ca3af; }
 
-.dot {
-  color: #d1d5db;
-}
+/* 待确认 */
+.confirm-list { margin: 0; padding-left: 18px; color: #78350f; font-size: 13px; line-height: 2; }
 
-.score-pill {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 700;
-  text-align: center;
-  min-width: 64px;
-}
+/* 数据源 */
+.source-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; box-shadow: 0 4px 14px rgba(15,23,42,.05); }
+.panel { background: #fff; }
+h3 { margin: 0; font-size: 16px; font-weight: 700; color: #111827; }
+p { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+.section-header { margin-bottom: 14px; }
+.source-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.source-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #f9fafb; }
+.source-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.source-name { font-size: 13px; font-weight: 700; color: #111827; line-height: 1.3; }
+.source-stats { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: #6b7280; }
+.source-warn { margin-top: 6px; font-size: 12px; color: #d97706; background: #fffbeb; padding: 4px 8px; border-radius: 6px; }
 
-.score-high {
-  background: #ecfdf3;
-  color: #15803d;
-}
-
-.score-mid {
-  background: #f5f3ff;
-  color: #6b21a8;
-}
-
-.score-low {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.score-neutral {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.drawer-title {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.drawer-sub {
-  color: #6b7280;
-  font-size: 13px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.drawer-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.section {
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid #eef2f7;
-  border-radius: 12px;
-  background: #f9fafb;
-}
-
-.section-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.section-body {
-  color: #1f2937;
-  line-height: 1.6;
-  margin: 0 0 8px;
-}
-
-.llm-summary {
-  background: #eef2ff;
-  padding: 8px;
-  border-radius: 8px;
-  color: #4b5563;
-}
-
-.keyword-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
-}
-
-.match-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.match-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
-  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.08);
-}
-
-.match-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.match-title {
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.match-sub {
-  color: #6b7280;
-  font-size: 13px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.reason-block {
-  margin-top: 8px;
-}
-
-.reason-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.reason-text {
-  color: #1f2937;
-  margin: 0 0 8px;
-  line-height: 1.5;
-}
-
-.snippet {
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.snippet-label {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.snippet-text {
-  margin: 4px 0 0;
-  color: #374151;
-  line-height: 1.5;
-}
-
-.card-actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
+@media (max-width: 1200px) {
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .main-grid { grid-template-columns: 1fr; }
+  .source-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

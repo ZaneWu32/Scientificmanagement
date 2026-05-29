@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.achievement.mapper.DemandMatchMapper">
+
+    <select id="selectActiveByDemandId" resultType="com.achievement.domain.po.DemandMatch">
+        SELECT *
+        FROM demand_matches
+        WHERE is_delete = 0
+          AND demand_id = #{demandId}
+        ORDER BY match_score DESC, created_at DESC, id DESC
+    </select>
+
+    <update id="softDeleteUnconfirmedByDemandId">
+        UPDATE demand_matches
+        SET is_delete = 1,
+            updated_at = NOW(6)
+        WHERE demand_id = #{demandId}
+          AND is_delete = 0
+          AND confirm_status != 'confirmed'
+    </update>
+</mapper>

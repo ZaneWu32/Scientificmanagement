@@ -180,10 +180,10 @@ const menuItems = computed(() => {
       ]
     })
 
-    // 3. 科技助手
+    // 3. 智能洞察
     items.push({
       path: '/insights',
-      title: '科技助手',
+      title: '智能洞察',
       icon: DataAnalysis,
       roles: [UserRole.ADMIN],
       children: [

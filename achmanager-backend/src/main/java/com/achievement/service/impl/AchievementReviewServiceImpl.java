@@ -8,8 +8,11 @@ import java.util.Map;
 
 import com.achievement.constant.RoleConstants;
 import com.achievement.domain.vo.ReviewAssignVO;
+import com.achievement.domain.vo.RagIndexResultVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.achievement.domain.dto.AssignReviewerDTO;
 import com.achievement.domain.dto.KeycloakUser;
@@ -25,6 +28,7 @@ import com.achievement.mapper.AchievementReviewMapper;
 import com.achievement.mapper.AchievementReviewerAssignmentMapper;
 import com.achievement.service.IAchievementReviewService;
 import com.achievement.service.IKeycloakUserService;
+import com.achievement.service.IRagAchievementIndexService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -44,6 +48,7 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
     private final AchievementReviewMapper achievementReviewMapper;
     private final AchievementReviewerAssignmentMapper assignmentMapper;
     private final IKeycloakUserService keycloakUserService;
+    private final IRagAchievementIndexService ragAchievementIndexService;
 
     private record ResolvedReviewer(Integer reviewerId, String reviewerName) {
     }
@@ -181,9 +186,41 @@ public class AchievementReviewServiceImpl implements IAchievementReviewService {
         result.setSuccess(true);
         result.setMessage(message);
 
+        if ("APPROVED".equals(newStatus)) {
+            scheduleAchievementIndexSync(achievementDocId);
+        }
+
         log.info("审核完成: achievementDocId={}, newStatus={}", achievementDocId, newStatus);
 
         return result;
+    }
+
+    private void scheduleAchievementIndexSync(String achievementDocId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    syncApprovedAchievementIndex(achievementDocId);
+                }
+            });
+            return;
+        }
+        syncApprovedAchievementIndex(achievementDocId);
+    }
+
+    private void syncApprovedAchievementIndex(String achievementDocId) {
+        try {
+            RagIndexResultVO indexResult = ragAchievementIndexService.rebuildAndIndexAchievementDoc(achievementDocId);
+            if (indexResult.getFailed() > 0) {
+                log.warn("审核通过后自动同步成果 RAG 索引失败: achievementDocId={}, failedIds={}",
+                        achievementDocId, indexResult.getFailedIds());
+                return;
+            }
+            log.info("审核通过后已自动同步成果 RAG 索引: achievementDocId={}, success={}",
+                    achievementDocId, indexResult.getSuccess());
+        } catch (Exception e) {
+            log.warn("审核通过后自动同步成果 RAG 索引异常: achievementDocId={}", achievementDocId, e);
+        }
     }
 
     @Override
