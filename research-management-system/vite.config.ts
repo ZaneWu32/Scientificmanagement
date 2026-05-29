@@ -62,6 +62,13 @@ export default defineConfig({
         target: "http://localhost:8081",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.error('[proxy error]', err.message)
+          })
+        },
+        timeout: 120_000,
+        proxyTimeout: 120_000,
       },
       // 代理 Strapi 上传的文件
       "/uploads": {
