@@ -127,6 +127,17 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     public List<CrawlerStatusVO> getCrawlerStatusList() {
         Map<String, String> names = crawlerClient.listCrawlers();
         Map<String, String> taskStatuses = crawlerClient.getAllStatuses();
+
+        // 查询每个爬虫的政策数量
+        LambdaQueryWrapper<CrawlerPolicy> countQuery = new LambdaQueryWrapper<>();
+        countQuery.eq(CrawlerPolicy::getDelFlag, "0")
+                  .select(CrawlerPolicy::getCrawlerId)
+                  .groupBy(CrawlerPolicy::getCrawlerId);
+        Map<String, Long> countMap = new HashMap<>();
+        for (CrawlerPolicy p : crawlerPolicyMapper.selectList(countQuery)) {
+            countMap.merge(p.getCrawlerId(), 1L, Long::sum);
+        }
+
         List<CrawlerStatusVO> result = new ArrayList<>();
         for (Map.Entry<String, String> entry : names.entrySet()) {
             String id = entry.getKey();
@@ -135,6 +146,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             vo.setName(entry.getValue());
             vo.setSyncStatus(syncStatus.getOrDefault(id, "idle"));
             vo.setCrawlerStatus(taskStatuses.getOrDefault(id, "idle"));
+            vo.setPolicyCount(countMap.getOrDefault(id, 0L));
             result.add(vo);
         }
         return result;

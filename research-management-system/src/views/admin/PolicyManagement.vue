@@ -18,25 +18,36 @@
         <div v-for="crawler in crawlers" :key="crawler.id" class="crawler-card">
           <div class="crawler-card-header">
             <span class="crawler-name">{{ crawler.name }}</span>
-            <el-tag :type="syncStatusType(crawler.syncStatus)" size="small" effect="plain">
-              {{ syncStatusText(crawler.syncStatus) }}
-            </el-tag>
+            <el-button
+              size="small"
+              :loading="crawler.syncStatus === 'syncing'"
+              :disabled="crawler.syncStatus === 'syncing'"
+              @click="handleSyncOne(crawler.id)"
+            >
+              同步
+            </el-button>
           </div>
-          <div class="crawler-card-meta">
+          <div class="crawler-card-body">
             <span class="crawler-id">{{ crawler.id }}</span>
-            <el-tag v-if="crawler.crawlerStatus !== 'unavailable'" type="info" size="small" effect="plain">
-              {{ crawler.crawlerStatus }}
-            </el-tag>
-            <el-tag v-else type="danger" size="small" effect="plain">不可用</el-tag>
+            <div class="crawler-tags">
+              <el-tag
+                :type="statusTagType(crawler.syncStatus)"
+                size="small"
+                effect="plain"
+              >
+                {{ syncStatusText(crawler.syncStatus) }}
+              </el-tag>
+              <el-tag
+                v-if="crawler.crawlerStatus !== 'idle'"
+                :type="crawler.crawlerStatus === 'unavailable' ? 'danger' : 'info'"
+                size="small"
+                effect="plain"
+              >
+                {{ crawler.crawlerStatus === 'unavailable' ? '不可用' : crawler.crawlerStatus }}
+              </el-tag>
+            </div>
+            <span class="crawler-count">{{ crawler.policyCount }} 条数据</span>
           </div>
-          <el-button
-            size="small"
-            :loading="crawler.syncStatus === 'syncing'"
-            :disabled="crawler.syncStatus === 'syncing'"
-            @click="handleSyncOne(crawler.id)"
-          >
-            同步
-          </el-button>
         </div>
         <el-empty v-if="!crawlersLoading && crawlers.length === 0" description="暂无可用爬虫" />
       </div>
@@ -117,12 +128,30 @@ async function loadCrawlers() {
   crawlersLoading.value = true
   try {
     const res = await getCrawlerStatus()
-    crawlers.value = res?.data || []
+    const incoming = res?.data || []
+    mergeCrawlers(incoming)
   } catch {
     ElMessage.error('加载爬虫列表失败')
   } finally {
     crawlersLoading.value = false
   }
+}
+
+function mergeCrawlers(incoming: CrawlerStatus[]) {
+  const existingMap = new Map(crawlers.value.map(c => [c.id, c]))
+  for (const item of incoming) {
+    const existing = existingMap.get(item.id)
+    if (existing) {
+      existing.syncStatus = item.syncStatus
+      existing.crawlerStatus = item.crawlerStatus
+      existing.policyCount = item.policyCount
+    } else {
+      crawlers.value.push(item)
+    }
+  }
+  // 移除不再存在的爬虫
+  const incomingIds = new Set(incoming.map(c => c.id))
+  crawlers.value = crawlers.value.filter(c => incomingIds.has(c.id))
 }
 
 async function loadPolicies(page?: number) {
@@ -181,7 +210,10 @@ async function handleMatch() {
 function startPolling() {
   stopPolling()
   pollTimer = setInterval(async () => {
-    await loadCrawlers()
+    const res = await getCrawlerStatus().catch(() => null)
+    if (res?.data) {
+      mergeCrawlers(res.data)
+    }
     const hasSyncing = crawlers.value.some(c => c.syncStatus === 'syncing')
     if (!hasSyncing) {
       stopPolling()
@@ -201,7 +233,7 @@ function openSource(url: string) {
   if (url) window.open(url, '_blank')
 }
 
-function syncStatusType(status: string) {
+function statusTagType(status: string) {
   const map: Record<string, string> = {
     idle: 'info',
     syncing: '',
@@ -257,7 +289,7 @@ function syncStatusText(status: string) {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .crawler-card-header {
@@ -272,9 +304,9 @@ function syncStatusText(status: string) {
   color: #334155;
 }
 
-.crawler-card-meta {
+.crawler-card-body {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   font-size: 12px;
   color: #94a3b8;
@@ -282,6 +314,17 @@ function syncStatusText(status: string) {
 
 .crawler-id {
   font-family: monospace;
+}
+
+.crawler-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.crawler-count {
+  color: #64748b;
+  font-size: 13px;
 }
 
 .pagination {

@@ -8,4 +8,5 @@ public class CrawlerStatusVO {
     private String name;
     private String syncStatus;
     private String crawlerStatus;
+    private long policyCount;
 }

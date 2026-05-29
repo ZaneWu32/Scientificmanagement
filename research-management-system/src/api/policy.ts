@@ -18,6 +18,7 @@ export interface CrawlerStatus {
   name: string
   syncStatus: string
   crawlerStatus: string
+  policyCount: number
 }
 
 export function getRelatedPolicies(
