@@ -44,10 +44,13 @@
         GROUP BY crawler_id
     </select>
 
-    <select id="selectLightweightPolicies" resultType="map">
-        SELECT id, crawler_id, title, keywords_extracted
+    <select id="selectFilteredCandidates" resultType="map">
+        SELECT id, title, keywords_extracted
         FROM crawler_policies
         WHERE del_flag = '0'
+          AND JSON_OVERLAPS(keywords_extracted, #{keywordsJson})
+        ORDER BY create_time DESC
+        LIMIT #{limit}
     </select>
 
     <select id="selectPolicyDetailByIds" resultMap="PolicyVOMap">

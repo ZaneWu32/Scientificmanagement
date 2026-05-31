@@ -54,7 +54,7 @@ public class AutoFillServiceImpl implements IAutoFillService {
 
         // 2. 截取（论文只取前 N 字符，因为元数据集中在首页）
         String truncated = truncateForType(text, resultTypeCode);
-        boolean wasTruncated = truncated.length() < text.length();
+        // boolean wasTruncated = truncated.length() < text.length();
 
         // 3. 调用 LLM 识别字段
         String rawResponse = callLlm(truncated, resultTypeCode);

@@ -23,6 +23,11 @@ public class CrawlerPolicyController {
 
     private final ICrawlerPolicyService crawlerPolicyService;
 
+    @GetMapping("/crawler-names")
+    public Result<Map<String, String>> getCrawlerNames() {
+        return Result.success(crawlerPolicyService.getCrawlerNames());
+    }
+
     @GetMapping("/achievement/{achievementDocId}/related")
     public Result<List<PolicyVO>> getRelatedPolicies(
             @PathVariable String achievementDocId,

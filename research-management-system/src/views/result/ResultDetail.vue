@@ -313,7 +313,7 @@ import {
   View, Lock, Unlock, Download, ArrowRight
 } from '@element-plus/icons-vue'
 import { getResult, requestResultAccess, getFieldDefsByType } from '@/api/result'
-import { getRelatedPolicies, getCrawlerStatus, type PolicyItem } from '@/api/policy'
+import { getRelatedPolicies, getCrawlerNames, type PolicyItem } from '@/api/policy'
 import { mapFieldType, FrontendFieldType } from '@/config/dynamicFields'
 import { formatDateTime } from '@/utils/date'
 import {
@@ -510,17 +510,13 @@ async function loadDynamicFields(typeId: string) {
 
 async function loadRelatedPolicies(achievementDocId: string) {
   try {
-    const [policyRes, crawlerRes] = await Promise.all([
+    const [policyRes, namesRes] = await Promise.all([
       getRelatedPolicies(achievementDocId),
-      getCrawlerStatus().catch(() => null)
+      getCrawlerNames().catch(() => null),
     ])
     relatedPolicies.value = policyRes?.data || []
-    if (crawlerRes?.data) {
-      const map: Record<string, string> = {}
-      for (const c of crawlerRes.data) {
-        map[c.id] = c.name
-      }
-      crawlerNames.value = map
+    if (namesRes?.data) {
+      crawlerNames.value = namesRes.data
     }
   } catch (error) {
     console.error('加载相关政策失败', error)

@@ -17,7 +17,8 @@ public interface CrawlerPolicyMapper extends BaseMapper<CrawlerPolicy> {
 
     List<Map<String, Object>> countGroupByCrawlerId();
 
-    List<Map<String, Object>> selectLightweightPolicies();
+    List<Map<String, Object>> selectFilteredCandidates(@Param("keywordsJson") String keywordsJson,
+                                                        @Param("limit") int limit);
 
     List<PolicyVO> selectPolicyDetailByIds(@Param("ids") List<Long> ids);
 }

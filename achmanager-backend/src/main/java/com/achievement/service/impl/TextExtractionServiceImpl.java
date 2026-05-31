@@ -2,8 +2,10 @@ package com.achievement.service.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Supplier;
 
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.exception.WriteLimitReachedException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
@@ -39,20 +41,7 @@ public class TextExtractionServiceImpl implements ITextExtractionService {
             throw new TextExtractionException(
                     "文件大小 %d 字节超过限制 %d 字节".formatted(content.length, maxBytes));
         }
-        Metadata metadata = buildMetadata(filename, mimeType);
-        try (TikaInputStream tis = TikaInputStream.get(content)) {
-            return doExtract(tis, metadata);
-        } catch (TextExtractionException e) {
-            throw e;
-        } catch (TikaException | IOException | SAXException e) {
-            throw new TextExtractionException("文本提取失败: " + filename, e);
-        } catch (RuntimeException e) {
-            if (isOcrUnavailable(e)) {
-                log.warn("Tesseract 不可用，OCR 跳过: {}", filename);
-                return emptyResult();
-            }
-            throw e;
-        }
+        return extractText(() -> TikaInputStream.get(content), filename, mimeType);
     }
 
     @Override
@@ -60,8 +49,12 @@ public class TextExtractionServiceImpl implements ITextExtractionService {
         if (stream == null) {
             return emptyResult();
         }
+        return extractText(() -> TikaInputStream.get(stream), filename, mimeType);
+    }
+
+    private ExtractionResult extractText(Supplier<TikaInputStream> tisSupplier, String filename, String mimeType) {
         Metadata metadata = buildMetadata(filename, mimeType);
-        try (TikaInputStream tis = TikaInputStream.get(stream)) {
+        try (TikaInputStream tis = tisSupplier.get()) {
             return doExtract(tis, metadata);
         } catch (TikaException | IOException | SAXException e) {
             throw new TextExtractionException("文本提取失败: " + filename, e);
@@ -91,7 +84,7 @@ public class TextExtractionServiceImpl implements ITextExtractionService {
         boolean truncated = false;
         try {
             parser.parse(tis, handler, metadata, context);
-        } catch (org.apache.tika.exception.WriteLimitReachedException e) {
+        } catch (WriteLimitReachedException e) {
             truncated = true;
         }
 

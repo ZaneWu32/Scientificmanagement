@@ -31,6 +31,13 @@ export function getRelatedPolicies(
   })
 }
 
+export function getCrawlerNames(): Promise<ApiResponse<Record<string, string>>> {
+  return request({
+    url: '/policy/crawler-names',
+    method: 'get'
+  })
+}
+
 export function getCrawlerStatus(): Promise<ApiResponse<CrawlerStatus[]>> {
   return request({
     url: '/policy/crawlers',

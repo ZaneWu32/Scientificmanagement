@@ -1,6 +1,7 @@
 package com.achievement.service.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -22,18 +23,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.achievement.client.CrawlerClient;
 import com.achievement.config.CrawlerProperties;
+import com.achievement.domain.dto.AchMainBaseRow;
 import com.achievement.domain.dto.CrawlerResultDTO;
 import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.po.CrawlerPolicy;
 import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
+import com.achievement.mapper.AchievementMainsMapper;
 import com.achievement.mapper.CrawlerPolicyMapper;
 import com.achievement.service.ICrawlerPolicyService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -53,8 +55,8 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     private final CrawlerClient crawlerClient;
     private final CrawlerProperties crawlerProperties;
     private final CrawlerPolicyMapper crawlerPolicyMapper;
+    private final AchievementMainsMapper mainsMapper;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
     private static final double MATCH_THRESHOLD = 0.1;
     private final ConcurrentHashMap<String, String> crawlerState = new ConcurrentHashMap<>();
@@ -197,12 +199,6 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         for (CrawlerResultDTO dto : results) {
             String hash = computeHash(dto.getTitle(), dto.getSource(), dto.getDatetime());
 
-            LambdaQueryWrapper<CrawlerPolicy> existsQuery = new LambdaQueryWrapper<>();
-            existsQuery.eq(CrawlerPolicy::getContentHash, hash);
-            if (crawlerPolicyMapper.selectCount(existsQuery) > 0) {
-                continue;
-            }
-
             CrawlerPolicy policy = new CrawlerPolicy();
             policy.setCrawlerId(crawlerId);
             policy.setSourceUrl(dto.getSource());
@@ -223,8 +219,12 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
                 policy.setKeywordsExtracted("[]");
             }
             policy.setDelFlag("0");
-            crawlerPolicyMapper.insert(policy);
-            newCount++;
+            try {
+                crawlerPolicyMapper.insert(policy);
+                newCount++;
+            } catch (DuplicateKeyException e) {
+                // content_hash 已存在，跳过重复数据
+            }
         }
 
         return newCount;
@@ -238,23 +238,30 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             return Collections.emptyList();
         }
 
-        // 2. 加载所有政策的轻量数据，在内存中匹配
-        List<Map<String, Object>> policies = crawlerPolicyMapper.selectLightweightPolicies();
-        List<ScoredPolicy> candidates = new ArrayList<>();
-        for (Map<String, Object> row : policies) {
-            String keywordsJson = (String) row.get("keywords_extracted");
-            List<String> policyKeywords = parseKeywords(keywordsJson);
+        // 2. 数据库端预过滤：JSON_OVERLAPS 筛选关键词有交集的候选政策
+        String keywordsJson;
+        try {
+            keywordsJson = objectMapper.writeValueAsString(achTokens);
+        } catch (JsonProcessingException e) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> candidates = crawlerPolicyMapper.selectFilteredCandidates(keywordsJson, 500);
+
+        // 3. 对候选集计算 Jaccard 相似度
+        List<ScoredPolicy> scored = new ArrayList<>();
+        for (Map<String, Object> row : candidates) {
+            List<String> policyKeywords = parseKeywords((String) row.get("keywords_extracted"));
             if (policyKeywords.isEmpty()) {
                 continue;
             }
             double score = jaccardSimilarity(new HashSet<>(policyKeywords), achTokens);
             if (score >= MATCH_THRESHOLD) {
-                candidates.add(new ScoredPolicy(((Number) row.get("id")).longValue(), score));
+                scored.add(new ScoredPolicy(((Number) row.get("id")).longValue(), score));
             }
         }
 
-        // 3. 取 top N，查详情
-        List<Long> topIds = candidates.stream()
+        // 4. 取 top N，查详情
+        List<Long> topIds = scored.stream()
                 .sorted((a, b) -> Double.compare(b.score, a.score))
                 .limit(limit)
                 .map(sp -> sp.id)
@@ -267,13 +274,13 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         Map<Long, PolicyVO> detailMap = crawlerPolicyMapper.selectPolicyDetailByIds(topIds).stream()
                 .collect(Collectors.toMap(PolicyVO::getId, p -> p));
 
-        return candidates.stream()
+        return scored.stream()
                 .filter(sp -> detailMap.containsKey(sp.id))
                 .sorted((a, b) -> Double.compare(b.score, a.score))
                 .limit(limit)
                 .map(sp -> {
                     PolicyVO vo = detailMap.get(sp.id);
-                    vo.setMatchScore(BigDecimal.valueOf(sp.score).setScale(4, BigDecimal.ROUND_HALF_UP));
+                    vo.setMatchScore(BigDecimal.valueOf(sp.score).setScale(4, RoundingMode.HALF_UP));
                     vo.setMatchReason("关键词重叠度: " + String.format("%.1f%%", sp.score * 100));
                     return vo;
                 })
@@ -290,26 +297,14 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     }
 
     private Set<String> getAchievementKeywords(String achievementDocId) {
-        try (SqlSession session = sqlSessionFactory.openSession()) {
-            var conn = session.getConnection();
-            var stmt = conn.prepareStatement(
-                    "SELECT title, keywords FROM achievement_mains WHERE document_id = ? AND is_delete = 0");
-            stmt.setString(1, achievementDocId);
-            var rs = stmt.executeQuery();
-            Set<String> tokens = new HashSet<>();
-            if (rs.next()) {
-                String title = rs.getString("title");
-                String keywordsJson = rs.getString("keywords");
-                tokens.addAll(parseKeywords(keywordsJson));
-                tokens.addAll(extractKeywords(title));
-            }
-            rs.close();
-            stmt.close();
-            return tokens;
-        } catch (Exception e) {
-            log.error("获取成果物 {} 关键词失败: {}", achievementDocId, e.getMessage());
+        AchMainBaseRow row = mainsMapper.selectMainBaseByDocId(achievementDocId);
+        if (row == null) {
             return Collections.emptySet();
         }
+        Set<String> tokens = new HashSet<>();
+        tokens.addAll(parseKeywords(row.getKeywordsJson()));
+        tokens.addAll(extractKeywords(row.getTitle()));
+        return tokens;
     }
 
     private record ScoredPolicy(long id, double score) {}
