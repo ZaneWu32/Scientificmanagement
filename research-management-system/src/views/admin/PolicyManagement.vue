@@ -30,7 +30,10 @@
           <div class="crawler-card-info">
             <span class="crawler-id">{{ crawler.id }}</span>
             <span class="crawler-sep">&middot;</span>
-            <span class="crawler-count">{{ crawler.policyCount }} 条数据</span>
+            <span v-if="crawler.status === 'running' && crawler.stats" class="crawler-progress">
+              {{ crawler.stats.done }}/{{ crawler.stats.total }} 条已处理
+            </span>
+            <span v-else class="crawler-count">{{ crawler.policyCount }} 条数据</span>
             <el-tag
               :type="statusTagType(crawler.status)"
               size="small"
@@ -180,6 +183,7 @@ function mergeCrawlers(incoming: CrawlerStatus[]) {
     if (existing) {
       existing.status = item.status
       existing.policyCount = item.policyCount
+      existing.stats = item.stats
     } else {
       crawlers.value.push(item)
     }
@@ -373,6 +377,11 @@ function statusText(status: string) {
 
 .crawler-count {
   color: #64748b;
+}
+
+.crawler-progress {
+  color: #3b82f6;
+  font-weight: 500;
 }
 
 .search-form {

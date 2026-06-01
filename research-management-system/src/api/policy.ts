@@ -13,11 +13,19 @@ export interface PolicyItem {
   matchReason?: string
 }
 
+export interface CrawlerStats {
+  total: number
+  success: number
+  failed: number
+  done: number
+}
+
 export interface CrawlerStatus {
   id: string
   name: string
   status: string
   policyCount: number
+  stats?: CrawlerStats
 }
 
 export function getRelatedPolicies(
