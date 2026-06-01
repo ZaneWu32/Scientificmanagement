@@ -1,6 +1,8 @@
 package com.achievement.client;
 
 import com.achievement.domain.dto.CrawlerResultDTO;
+import com.achievement.domain.vo.CrawlerStatsVO;
+import com.achievement.domain.vo.CrawlerStatusVO;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +83,7 @@ public class CrawlerClient {
         }
     }
 
-    public Map<String, String> getAllStatuses() {
+    public Map<String, CrawlerStatusVO> getAllStatuses() {
         try {
             JsonNode body = crawlerWebClient.get()
                     .uri("/api/crawlers/status")
@@ -93,11 +95,25 @@ public class CrawlerClient {
                     .bodyToMono(JsonNode.class)
                     .block();
 
-            Map<String, String> result = new LinkedHashMap<>();
+            Map<String, CrawlerStatusVO> result = new LinkedHashMap<>();
             if (body != null && body.has("tasks")) {
                 JsonNode tasks = body.get("tasks");
-                tasks.fieldNames().forEachRemaining(id ->
-                        result.put(id, tasks.get(id).path("status").asText("unknown")));
+                tasks.fieldNames().forEachRemaining(id -> {
+                    JsonNode task = tasks.get(id);
+                    CrawlerStatusVO vo = new CrawlerStatusVO();
+                    vo.setId(id);
+                    vo.setStatus(task.path("status").asText("unknown"));
+                    JsonNode statsNode = task.get("stats");
+                    if (statsNode != null) {
+                        CrawlerStatsVO stats = new CrawlerStatsVO();
+                        stats.setTotal(statsNode.path("total").asInt(0));
+                        stats.setSuccess(statsNode.path("success").asInt(0));
+                        stats.setFailed(statsNode.path("failed").asInt(0));
+                        stats.setDone(statsNode.path("done").asInt(0));
+                        vo.setStats(stats);
+                    }
+                    result.put(id, vo);
+                });
             }
             return result;
         } catch (Exception e) {

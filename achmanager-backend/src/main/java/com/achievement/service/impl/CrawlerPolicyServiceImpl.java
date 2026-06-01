@@ -135,6 +135,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     @Override
     public List<CrawlerStatusVO> getCrawlerStatusList() {
         Map<String, String> names = crawlerClient.listCrawlers();
+        Map<String, CrawlerStatusVO> upstream = crawlerClient.getAllStatuses();
 
         Map<String, Long> countMap = new HashMap<>();
         for (Map<String, Object> row : crawlerPolicyMapper.countGroupByCrawlerId()) {
@@ -153,6 +154,10 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             vo.setName(entry.getValue());
             vo.setStatus(crawlerState.getOrDefault(id, "idle"));
             vo.setPolicyCount(countMap.getOrDefault(id, 0L));
+            CrawlerStatusVO upVo = upstream.get(id);
+            if (upVo != null && upVo.getStats() != null) {
+                vo.setStats(upVo.getStats());
+            }
             result.add(vo);
         }
         return result;
