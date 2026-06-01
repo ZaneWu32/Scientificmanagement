@@ -169,6 +169,9 @@ async function loadCrawlers() {
     const res = await getCrawlerStatus()
     const incoming = res?.data || []
     mergeCrawlers(incoming)
+    if (crawlers.value.some(c => c.status === 'running')) {
+      startPolling()
+    }
   } catch {
     ElMessage.error('加载爬虫列表失败')
   } finally {
