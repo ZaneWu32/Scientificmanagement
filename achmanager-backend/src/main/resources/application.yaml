@@ -61,6 +61,8 @@ process-system:
       - docx
       - xls
       - xlsx
+      - ppt
+      - pptx
       - txt
       - zip
       - rar
