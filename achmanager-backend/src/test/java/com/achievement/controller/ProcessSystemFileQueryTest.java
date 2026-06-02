@@ -2,8 +2,6 @@ package com.achievement.controller;
 
 import com.achievement.domain.po.ProcessSubmissionFile;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -16,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 过程系统文件查询API测试
  */
-@SpringBootTest
-@ActiveProfiles("test")
 class ProcessSystemFileQueryTest {
 
     @Test

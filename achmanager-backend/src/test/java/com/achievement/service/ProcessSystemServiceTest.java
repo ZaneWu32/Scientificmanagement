@@ -4,8 +4,6 @@ import com.achievement.domain.dto.ProcessSubmissionRequest;
 import com.achievement.domain.po.ProcessSubmissionFile;
 import com.achievement.domain.vo.ProcessSubmissionVO;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -17,8 +15,6 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 过程系统服务测试
  */
-@SpringBootTest
-@ActiveProfiles("test")
 class ProcessSystemServiceTest {
 
     @Test

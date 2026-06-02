@@ -65,6 +65,16 @@ public class RagController {
         return Result.success(ragAchievementIndexService.rebuildAchievementDoc(achievementDocId));
     }
 
+    @Operation(description = "同步单个成果的 RAG 索引；已审核成果会重建并写入 ES，未审核/删除成果会清理索引")
+    @PostMapping("/search-docs/achievements/{achievementDocId}/sync")
+    public Result<RagIndexResultVO> syncAchievementDoc(@PathVariable String achievementDocId,
+                                                       @CurrentUser KeycloakUser currentUser) {
+        if (!isAdmin(currentUser)) {
+            return Result.error(403, "无权限：仅管理员可同步索引");
+        }
+        return Result.success(ragAchievementIndexService.syncAchievementDoc(achievementDocId));
+    }
+
     @Operation(description = "将待同步的成果检索快照写入 ES")
     @PostMapping("/search-docs/achievements/index")
     public Result<RagIndexResultVO> indexPendingAchievementDocs(@RequestParam(required = false) Integer limit,

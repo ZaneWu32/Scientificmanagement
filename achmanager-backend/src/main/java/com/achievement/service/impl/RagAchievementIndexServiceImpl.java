@@ -94,6 +94,33 @@ public class RagAchievementIndexServiceImpl implements IRagAchievementIndexServi
     }
 
     @Override
+    @Transactional
+    public RagIndexResultVO syncAchievementDoc(String achievementDocId) {
+        RagIndexResultVO result = new RagIndexResultVO();
+        if (achievementDocId == null || achievementDocId.isBlank()) {
+            return result;
+        }
+        result.setTotal(1);
+
+        String approvedDocId = achievementSearchDocMapper.selectApprovedAchievementDocId(achievementDocId);
+        if (approvedDocId != null && !approvedDocId.isBlank()) {
+            return rebuildAndIndexAchievementDoc(achievementDocId);
+        }
+
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            achievementSearchDocMapper.markDeletedByAchievementDocId(achievementDocId, now);
+            ragElasticsearchClient.deleteAchievement(achievementDocId);
+            result.setSuccess(1);
+        } catch (Exception e) {
+            log.warn("同步清理成果 RAG 索引失败，achievementDocId={}", achievementDocId, e);
+            result.setFailed(1);
+            result.getFailedIds().add(achievementDocId);
+        }
+        return result;
+    }
+
+    @Override
     public RagIndexResultVO rebuildAllAchievementDocs() {
         List<String> docIds = achievementSearchDocMapper.selectApprovedAchievementDocIds();
         RagIndexResultVO result = new RagIndexResultVO();
@@ -236,7 +263,9 @@ public class RagAchievementIndexServiceImpl implements IRagAchievementIndexServi
             return entries;
         }
         for (JsonNode item : data) {
-            JsonNode files = item.path("files");
+            JsonNode itemPayload = unwrapPayload(item);
+            JsonNode files = itemPayload.has("files") ? itemPayload.path("files") : itemPayload.path("file");
+            files = unwrapData(files);
             if (files.isArray()) {
                 for (JsonNode file : files) {
                     addAttachmentMeta(entries, file);
@@ -249,11 +278,28 @@ public class RagAchievementIndexServiceImpl implements IRagAchievementIndexServi
     }
 
     private void addAttachmentMeta(List<AttachmentMeta> entries, JsonNode file) {
-        String name = file.path("name").asText(null);
+        JsonNode filePayload = unwrapPayload(unwrapData(file));
+        String name = filePayload.path("name").asText(null);
         if (name == null || name.isBlank()) {
             return;
         }
-        entries.add(new AttachmentMeta(name, file.path("mime").asText(null)));
+        entries.add(new AttachmentMeta(name, filePayload.path("mime").asText(null)));
+    }
+
+    private JsonNode unwrapPayload(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return objectMapper.nullNode();
+        }
+        JsonNode attributes = node.path("attributes");
+        return attributes.isObject() ? attributes : node;
+    }
+
+    private JsonNode unwrapData(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return objectMapper.nullNode();
+        }
+        JsonNode data = node.path("data");
+        return data.isMissingNode() || data.isNull() ? node : data;
     }
 
     private String joinAttachmentContents(Map<String, String> attachmentContents) {

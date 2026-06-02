@@ -1,7 +1,7 @@
 # 需求洞察 RAG 功能维护说明
 
-版本：v0.1  
-日期：2026-05-25  
+版本：v0.2
+日期：2026-06-01
 适用范围：`achmanager-backend`、`research-management-system` 中的需求洞察 RAG 一期实现
 
 ## 1. 当前实现目标
@@ -246,9 +246,17 @@ match_score = ES归一化分 * 0.5 + 规则分 * 0.2 + LLM分 * 0.3
 
 限制：
 
-- 单文件最大 10MB。
-- 每个附件最多提取前 10000 字。
+- 单文件最大值由 `tika.max-file-size-bytes` 控制，默认 50MB。
+- 每个附件最多提取文本长度由 `tika.max-text-length` 控制，默认 100000 字符。
 - 图片、音频、视频、压缩包、加密文件、损坏文件会跳过。
+
+附件 JSON 兼容常见 Strapi media relation 形态：
+
+- `attributes.files.data[]`
+- `files.data[]`
+- `files.data`
+- `file.data`
+- 平铺的 `files` / `file` 对象
 
 提取结果写入：
 
@@ -273,6 +281,7 @@ match_score = ES归一化分 * 0.5 + 规则分 * 0.2 + LLM分 * 0.3
 | POST | `/rag/achievement-index/ensure` | 创建或确认成果 ES 索引 |
 | POST | `/rag/search-docs/achievements/rebuild` | 重建全部已审核成果 MySQL 快照 |
 | POST | `/rag/search-docs/achievements/{achievementDocId}` | 重建单个成果 MySQL 快照 |
+| POST | `/rag/search-docs/achievements/{achievementDocId}/sync` | 同步单个成果 RAG 索引；已审核成果写入 ES，未审核/删除成果清理索引 |
 | POST | `/rag/search-docs/achievements/index?limit=200` | 将待同步快照写入 ES |
 | POST | `/rag/search-docs/achievements/rebuild-and-index` | 重建全部快照并写入 ES |
 | GET | `/rag/achievements/search?keyword=xxx&topK=10` | ES 成果检索调试 |
@@ -342,9 +351,26 @@ POST /demand/{id}/rematch
 
 ### 8.2 单个成果变更后
 
-成果在审核通过后，系统会自动重建该成果的 MySQL 检索快照并写入 ES，无需人工执行维护接口。
+成果在以下场景会自动同步 RAG 索引，无需人工执行维护接口：
 
-如果成果标题、摘要、关键词、动态字段或附件在已发布后再次发生变化，或需要修复历史数据索引，可手动执行：
+- 成果审核通过。
+- 成果创建或更新。
+- 成果附件上传、覆盖或删除。
+- 成果可见范围变更。
+- 成果删除、下架或不再满足“已发布 + 已审核通过 + 未删除”条件。
+
+同步规则：
+
+- 满足已发布、已审核通过、未删除条件时，重建 `achievement_search_docs` 并写入 ES。
+- 不满足条件时，将 MySQL 检索快照标记删除，并删除 ES 中对应文档。
+
+如果需要修复历史数据索引，可手动执行：
+
+```http
+POST /rag/search-docs/achievements/{achievementDocId}/sync
+```
+
+也可分步重建快照并写入待同步 ES 文档：
 
 ```http
 POST /rag/search-docs/achievements/{achievementDocId}
@@ -383,6 +409,12 @@ request({ url: '/demand', method: 'get', params, mock: false })
 
 因此前端运行时必须确保：
 
+- MySQL 监听 `3306`，且 `strapi` 数据库可访问。
+- Redis 监听 `6379`。
+- Strapi 监听 `1337`。
+- Elasticsearch 监听 `9200`。
+- Keycloak 监听 `8080`，并存在 `research-management` realm 或通过环境变量覆盖。
+- 后端监听 `8081`，前端开发服务监听 `5173`。
 - 后端服务运行在 Vite 代理目标 `http://localhost:8081`
 - 用户已登录并携带有效 token
 - 后端存在需求数据或使用 `/demand/match-preview` 调试
@@ -433,7 +465,7 @@ WHERE is_delete = 0
 检查：
 
 - 附件是否属于支持格式。
-- 文件是否超过 10MB。
+- 文件是否超过 `tika.max-file-size-bytes`，默认 50MB。
 - Strapi 文件 URL 是否能被后端访问。
 - `achievement_search_docs.attachment_extract_status` 和 `attachment_extract_error`。
 - 后端日志中 `AttachmentContentExtractor` 的 warn 信息。
@@ -490,11 +522,10 @@ WHERE is_delete = 0
 
 ### 11.3 增量索引
 
-当前已具备 `search_hash` 和 `indexed_at/es_indexed_at`，并已在成果审核通过后自动同步单条成果索引。后续可以继续增强为：
+当前已具备 `search_hash` 和 `indexed_at/es_indexed_at`，并已在成果审核通过、成果保存、附件变更、删除/下架后自动同步单条成果索引。后续可以继续增强为：
 
-- 成果保存后自动重建单条快照。
 - 定时任务扫描 `indexed_at > es_indexed_at` 的记录。
-- 删除或下架成果时同步删除 ES 文档或写入 `isDelete = 1`。
+- 批量扫描 `is_delete = 1` 的历史快照并清理 ES 残留文档。
 
 ### 11.4 Embedding 与向量检索
 
@@ -529,11 +560,18 @@ WHERE is_delete = 0
 
 ## 12. 验证命令
 
-后端编译：
+后端完整测试：
 
 ```bash
 cd achmanager-backend
-./mvnw -q -DskipTests compile
+./mvnw -q test
+```
+
+RAG/需求洞察定向测试：
+
+```bash
+cd achmanager-backend
+./mvnw -q -Dtest=RagAchievementIndexServiceImplTest,DemandInsightServiceImplTest,AttachmentContentExtractorTest test
 ```
 
 前端类型检查：
@@ -543,11 +581,17 @@ cd research-management-system
 npm run type-check
 ```
 
-前端 lint：
+前端构建：
 
 ```bash
 cd research-management-system
-npm run lint
+npm run build
 ```
 
-注意：当前仓库已有测试环境问题，直接运行 `./mvnw test` 可能因 Keycloak 测试配置缺失或既有测试对象为空而失败。维护 RAG 功能时，应至少保证 `compile` 通过，并在具备完整测试环境后再跑完整测试套件。
+空白与补丁格式检查：
+
+```bash
+git diff --check
+```
+
+说明：`./mvnw -q test` 当前在 `test` profile 下会禁用外部 ES/LLM/初始化器依赖，可验证代码行为和核心链路。真正端到端联调仍要求 MySQL、Strapi、ES、Keycloak、后端和前端服务全部启动。

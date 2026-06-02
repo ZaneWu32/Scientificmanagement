@@ -17,6 +17,7 @@ import com.achievement.domain.dto.DemandMatchPreviewRequest;
 import com.achievement.domain.dto.DemandQueryDTO;
 import com.achievement.domain.dto.DemandStatusUpdateDTO;
 import com.achievement.domain.dto.KeycloakUser;
+import com.achievement.domain.vo.DemandInsightStatsVO;
 import com.achievement.domain.vo.DemandInsightVO;
 import com.achievement.domain.vo.DemandMatchVO;
 import com.achievement.domain.vo.DemandSourceVO;
@@ -35,6 +36,12 @@ import lombok.RequiredArgsConstructor;
 public class DemandInsightController {
 
     private final IDemandInsightService demandInsightService;
+
+    @Operation(description = "需求洞察指标统计")
+    @GetMapping("/statistics")
+    public Result<DemandInsightStatsVO> getStats() {
+        return Result.success(demandInsightService.getStats());
+    }
 
     @Operation(description = "需求池分页列表")
     @GetMapping
@@ -92,5 +99,13 @@ public class DemandInsightController {
                                                 @RequestBody DemandConfirmMatchDTO dto,
                                                 @CurrentUser KeycloakUser currentUser) {
         return Result.success(demandInsightService.confirmMatch(id, dto.getResultId(), currentUser));
+    }
+
+    @Operation(description = "人工排除不合适的候选成果")
+    @PostMapping("/{id}/reject-match")
+    public Result<DemandInsightVO> rejectMatch(@PathVariable Long id,
+                                               @RequestBody DemandConfirmMatchDTO dto,
+                                               @CurrentUser KeycloakUser currentUser) {
+        return Result.success(demandInsightService.rejectMatch(id, dto.getResultId(), currentUser));
     }
 }

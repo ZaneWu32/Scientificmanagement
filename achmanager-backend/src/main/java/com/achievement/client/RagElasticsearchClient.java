@@ -71,6 +71,23 @@ public class RagElasticsearchClient {
                 .toBodilessEntity();
     }
 
+    public void deleteAchievement(String achievementDocId) {
+        ensureEnabled();
+        if (achievementDocId == null || achievementDocId.isBlank()) {
+            return;
+        }
+        try {
+            restClient.delete()
+                    .uri("/{index}/_doc/{id}", achievementIndex(), achievementDocId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() != HttpStatus.NOT_FOUND) {
+                throw e;
+            }
+        }
+    }
+
     public List<AchievementSearchHitVO> searchAchievements(String keyword, int topK) {
         ensureEnabled();
         if (keyword == null || keyword.isBlank()) {

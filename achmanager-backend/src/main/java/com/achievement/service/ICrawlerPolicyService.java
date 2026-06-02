@@ -18,6 +18,8 @@ public interface ICrawlerPolicyService {
 
     void triggerSyncAll();
 
+    int backfillPoliciesToDemands();
+
     List<PolicyVO> matchForAchievement(String achievementDocId, int limit);
 
     Map<String, List<PolicyVO>> matchForAchievements(List<String> achievementDocIds, int limit);

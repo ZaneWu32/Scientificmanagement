@@ -23,7 +23,7 @@ public interface IAchievementAdminService {
      * - data: application/json（原 createAchievement 的请求体）
      * - files: 文件数组（可选）
      * <p>
-     * 后端会先调用 Strapi /api/upload 拿到文件 id，自动写入 data.attachments[].data.file。
+     * 后端会先调用 Strapi /api/upload 拿到文件 id，自动写入 data.attachments[].data.files。
      */
     JsonNode createAchievementWithFiles(Map<String, Object> req, MultipartFile[] files,Integer userId);
 
@@ -34,7 +34,7 @@ public interface IAchievementAdminService {
      * - data: application/json（原 updateAchievement 的请求体）
      * - files: 文件数组（可选）
      * <p>
-     * 后端会先调用 Strapi /api/upload 拿到文件 id，追加写入 data.attachments[].data.file 后再执行 update。
+     * 后端会先调用 Strapi /api/upload 拿到文件 id，覆盖同步到 data.attachments[].data.files 后再执行 update。
      */
     JsonNode updateAchievementWithFiles(String achievementDocId, Map<String, Object> req, MultipartFile[] files);
 

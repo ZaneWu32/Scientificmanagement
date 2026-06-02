@@ -1,7 +1,9 @@
 package com.achievement.service.impl;
 
 import com.achievement.client.StrapiClient;
+import com.achievement.domain.vo.RagIndexResultVO;
 import com.achievement.service.IAchievementAdminService;
+import com.achievement.service.IRagAchievementIndexService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +28,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
 
     private final StrapiClient strapiClient;
     private final ObjectMapper objectMapper;
+    private final IRagAchievementIndexService ragAchievementIndexService;
 
     @Override
     public JsonNode createAchievement(Map<String, Object> req, Integer userId) {
@@ -78,20 +81,21 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         out.set("achievement", mainJson);
         out.set("fields", fieldResults);
         out.set("attachments", attachmentResults);
+        syncRagIndexSafely(achievementDocId);
         return out;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public JsonNode createAchievementWithFiles(Map<String, Object> req, MultipartFile[] files, Integer userId) {
-        if (files == null || files.length == 0) {
+        if (!hasUploadableFiles(files)) {
             return createAchievement(req,userId);
         }
 
         String uploadRaw = strapiClient.upload(files);
         JsonNode uploadJson = readJson(uploadRaw);
         if (uploadJson == null || !uploadJson.isArray() || uploadJson.isEmpty()) {
-            return createAchievement(req,userId);
+            throw new RuntimeException("文件上传失败：Strapi 未返回有效文件信息");
         }
 
         List<Integer> fileIds = new ArrayList<>();
@@ -103,7 +107,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             fileIds.add(idNode.intValue());
         }
         if (fileIds.isEmpty()) {
-            return createAchievement(req,userId);
+            throw new RuntimeException("文件上传失败：Strapi 未返回有效文件ID");
         }
 
         Object dataObj = req.get("data");
@@ -160,6 +164,13 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
     }
 
     private JsonNode updateAchievementInternal(String achievementDocId, Map<String, Object> req, boolean forcePending) {
+        return updateAchievementInternal(achievementDocId, req, forcePending, true);
+    }
+
+    private JsonNode updateAchievementInternal(String achievementDocId,
+                                               Map<String, Object> req,
+                                               boolean forcePending,
+                                               boolean syncRagIndex) {
         MainAndFields mainAndFields = parseMainAndFields(req);
         Map<String, Object> mainReq = mainAndFields.mainReq;
         List<Map<String, Object>> fields = mainAndFields.fields;
@@ -226,6 +237,9 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         out.set("achievement", mainJson);
         out.set("fields", fieldResults);
         out.set("attachments", attachmentResults);
+        if (syncRagIndex) {
+            syncRagIndexSafely(achievementDocId);
+        }
         return out;
     }
 
@@ -236,7 +250,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
                                                         boolean forcePending) {
         log.info("更新成果物");
         // 1) 不上传文件就按原逻辑更新
-        if (files == null || files.length == 0) {
+        if (!hasUploadableFiles(files)) {
             return updateAchievementInternal(achievementDocId, req, forcePending);
         }
 
@@ -244,7 +258,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         String uploadRaw = strapiClient.upload(files);
         JsonNode uploadJson = readJson(uploadRaw);
         if (uploadJson == null || !uploadJson.isArray() || uploadJson.isEmpty()) {
-            return updateAchievementInternal(achievementDocId, req, forcePending);
+            throw new RuntimeException("文件上传失败：Strapi 未返回有效文件信息");
         }
 
         List<Integer> fileIds = new ArrayList<>();
@@ -255,7 +269,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             }
         }
         if (fileIds.isEmpty()) {
-            return updateAchievementInternal(achievementDocId, req, forcePending);
+            throw new RuntimeException("文件上传失败：Strapi 未返回有效文件ID");
         }
 
         // 3) 取 req.data。先提取前端保留的旧附件 fileIds，再移除 attachments，
@@ -273,7 +287,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         data.remove("attachments");
 
         // 4) 先更新成果物主信息 + fields（按 forcePending 决定是否强制状态）
-        JsonNode out = updateAchievementInternal(achievementDocId, req, forcePending);
+        JsonNode out = updateAchievementInternal(achievementDocId, req, forcePending, false);
 
         // 5) 附件覆盖同步：保留前端现有附件 + 新上传附件
         LinkedHashSet<Integer> mergedIds = new LinkedHashSet<>(keepFileIds);
@@ -289,6 +303,7 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             log.warn("覆盖附件：回填 attachments 失败，achievementDocId={}", achievementDocId, e);
         }
 
+        syncRagIndexSafely(achievementDocId);
         return out;
     }
 
@@ -320,7 +335,9 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         body.put("data", Map.of("visibility_range", visibilityRange));
 
         String raw = strapiClient.update(ACHIEVEMENT_COLLECTION, documentId, body);
-        return readJson(raw);
+        JsonNode out = readJson(raw);
+        syncRagIndexSafely(documentId);
+        return out;
     }
 
     @SuppressWarnings("unchecked")
@@ -551,6 +568,18 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         return val == null || String.valueOf(val).trim().isEmpty();
     }
 
+    private boolean hasUploadableFiles(MultipartFile[] files) {
+        if (files == null || files.length == 0) {
+            return false;
+        }
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static final class FieldValueRequest {
         private final String documentId;
         private final Map<String, Object> body;
@@ -661,16 +690,17 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
             return;
         }
 
+        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> bodyData = new HashMap<>();
+        bodyData.put("achievement_main_id", achievementDocId);
+        bodyData.put("files", fileIds);
+        bodyData.put("is_delete", 0);
+        body.put("data", bodyData);
         try {
-            Map<String, Object> body = new HashMap<>();
-            Map<String, Object> bodyData = new HashMap<>();
-            bodyData.put("achievement_main_id", achievementDocId);
-            bodyData.put("files", fileIds);
-            bodyData.put("is_delete", 0);
-            body.put("data", bodyData);
             strapiClient.create(ACHIEVEMENT_FILE_COLLECTION, body);
         } catch (Exception e) {
-            log.warn("覆盖附件：创建新 achievement-files 失败，achievementDocId={}", achievementDocId, e);
+            log.error("覆盖附件：创建新 achievement-files 失败，achievementDocId={}", achievementDocId, e);
+            throw new RuntimeException("覆盖附件失败：创建新附件关联失败", e);
         }
     }
 
@@ -699,7 +729,8 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
                 }
             }
         } catch (Exception e) {
-            log.warn("覆盖附件：软删除旧 achievement-files 失败，achievementDocId={}", achievementDocId, e);
+            log.error("覆盖附件：软删除旧 achievement-files 失败，achievementDocId={}", achievementDocId, e);
+            throw new RuntimeException("覆盖附件失败：软删除旧附件关联失败", e);
         }
     }
 
@@ -781,6 +812,23 @@ public class AchievementAdminServiceImpl implements IAchievementAdminService {
         Map<String, Object> body = new HashMap<>();
         body.put("data", Map.of("is_delete", 1));
         String raw = strapiClient.update(ACHIEVEMENT_COLLECTION, achievementDocId, body);
-        return readJson(raw);
+        JsonNode out = readJson(raw);
+        syncRagIndexSafely(achievementDocId);
+        return out;
+    }
+
+    private void syncRagIndexSafely(String achievementDocId) {
+        if (achievementDocId == null || achievementDocId.isBlank()) {
+            return;
+        }
+        try {
+            RagIndexResultVO result = ragAchievementIndexService.syncAchievementDoc(achievementDocId);
+            if (result.getFailed() > 0) {
+                log.warn("成果变更后同步 RAG 索引失败: achievementDocId={}, failedIds={}",
+                        achievementDocId, result.getFailedIds());
+            }
+        } catch (Exception e) {
+            log.warn("成果变更后同步 RAG 索引异常: achievementDocId={}", achievementDocId, e);
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.achievement.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "process-system.db-init.enabled", havingValue = "true", matchIfMissing = true)
 public class ProcessSystemDatabaseConfig implements CommandLineRunner {
 
     private final JdbcTemplate jdbcTemplate;

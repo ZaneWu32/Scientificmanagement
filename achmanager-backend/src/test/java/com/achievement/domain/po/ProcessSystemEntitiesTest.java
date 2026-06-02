@@ -1,8 +1,6 @@
 package com.achievement.domain.po;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 过程系统实体类测试
  */
-@SpringBootTest
-@ActiveProfiles("test")
 class ProcessSystemEntitiesTest {
 
     @Test

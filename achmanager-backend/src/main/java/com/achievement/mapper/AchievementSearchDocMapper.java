@@ -12,9 +12,14 @@ public interface AchievementSearchDocMapper extends BaseMapper<AchievementSearch
 
     List<String> selectApprovedAchievementDocIds();
 
+    String selectApprovedAchievementDocId(@Param("achievementDocId") String achievementDocId);
+
     List<AchievementSearchDoc> selectPendingEsDocs(@Param("limit") int limit);
 
     int markEsIndexed(@Param("id") Long id,
                       @Param("esDocId") String esDocId,
                       @Param("esIndexedAt") LocalDateTime esIndexedAt);
+
+    int markDeletedByAchievementDocId(@Param("achievementDocId") String achievementDocId,
+                                      @Param("updatedAt") LocalDateTime updatedAt);
 }

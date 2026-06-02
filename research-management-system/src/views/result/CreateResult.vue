@@ -141,7 +141,6 @@
               <h3>附件识别 · 智能补全</h3>
               <p class="autofill-desc">系统将辅助从附件中识别关键字段。识别结果供参考，请确认后再采用，最终提交由您控制。</p>
             </div>
-            <el-tag type="warning" effect="plain" size="small">Mock 演示版</el-tag>
           </div>
 
           <!-- 无附件提示 -->
@@ -214,7 +213,7 @@
 
                 <!-- 待确认提示 -->
                 <div v-if="afResult.pendingConfirmations.length" class="af-pending-box">
-                  <div class="af-pending-title">⚠️ 待人工确认</div>
+                  <div class="af-pending-title">需人工复核</div>
                   <ul class="af-pending-list">
                     <li v-for="item in afResult.pendingConfirmations" :key="item">{{ item }}</li>
                   </ul>
@@ -300,7 +299,6 @@ import { getResultTypes, getFieldDefsByType, createResult, createResultWithFiles
 import { ResultVisibility } from '@/types'
 import DynamicFieldRenderer from '@/components/DynamicFieldRenderer.vue'
 import { mapFieldType } from '@/config/dynamicFields'
-import { getConfidenceLevel } from '@/mocks/autoFillMock'
 import { autoFillFromAttachment } from '@/api/autoFill'
 import type { AutoFillResult } from '@/api/autoFill'
 
@@ -412,6 +410,12 @@ function adoptSelectedFields() {
 function getAfConfidenceClass(confidence: number) {
   const level = getConfidenceLevel(confidence)
   return `af-conf-${level}`
+}
+
+function getConfidenceLevel(confidence: number) {
+  if (confidence >= 0.9) return 'high'
+  if (confidence >= 0.75) return 'medium'
+  return 'low'
 }
 
 function formatAfTime(iso: string) {

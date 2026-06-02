@@ -2,12 +2,13 @@ package com.achievement.service;
 
 import com.achievement.domain.po.ProcessSubmission;
 import com.achievement.domain.vo.ProcessSubmissionVO;
+import com.achievement.mapper.ProcessSubmissionFileMapper;
 import com.achievement.mapper.ProcessSubmissionMapper;
 import com.achievement.service.impl.ProcessSystemServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,9 +33,11 @@ class ProcessSystemVersionQueryTest {
     private ProcessSubmissionMapper processSubmissionMapper;
 
     @Mock
+    private ProcessSubmissionFileMapper processSubmissionFileMapper;
+
+    @Mock
     private ProcessSystemLogService processSystemLogService;
 
-    @InjectMocks
     private ProcessSystemServiceImpl processSystemService;
 
     private ProcessSubmission mockSubmission1;
@@ -42,6 +45,12 @@ class ProcessSystemVersionQueryTest {
 
     @BeforeEach
     void setUp() {
+        processSystemService = new ProcessSystemServiceImpl(
+                processSubmissionMapper,
+                processSubmissionFileMapper,
+                processSystemLogService,
+                new ObjectMapper());
+
         // 创建测试数据
         mockSubmission1 = createMockSubmission(12345L, 67890L, "proposal", "application", 1, 1);
         mockSubmission2 = createMockSubmission(12346L, 67890L, "proposal", "application", 1, 2);
@@ -152,7 +161,7 @@ class ProcessSystemVersionQueryTest {
         
         // 验证mapper调用
         verify(processSubmissionMapper).selectByVersion(applicationId, submissionType, submissionStage, submissionRound, submissionVersion);
-        verify(processSystemLogService).logOperation(eq("GET_SUBMISSION_BY_VERSION"), anyString(), eq(false));
+        verify(processSystemLogService, times(2)).logOperation(eq("GET_SUBMISSION_BY_VERSION"), anyString(), eq(false));
     }
 
     @Test

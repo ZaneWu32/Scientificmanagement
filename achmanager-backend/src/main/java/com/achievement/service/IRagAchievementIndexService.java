@@ -17,6 +17,8 @@ public interface IRagAchievementIndexService {
 
     RagIndexResultVO rebuildAndIndexAchievementDoc(String achievementDocId);
 
+    RagIndexResultVO syncAchievementDoc(String achievementDocId);
+
     RagIndexResultVO rebuildAllAchievementDocs();
 
     RagIndexResultVO indexPendingAchievementDocs(Integer limit);
