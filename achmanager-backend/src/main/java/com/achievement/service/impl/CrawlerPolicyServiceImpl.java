@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -32,9 +34,11 @@ import com.achievement.config.CrawlerProperties;
 import com.achievement.domain.dto.CrawlerResultDTO;
 import com.achievement.domain.dto.PolicyQueryDTO;
 import com.achievement.domain.po.CrawlerPolicy;
+import com.achievement.domain.po.DemandItem;
 import com.achievement.domain.vo.CrawlerStatusVO;
 import com.achievement.domain.vo.PolicyVO;
 import com.achievement.mapper.CrawlerPolicyMapper;
+import com.achievement.mapper.DemandItemMapper;
 import com.achievement.service.ICrawlerPolicyService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -53,6 +57,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     private final CrawlerClient crawlerClient;
     private final CrawlerProperties crawlerProperties;
     private final CrawlerPolicyMapper crawlerPolicyMapper;
+    private final DemandItemMapper demandItemMapper;
     private final ObjectMapper objectMapper;
     private final SqlSessionFactory sqlSessionFactory;
 
@@ -72,9 +77,10 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             crawlerState.put(crawlerId, "running");
         }
         int totalNew = 0;
-        for (String crawlerId : crawlerNames.keySet()) {
+        for (Map.Entry<String, String> entry : crawlerNames.entrySet()) {
+            String crawlerId = entry.getKey();
             try {
-                totalNew += syncCrawlerInternal(crawlerId);
+                totalNew += syncCrawlerInternal(crawlerId, entry.getValue());
                 crawlerState.put(crawlerId, "completed");
             } catch (Exception e) {
                 crawlerState.put(crawlerId, "failed");
@@ -88,7 +94,8 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     public void syncCrawler(String crawlerId) {
         crawlerState.put(crawlerId, "running");
         try {
-            int newCount = syncCrawlerInternal(crawlerId);
+            String crawlerName = crawlerClient.listCrawlers().getOrDefault(crawlerId, crawlerId);
+            int newCount = syncCrawlerInternal(crawlerId, crawlerName);
             crawlerState.put(crawlerId, "completed");
             log.info("爬虫 {} 同步完成，新增 {} 条", crawlerId, newCount);
         } catch (Exception e) {
@@ -126,6 +133,34 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
     }
 
     @Override
+    public int backfillPoliciesToDemands() {
+        Map<String, String> crawlerNames = crawlerClient.listCrawlers();
+        List<CrawlerPolicy> policies = crawlerPolicyMapper.selectList(
+                new LambdaQueryWrapper<CrawlerPolicy>()
+                        .eq(CrawlerPolicy::getDelFlag, "0")
+                        .orderByDesc(CrawlerPolicy::getPublishDateParsed)
+                        .orderByDesc(CrawlerPolicy::getCreateTime));
+        int before = countDemandItems();
+        for (CrawlerPolicy policy : policies) {
+            CrawlerResultDTO dto = new CrawlerResultDTO();
+            dto.setSource(policy.getSourceUrl());
+            dto.setTitle(policy.getTitle());
+            dto.setDatetime(policy.getPublishDate());
+            dto.setContent(policy.getContent());
+            dto.setHrefs(parseKeywords(policy.getHrefs()));
+            ensureDemandItemFromCrawlerResult(
+                    policy.getCrawlerId(),
+                    crawlerNames.getOrDefault(policy.getCrawlerId(), policy.getCrawlerId()),
+                    dto,
+                    policy.getContentHash(),
+                    parseKeywords(policy.getKeywordsExtracted()));
+        }
+        int inserted = countDemandItems() - before;
+        log.info("已从 crawler_policies 补写需求线索 {} 条", inserted);
+        return Math.max(inserted, 0);
+    }
+
+    @Override
     public Map<String, String> getCrawlerNames() {
         return crawlerClient.listCrawlers();
     }
@@ -156,7 +191,7 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
         return result;
     }
 
-    private int syncCrawlerInternal(String crawlerId) {
+    private int syncCrawlerInternal(String crawlerId, String crawlerName) {
         if (!crawlerClient.startCrawl(crawlerId)) {
             log.warn("爬虫 {} 不可用，跳过", crawlerId);
             return 0;
@@ -200,9 +235,11 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             LambdaQueryWrapper<CrawlerPolicy> existsQuery = new LambdaQueryWrapper<>();
             existsQuery.eq(CrawlerPolicy::getContentHash, hash);
             if (crawlerPolicyMapper.selectCount(existsQuery) > 0) {
+                ensureDemandItemFromCrawlerResult(crawlerId, crawlerName, dto, hash, null);
                 continue;
             }
 
+            List<String> keywords = extractKeywords(dto.getTitle() + " " + dto.getContent());
             CrawlerPolicy policy = new CrawlerPolicy();
             policy.setCrawlerId(crawlerId);
             policy.setSourceUrl(dto.getSource());
@@ -218,16 +255,136 @@ public class CrawlerPolicyServiceImpl implements ICrawlerPolicyService {
             }
             try {
                 policy.setKeywordsExtracted(objectMapper.writeValueAsString(
-                        extractKeywords(dto.getTitle() + " " + dto.getContent())));
+                        keywords));
             } catch (JsonProcessingException e) {
                 policy.setKeywordsExtracted("[]");
             }
             policy.setDelFlag("0");
             crawlerPolicyMapper.insert(policy);
+            ensureDemandItemFromCrawlerResult(crawlerId, crawlerName, dto, hash, keywords);
             newCount++;
         }
 
         return newCount;
+    }
+
+    private void ensureDemandItemFromCrawlerResult(String crawlerId,
+                                                   String crawlerName,
+                                                   CrawlerResultDTO dto,
+                                                   String hash,
+                                                   List<String> keywords) {
+        if (dto == null || hash == null || hash.isBlank()) {
+            return;
+        }
+        LambdaQueryWrapper<DemandItem> existsQuery = new LambdaQueryWrapper<>();
+        existsQuery.eq(DemandItem::getContentHash, hash)
+                .last("LIMIT 1");
+        if (demandItemMapper.selectCount(existsQuery) > 0) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<String> safeKeywords = keywords == null || keywords.isEmpty()
+                ? extractKeywords(dto.getTitle() + " " + dto.getContent())
+                : keywords;
+        DemandItem item = new DemandItem();
+        item.setDemandCode(buildDemandCode(crawlerId, hash));
+        item.setTitle(blankToDefault(dto.getTitle(), "未命名外部线索"));
+        item.setRawContent(dto.getContent());
+        item.setSummary(truncate(dto.getContent(), 500));
+        item.setLlmSummary(truncate(dto.getContent(), 500));
+        item.setKeywordsJson(writeStringList(safeKeywords.stream().limit(20).toList()));
+        item.setTagsJson(writeStringList(List.of("爬虫导入", resolveSourceCategory(crawlerId), crawlerId)));
+        item.setIndustry(resolveIndustry(crawlerId, dto));
+        item.setRegion(resolveRegion(crawlerId));
+        item.setSourceCategory(resolveSourceCategory(crawlerId));
+        item.setSourceSite(blankToDefault(crawlerName, crawlerId));
+        item.setSourceUrl(dto.getSource());
+        item.setCapturedAt(now);
+        item.setPriority(resolvePriority(crawlerId));
+        item.setConfidence(BigDecimal.valueOf(0.650));
+        item.setBestMatchScore(BigDecimal.ZERO);
+        item.setStatus("new");
+        item.setPendingConfirmationsJson(writeStringList(List.of("请确认该公告是否属于可跟进的真实需求线索")));
+        item.setRiskNotesJson(writeStringList(List.of("来源为公开网页采集，需人工确认有效性和跟进边界")));
+        item.setContentHash(hash);
+        item.setCreatedAt(now);
+        item.setUpdatedAt(now);
+        item.setIsDelete(0);
+        demandItemMapper.insert(item);
+    }
+
+    private String buildDemandCode(String crawlerId, String hash) {
+        String safeCrawlerId = crawlerId == null || crawlerId.isBlank()
+                ? "CRAWLER"
+                : crawlerId.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9_]", "_");
+        String suffix = hash == null || hash.length() < 12 ? String.valueOf(System.currentTimeMillis()) : hash.substring(0, 12);
+        return "CRAWLER-" + safeCrawlerId + "-" + suffix;
+    }
+
+    private String resolveSourceCategory(String crawlerId) {
+        return switch (crawlerId) {
+            case "c2", "c6" -> "招投标公告";
+            case "c1", "c3_1", "c3_2" -> "科技项目公告";
+            case "c4" -> "产业政策公告";
+            case "c5" -> "地方政府动态";
+            default -> "外部公告";
+        };
+    }
+
+    private String resolveIndustry(String crawlerId, CrawlerResultDTO dto) {
+        if ("c4".equals(crawlerId)) {
+            return "工业和信息化";
+        }
+        if ("c2".equals(crawlerId) || "c6".equals(crawlerId)) {
+            return "公共资源交易";
+        }
+        String text = (dto == null ? "" : blankToDefault(dto.getTitle(), "") + " " + blankToDefault(dto.getContent(), ""));
+        if (text.contains("科技") || text.contains("科研") || text.contains("基金")) {
+            return "科技创新";
+        }
+        return "综合";
+    }
+
+    private String resolveRegion(String crawlerId) {
+        return switch (crawlerId) {
+            case "c4", "c6" -> "嘉兴";
+            case "c5" -> "桐乡";
+            default -> "浙江";
+        };
+    }
+
+    private String resolvePriority(String crawlerId) {
+        return switch (crawlerId) {
+            case "c2", "c6" -> "high";
+            case "c4" -> "medium";
+            default -> "medium";
+        };
+    }
+
+    private String writeStringList(List<String> values) {
+        try {
+            return objectMapper.writeValueAsString(values == null ? List.of() : values);
+        } catch (JsonProcessingException e) {
+            return "[]";
+        }
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text == null) {
+            return null;
+        }
+        String value = text.trim();
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
+    private String blankToDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private int countDemandItems() {
+        return Math.toIntExact(demandItemMapper.selectCount(
+                new LambdaQueryWrapper<DemandItem>().eq(DemandItem::getIsDelete, 0)));
     }
 
     @Override

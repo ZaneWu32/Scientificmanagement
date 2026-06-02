@@ -5,6 +5,9 @@
         <div class="card-header">
           <span>爬虫数据源</span>
           <div class="header-actions">
+            <el-button :loading="backfillLoading" @click="handleBackfillDemands">
+              同步到需求洞察
+            </el-button>
             <el-button type="primary" :loading="syncAllLoading" @click="handleSyncAll">
               全部爬取
             </el-button>
@@ -126,6 +129,7 @@ import {
   getCrawlerStatus,
   triggerCrawlerSync,
   triggerSyncAll,
+  backfillPoliciesToDemands,
   getPolicyList,
   type CrawlerStatus,
   type PolicyItem
@@ -134,6 +138,7 @@ import {
 const crawlersLoading = ref(false)
 const policiesLoading = ref(false)
 const syncAllLoading = ref(false)
+const backfillLoading = ref(false)
 const crawlers = ref<CrawlerStatus[]>([])
 const policies = ref<PolicyItem[]>([])
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
@@ -236,6 +241,18 @@ async function handleSyncAll() {
     ElMessage.error('触发爬取失败')
   } finally {
     syncAllLoading.value = false
+  }
+}
+
+async function handleBackfillDemands() {
+  backfillLoading.value = true
+  try {
+    const res = await backfillPoliciesToDemands()
+    ElMessage.success(res?.data || '已同步到需求洞察')
+  } catch {
+    ElMessage.error('同步到需求洞察失败')
+  } finally {
+    backfillLoading.value = false
   }
 }
 

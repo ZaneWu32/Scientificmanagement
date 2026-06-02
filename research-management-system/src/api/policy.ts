@@ -52,6 +52,13 @@ export function triggerSyncAll(): Promise<ApiResponse<string>> {
   })
 }
 
+export function backfillPoliciesToDemands(): Promise<ApiResponse<string>> {
+  return request({
+    url: '/policy/backfill-demands',
+    method: 'post'
+  })
+}
+
 export interface PolicyQuery {
   page?: number
   pageSize?: number

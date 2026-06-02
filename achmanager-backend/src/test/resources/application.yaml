@@ -1,0 +1,67 @@
+spring:
+  profiles:
+    active: test
+  datasource:
+    url: jdbc:mysql://localhost:3306/strapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+keycloak:
+  auth-server-url: http://localhost:18080
+  realm: test
+  client-id: test-client
+  client-secret: test-secret
+  realm-default-roles: default-roles-test|uma_authorization|offline_access
+  portal-client-id: test-portal
+
+rag:
+  db-init:
+    enabled: false
+  llm:
+    enabled: false
+  elasticsearch:
+    enabled: false
+
+process-system:
+  db-init:
+    enabled: false
+  file-storage:
+    base-path: ./target/test-data/process-system/files
+
+strapi:
+  base-url: http://localhost:1337
+  api-token:
+
+easyscholar:
+  base-url: https://www.easyscholar.cc/open/getPublicationRank
+  secret-key:
+
+llm:
+  models:
+    default:
+      base-url:
+      api-key:
+      model-name:
+      max-tokens: 4096
+      temperature: 0.7
+  usage:
+    default: default
+    report: default
+    rag: default
+
+crawler:
+  base-url: http://localhost:8020
+  poll-interval-ms: 3000
+  max-poll-attempts: 1
+  sync-cron: 0 0 2 * * ?
+  policy-db-init:
+    enabled: false
+
+tika:
+  max-file-size-bytes: 52428800
+  max-text-length: 100000
+  ocr:
+    enabled: false
+    language: eng
+    timeout-seconds: 120

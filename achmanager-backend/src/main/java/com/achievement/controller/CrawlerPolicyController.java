@@ -55,6 +55,15 @@ public class CrawlerPolicyController {
         return Result.success("已触发爬取，请等待完成");
     }
 
+    @PostMapping("/backfill-demands")
+    public Result<String> backfillDemands(@CurrentUser KeycloakUser currentUser) {
+        if (!currentUser.hasRole("research_admin")) {
+            return Result.error("无权限：仅管理员可访问");
+        }
+        int count = crawlerPolicyService.backfillPoliciesToDemands();
+        return Result.success("已补写需求线索 " + count + " 条");
+    }
+
     @PostMapping("/crawler/{crawlerId}/sync")
     public Result<String> triggerCrawlerSync(@PathVariable String crawlerId, @CurrentUser KeycloakUser currentUser) {
         if (!currentUser.hasRole("research_admin")) {

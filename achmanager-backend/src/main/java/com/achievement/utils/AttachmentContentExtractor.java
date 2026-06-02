@@ -72,7 +72,9 @@ public class AttachmentContentExtractor {
             return entries;
         }
         for (JsonNode entry : data) {
-            JsonNode filesNode = entry.path("files");
+            JsonNode entryPayload = unwrapPayload(entry);
+            JsonNode filesNode = entryPayload.has("files") ? entryPayload.path("files") : entryPayload.path("file");
+            filesNode = unwrapData(filesNode);
             if (filesNode.isArray()) {
                 for (JsonNode file : filesNode) {
                     addFileEntry(entries, file);
@@ -85,14 +87,31 @@ public class AttachmentContentExtractor {
     }
 
     private void addFileEntry(List<FileEntry> entries, JsonNode file) {
-        String url = file.path("url").asText(null);
-        String name = file.path("name").asText(null);
+        JsonNode filePayload = unwrapPayload(unwrapData(file));
+        String url = filePayload.path("url").asText(null);
+        String name = filePayload.path("name").asText(null);
         if (url == null || url.isBlank() || name == null || name.isBlank()) {
             return;
         }
-        String mime = file.path("mime").asText(null);
-        long sizeBytes = (long) (file.path("size").asDouble(0) * 1024);
+        String mime = filePayload.path("mime").asText(null);
+        long sizeBytes = (long) (filePayload.path("size").asDouble(0) * 1024);
         entries.add(new FileEntry(name, mime, url, sizeBytes));
+    }
+
+    private JsonNode unwrapPayload(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return node;
+        }
+        JsonNode attributes = node.path("attributes");
+        return attributes.isObject() ? attributes : node;
+    }
+
+    private JsonNode unwrapData(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return node;
+        }
+        JsonNode data = node.path("data");
+        return data.isMissingNode() || data.isNull() ? node : data;
     }
 
     private byte[] downloadFile(String url) {

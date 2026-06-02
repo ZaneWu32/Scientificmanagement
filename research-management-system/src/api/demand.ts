@@ -57,7 +57,31 @@ export function confirmMatch(
   })
 }
 
+/**
+ * 管理员排除不合适的候选成果
+ * POST /demand/:id/reject-match
+ */
+export function rejectMatch(
+  demandId: string,
+  resultId: string
+): Promise<ApiResponse<any>> {
+  return request({
+    url: `/demand/${demandId}/reject-match`,
+    method: 'post',
+    data: { resultId },
+    mock: false
+  })
+}
+
 // ── 数据源管理 ────────────────────────────────────────────────
+
+/**
+ * 获取需求统计指标
+ * GET /demand/statistics
+ */
+export function getDemandStats(): Promise<ApiResponse<any>> {
+  return request({ url: '/demand/statistics', method: 'get', mock: false })
+}
 
 /**
  * 获取白名单数据源列表及健康状态

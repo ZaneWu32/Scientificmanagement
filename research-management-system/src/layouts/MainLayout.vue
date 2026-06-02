@@ -62,10 +62,6 @@
         </el-menu>
 
         <div class="sidebar-footer">
-          <div v-if="showSystemSettingsCard" class="footer-card" @click="goSystemSettings">
-            <div class="footer-title">系统设置</div>
-            <div class="footer-desc">通知、偏好、主题</div>
-          </div>
           <div class="profile-card">
             <!-- <el-avatar :src="userStore.userInfo?.avatar" :size="40">
               {{ userStore.userInfo?.name?.charAt(0) }}
@@ -124,7 +120,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const currentRoute = computed(() => route)
 const activeMenu = computed(() => route.path)
-const showSystemSettingsCard = computed(() => userStore.isAdmin)
 
 // 菜单配置
 const menuItems = computed(() => {
@@ -188,15 +183,12 @@ const menuItems = computed(() => {
       roles: [UserRole.ADMIN],
       children: [
         { path: '/insights/demands', title: '需求洞察' },
-        { path: '/admin/research-insights', title: '研究洞察' },
         { path: '/admin/report/create', title: '智能报告' }
       ]
     })
 
     // 4. 系统配置（低频维护）
-    const systemConfigChildren = [
-      { path: '/admin/system-settings', title: '系统设置' }
-    ]
+    const systemConfigChildren: Array<{ path: string; title: string }> = []
 
     // 只有管理员可以访问成果类型配置
     if (userStore.isAdmin) {
@@ -290,10 +282,6 @@ const menuItems = computed(() => {
 function hasPermission(roles) {
   if (!roles || roles.length === 0) return true
   return userStore.hasRole(roles)
-}
-
-function goSystemSettings() {
-  router.push('/admin/system-settings')
 }
 
 // 处理用户菜单命令

@@ -12,6 +12,16 @@
         ORDER BY m.updated_at DESC, m.id DESC
     </select>
 
+    <select id="selectApprovedAchievementDocId" resultType="java.lang.String">
+        SELECT m.document_id
+        FROM achievement_mains m
+        WHERE m.is_delete = 0
+          AND m.document_id = #{achievementDocId}
+          AND m.published_at IS NOT NULL
+          AND m.achievement_status = 'APPROVED'
+        LIMIT 1
+    </select>
+
     <select id="selectPendingEsDocs" resultType="com.achievement.domain.po.AchievementSearchDoc">
         SELECT *
         FROM achievement_search_docs
@@ -29,5 +39,13 @@
             es_indexed_at = #{esIndexedAt},
             updated_at = #{esIndexedAt}
         WHERE id = #{id}
+    </update>
+
+    <update id="markDeletedByAchievementDocId">
+        UPDATE achievement_search_docs
+        SET is_delete = 1,
+            updated_at = #{updatedAt}
+        WHERE achievement_doc_id = #{achievementDocId}
+          AND is_delete = 0
     </update>
 </mapper>

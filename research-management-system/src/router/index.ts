@@ -132,27 +132,10 @@ const router = createRouter({
           meta: { title: "成果类型配置", roles: [UserRole.ADMIN] },
         },
         {
-          path: "/admin/system-settings",
-          name: "SystemSettings",
-          component: () => import("@/views/admin/SystemSettings.vue"),
-          meta: {
-            title: "系统设置",
-            roles: [UserRole.ADMIN],
-            comingSoon: true,
-            comingSoonMessage: "开发中，请等待",
-          },
-        },
-        {
           path: "/admin/policies",
           name: "PolicyManagement",
           component: () => import("@/views/admin/PolicyManagement.vue"),
           meta: { title: "政策数据管理", roles: [UserRole.ADMIN] },
-        },
-        {
-          path: "/admin/research-insights",
-          name: "ResearchInsights",
-          component: () => import("@/views/admin/ResearchInsights.vue"),
-          meta: { title: "研究洞察", roles: [UserRole.ADMIN] },
         },
         {
           path: "/admin/interim-results",

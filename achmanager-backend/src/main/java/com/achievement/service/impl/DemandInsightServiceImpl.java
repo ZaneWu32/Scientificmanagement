@@ -20,9 +20,11 @@ import com.achievement.domain.dto.KeycloakUser;
 import com.achievement.domain.po.DemandFollowUp;
 import com.achievement.domain.po.DemandItem;
 import com.achievement.domain.po.DemandMatch;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.achievement.domain.po.DemandSource;
 import com.achievement.domain.vo.AchievementSearchHitVO;
 import com.achievement.domain.vo.DemandFollowUpVO;
+import com.achievement.domain.vo.DemandInsightStatsVO;
 import com.achievement.domain.vo.DemandInsightVO;
 import com.achievement.domain.vo.DemandMatchVO;
 import com.achievement.domain.vo.DemandSourceVO;
@@ -55,6 +57,21 @@ public class DemandInsightServiceImpl implements IDemandInsightService {
     private final IRagAchievementIndexService ragAchievementIndexService;
     private final IDemandMatchLlmRerankService demandMatchLlmRerankService;
     private final ObjectMapper objectMapper;
+
+    @Override
+    public DemandInsightStatsVO getStats() {
+        DemandInsightStatsVO stats = new DemandInsightStatsVO();
+        long total = demandItemMapper.selectCount(new LambdaQueryWrapper<DemandItem>()
+                .eq(DemandItem::getIsDelete, 0));
+        long matched = demandMatchMapper.countMatchedDemands();
+        long followUp = demandItemMapper.selectCount(new LambdaQueryWrapper<DemandItem>()
+                .eq(DemandItem::getIsDelete, 0)
+                .eq(DemandItem::getStatus, "in_follow_up"));
+        stats.setTotalDemands(total);
+        stats.setMatchedDemands(matched);
+        stats.setFollowUpDemands(followUp);
+        return stats;
+    }
 
     @Override
     public Page<DemandInsightVO> pageList(DemandQueryDTO query) {
@@ -189,6 +206,59 @@ public class DemandInsightServiceImpl implements IDemandInsightService {
         update.setBestMatchScore(target.getMatchScore());
         update.setUpdatedAt(now);
         demandItemMapper.updateById(update);
+
+        // 自动增加一条确认成果的跟进轨迹
+        String adminName = resolveUserName(currentUser);
+        DemandFollowUp followUp = new DemandFollowUp();
+        followUp.setDemandId(demandId);
+        followUp.setOwnerId(currentUser == null || currentUser.getId() == null ? null : String.valueOf(currentUser.getId()));
+        followUp.setOwnerName(adminName);
+        followUp.setStatus("in_follow_up");
+        followUp.setNextAction("确认成果");
+        followUp.setNote("管理员 " + (adminName != null ? adminName : "系统") + " 确认了候选成果：" + target.getResultTitle());
+        followUp.setCreatedAt(now);
+        followUp.setUpdatedAt(now);
+        followUp.setIsDelete(0);
+        demandFollowUpMapper.insert(followUp);
+
+        return detail(demandId);
+    }
+
+    @Override
+    @Transactional
+    public DemandInsightVO rejectMatch(Long demandId, String resultId, KeycloakUser currentUser) {
+        if (resultId == null || resultId.isBlank()) {
+            throw new IllegalArgumentException("resultId不能为空");
+        }
+        DemandItem item = demandItemMapper.selectById(demandId);
+        if (item == null || Integer.valueOf(1).equals(item.getIsDelete())) {
+            throw new RuntimeException("需求不存在或已删除");
+        }
+        DemandMatch target = demandMatchMapper.selectActiveByDemandId(demandId).stream()
+                .filter(match -> resultId.equals(String.valueOf(match.getId())) || resultId.equals(match.getAchievementDocId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("匹配结果不存在"));
+
+        LocalDateTime now = LocalDateTime.now();
+        int updated = demandMatchMapper.rejectMatch(demandId, resultId, resolveUserName(currentUser));
+        if (updated == 0) {
+            throw new RuntimeException("匹配结果不存在或已被确认/排除，无法再次操作");
+        }
+
+        // 自动增加一条排除成果的跟进轨迹
+        String adminName = resolveUserName(currentUser);
+        DemandFollowUp followUp = new DemandFollowUp();
+        followUp.setDemandId(demandId);
+        followUp.setOwnerId(currentUser == null || currentUser.getId() == null ? null : String.valueOf(currentUser.getId()));
+        followUp.setOwnerName(adminName);
+        followUp.setStatus(item.getStatus());
+        followUp.setNextAction("排除成果");
+        followUp.setNote("管理员 " + (adminName != null ? adminName : "系统") + " 排除了候选成果：" + target.getResultTitle());
+        followUp.setCreatedAt(now);
+        followUp.setUpdatedAt(now);
+        followUp.setIsDelete(0);
+        demandFollowUpMapper.insert(followUp);
+
         return detail(demandId);
     }
 
@@ -221,6 +291,7 @@ public class DemandInsightServiceImpl implements IDemandInsightService {
                 .setKeywordsJson(writeStringList(request.getKeywords()));
         LocalDateTime now = LocalDateTime.now();
         List<DemandMatch> matches = hits.stream()
+                .filter(this::hasAchievementDocId)
                 .map(hit -> buildDemandMatch(transientDemand, hit, maxEsScore, now))
                 .toList();
         return demandMatchLlmRerankService.rerank(transientDemand, matches, maxEsScore).stream()
@@ -283,6 +354,12 @@ public class DemandInsightServiceImpl implements IDemandInsightService {
         match.setUpdatedAt(now);
         match.setIsDelete(0);
         return match;
+    }
+
+    private boolean hasAchievementDocId(AchievementSearchHitVO hit) {
+        return hit != null
+                && hit.getAchievementDocId() != null
+                && !hit.getAchievementDocId().isBlank();
     }
 
     private DemandMatchVO toMatchVO(DemandMatch match) {

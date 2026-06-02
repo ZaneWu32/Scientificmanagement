@@ -18,4 +18,25 @@
           AND is_delete = 0
           AND confirm_status != 'confirmed'
     </update>
+
+    <!--
+        排除某条候选成果匹配结果：
+        resultId 可以是 demand_matches.id（数字字符串），也可以是 achievement_doc_id（GUID 字符串）。
+        通过 CAST 让两种格式都能命中，同时限定 demand_id 与 is_delete=0 防止越权。
+    -->
+    <update id="rejectMatch">
+        UPDATE demand_matches
+        SET confirm_status = 'rejected',
+            confirmed_by   = #{rejectedBy},
+            confirmed_at   = NOW(6),
+            updated_at     = NOW(6)
+        WHERE demand_id = #{demandId}
+          AND is_delete = 0
+          AND confirm_status != 'confirmed'
+          AND (
+              CAST(id AS CHAR) = #{resultId}
+              OR achievement_doc_id = #{resultId}
+          )
+    </update>
+
 </mapper>
